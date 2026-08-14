@@ -1,12 +1,22 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/loot.gd" id="1_loot"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/coin_sprite_frames.tres" id="2_coin_frames"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_loot"]
 radius = 8.0
 
 [node name="Loot" type="Area2D"]
 script = ExtResource("1_loot")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.0, 0.0, 0.0, 0.3)
+polygon = PackedVector2Array(8, 6, 6.93, 7.5, 4, 8.6, 0, 9, -4, 8.6, -6.93, 7.5, -8, 6, -6.93, 4.5, -4, 3.4, 0, 3, 4, 3.4, 6.93, 4.5)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2.5, 2.5)
+sprite_frames = ExtResource("2_coin_frames")
+animation = &"spin"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_loot")

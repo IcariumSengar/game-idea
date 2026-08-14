@@ -1,12 +1,22 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/enemy_sprite_frames.tres" id="2_enemy_frames"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
 radius = 14.0
 
 [node name="Enemy" type="CharacterBody2D"]
 script = ExtResource("1_enemy")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.0, 0.0, 0.0, 0.35)
+polygon = PackedVector2Array(14, 14, 12.12, 16, 7, 17.6, 0, 18, -7, 17.6, -12.12, 16, -14, 14, -12.12, 12, -7, 10.4, 0, 10, 7, 10.4, 12.12, 12)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2.5, 2.5)
+sprite_frames = ExtResource("2_enemy_frames")
+animation = &"run"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_enemy")

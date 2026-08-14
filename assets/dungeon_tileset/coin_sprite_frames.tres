@@ -1,0 +1,26 @@
+[gd_resource type="SpriteFrames" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f0.png" id="1_f0"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f1.png" id="2_f1"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f2.png" id="3_f2"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f3.png" id="4_f3"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_f0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_f1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_f2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_f3")
+}],
+"loop": true,
+"name": &"spin",
+"speed": 8.0
+}]

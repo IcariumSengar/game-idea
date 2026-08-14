@@ -7,14 +7,13 @@ signal hp_changed(current: float, max_hp: float)
 signal loot_changed(backpack: Dictionary)
 
 const RADIUS: float = 16.0
-const BASE_COLOR: Color = Color.CYAN
+const SPARK_COLOR: Color = Color.CYAN
 const FLASH_DECAY_PER_SEC: float = 6.0
+const HIT_FLASH_COLOR: Color = Color(1.0, 0.35, 0.35)
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 const MIN_HP_FRACTION: float = 0.2
 const HIT_SPARK_AMOUNT: int = 8
-const FACING_LENGTH: float = 10.0
-const FACING_WIDTH: float = 6.0
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 @export var speed: float = 250.0
@@ -40,6 +39,7 @@ var _space_was_pressed: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
+@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 
 func _ready() -> void:
@@ -70,6 +70,10 @@ func _physics_process(delta: float) -> void:
 	var input_direction := _get_input_direction()
 	if input_direction != Vector2.ZERO:
 		_facing = input_direction
+		_sprite.flip_h = _facing.x < 0.0
+		_sprite.play("run")
+	else:
+		_sprite.play("idle")
 
 	_check_dash_input()
 
@@ -86,7 +90,7 @@ func _physics_process(delta: float) -> void:
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
-	queue_redraw()
+	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
 
 
 func _check_dash_input() -> void:
@@ -130,7 +134,6 @@ func take_damage(amount: float, from_position: Vector2) -> void:
 		return
 	hit.emit()
 	_flash_amount = 1.0
-	queue_redraw()
 	_spawn_spark()
 	if from_position != position:
 		_knockback = position.direction_to(from_position) * -KNOCKBACK_SPEED
@@ -148,28 +151,10 @@ func _set_hp(new_hp: float) -> void:
 		hide()
 
 
-func _draw() -> void:
-	var fill := BASE_COLOR.lerp(Color.WHITE, _flash_amount)
-	draw_circle(Vector2(0.0, 4.0), RADIUS * 0.9, Color(0.0, 0.0, 0.0, 0.25))
-	draw_circle(Vector2.ZERO, RADIUS, fill)
-	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 24, fill.darkened(0.4), 2.0, true)
-	_draw_facing_notch(fill.lightened(0.5))
-
-
-func _draw_facing_notch(notch_color: Color) -> void:
-	var tip := _facing * (RADIUS + FACING_LENGTH)
-	var side := _facing.orthogonal() * FACING_WIDTH * 0.5
-	var base_center := _facing * RADIUS * 0.4
-	draw_polygon(
-		PackedVector2Array([tip, base_center + side, base_center - side]),
-		PackedColorArray([notch_color]),
-	)
-
-
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = BASE_COLOR
+	spark.color = SPARK_COLOR
 	spark.amount = HIT_SPARK_AMOUNT
 	get_parent().add_child(spark)
 	spark.emitting = true

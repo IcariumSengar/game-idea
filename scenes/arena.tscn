@@ -1,8 +1,6 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
-[ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
-[ext_resource type="Script" path="res://scripts/weapon.gd" id="3_weapon"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/stat_bar.gd" id="5_statbar"]
 [ext_resource type="Script" path="res://scripts/backpack_grid.gd" id="10_backpackgrid"]
@@ -10,12 +8,10 @@
 [ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="7_btn_normal"]
 [ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="8_btn_hover"]
 [ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="9_btn_pressed"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 16.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
-radius = 60.0
+[ext_resource type="TileSet" path="res://resources/dungeon_floor_tileset.tres" id="11_floor_tileset"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/ui_heart_full.png" id="12_heart_icon"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f0.png" id="13_coin_icon"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="14_player_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
 bg_color = Color(0.03, 0.03, 0.03, 0.88)
@@ -32,29 +28,12 @@ corner_radius_bottom_left = 14
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.09, 0.11, 0.09, 1)
+[node name="Floor" type="TileMapLayer" parent="."]
+scale = Vector2(2.5, 2.5)
+tile_set = ExtResource("11_floor_tileset")
 
-[node name="Player" type="CharacterBody2D" parent="."]
+[node name="Player" parent="." instance=ExtResource("14_player_scene")]
 position = Vector2(640, 360)
-script = ExtResource("2_player")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-shape = SubResource("CircleShape2D_player")
-
-[node name="PickupArea" type="Area2D" parent="Player"]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/PickupArea"]
-shape = SubResource("CircleShape2D_pickup")
-
-[node name="Weapon" type="Node" parent="Player"]
-script = ExtResource("3_weapon")
-
-[node name="AttackTimer" type="Timer" parent="Player/Weapon"]
-wait_time = 0.4
-autostart = true
 
 [node name="EnemySpawnTimer" type="Timer" parent="."]
 wait_time = 1.5
@@ -82,12 +61,11 @@ theme_override_constants/separation = 6
 [node name="HPRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_constants/separation = 8
 
-[node name="HPCaption" type="Label" parent="HUD/StatsPanel/Margin/VBox/HPRow"]
-custom_minimum_size = Vector2(34, 0)
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-text = "HP"
-vertical_alignment = 1
+[node name="HPCaption" type="TextureRect" parent="HUD/StatsPanel/Margin/VBox/HPRow"]
+custom_minimum_size = Vector2(20, 20)
+texture = ExtResource("12_heart_icon")
+expand_mode = 1
+stretch_mode = 4
 
 [node name="HPBar" type="Control" parent="HUD/StatsPanel/Margin/VBox/HPRow"]
 custom_minimum_size = Vector2(160, 16)
@@ -104,12 +82,11 @@ vertical_alignment = 1
 [node name="LootRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_constants/separation = 8
 
-[node name="LootCaption" type="Label" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
-custom_minimum_size = Vector2(34, 0)
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-text = "BAG"
-vertical_alignment = 1
+[node name="LootCaption" type="TextureRect" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
+custom_minimum_size = Vector2(20, 20)
+texture = ExtResource("13_coin_icon")
+expand_mode = 1
+stretch_mode = 4
 
 [node name="LootGrid" type="Control" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
 layout_mode = 2
@@ -168,6 +145,5 @@ theme_override_styles/hover = ExtResource("8_btn_hover")
 theme_override_styles/pressed = ExtResource("9_btn_pressed")
 text = "Continue to Shop"
 
-[connection signal="timeout" from="Player/Weapon/AttackTimer" to="Player/Weapon" method="_on_attack_timer_timeout"]
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]

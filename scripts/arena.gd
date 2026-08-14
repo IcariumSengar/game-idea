@@ -13,16 +13,30 @@ const ENEMY_HP_SCALE_MIN: float = 1.5
 const ENEMY_HP_SCALE_MAX: float = 3.0
 const ENEMY_SPEED_SCALE_MIN: float = 1.6
 const ENEMY_SPEED_SCALE_MAX: float = 2.4
+const FLOOR_COLUMNS: int = 32
+const FLOOR_ROWS: int = 18
+const FLOOR_VARIANT_CHANCE: float = 0.18
 
 var _shake_time_left: float = 0.0
 var _run_time: float = 0.0
 
 @onready var _spawn_timer: Timer = $EnemySpawnTimer
+@onready var _floor: TileMapLayer = $Floor
 
 
 func _ready() -> void:
 	var player: Player = get_tree().get_first_node_in_group("player")
 	player.hit.connect(_on_player_hit)
+	_populate_floor()
+
+
+func _populate_floor() -> void:
+	for x in FLOOR_COLUMNS:
+		for y in FLOOR_ROWS:
+			var variant_x := 0
+			if randf() < FLOOR_VARIANT_CHANCE:
+				variant_x = randi_range(1, 7)
+			_floor.set_cell(Vector2i(x, y), 0, Vector2i(variant_x, 0))
 
 
 func _process(delta: float) -> void:
