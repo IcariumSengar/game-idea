@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/weapon.gd" id="3_weapon"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 16.0
@@ -21,8 +23,27 @@ script = ExtResource("2_player")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("CircleShape2D_player")
 
+[node name="Weapon" type="Node" parent="Player"]
+script = ExtResource("3_weapon")
+
+[node name="AttackTimer" type="Timer" parent="Player/Weapon"]
+wait_time = 0.5
+autostart = true
+
 [node name="EnemySpawnTimer" type="Timer" parent="."]
 wait_time = 1.5
 autostart = true
 
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="HPLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 220.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 22
+text = "HP: 100 / 100"
+
+[connection signal="timeout" from="Player/Weapon/AttackTimer" to="Player/Weapon" method="_on_attack_timer_timeout"]
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]

@@ -11,7 +11,7 @@ playable/checkable on its own before moving to the next:
 
 - [x] Player: top-down movement in an arena
 - [x] Enemy: single type that spawns and chases the player
-- [ ] Combat: auto-attack fires at nearest enemy; enemies damage player on
+- [x] Combat: auto-attack fires at nearest enemy; enemies damage player on
       contact
 - [ ] Player HP + death → run-end state
 - [ ] Loot: drops on enemy death, picked up by player
