@@ -16,7 +16,7 @@ playable/checkable on its own before moving to the next:
 - [x] Player HP + death → run-end state
 - [x] Loot: drops on enemy death, picked up by player (proximity-based,
       via an upgradeable pickup-range stat)
-- [ ] Backpack: capacity + fill %, max HP shrinks with fill %
+- [x] Backpack: capacity + fill %, max HP shrinks with fill %
 - [ ] Enemy spawn rate/difficulty ramps over run duration
 - [ ] Run summary screen (loot collected this run)
 - [ ] Meta-currency conversion + minimal shop (backpack capacity upgrade)

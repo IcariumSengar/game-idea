@@ -11,13 +11,16 @@ const BASE_COLOR: Color = Color.CYAN
 const FLASH_DECAY_PER_SEC: float = 6.0
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
+const MIN_HP_FRACTION: float = 0.2
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
-@export var max_hp: float = 100.0
+@export var base_max_hp: float = 100.0
 @export var pickup_range: float = 60.0
+@export var backpack_capacity: int = 20
 
 var hp: float
+var max_hp: float
 var loot: int = 0
 
 var _flash_amount: float = 0.0
@@ -29,6 +32,7 @@ var _knockback: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
+	max_hp = base_max_hp
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
 	(_pickup_shape.shape as CircleShape2D).radius = pickup_range
@@ -51,21 +55,33 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 
 
-func collect_loot(amount: int) -> void:
-	loot += amount
+func collect_loot(amount: int) -> bool:
+	if loot >= backpack_capacity:
+		return false
+	loot = min(loot + amount, backpack_capacity)
 	loot_changed.emit(loot)
+	var fill_ratio := float(loot) / float(backpack_capacity)
+	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
+	_set_hp(min(hp, max_hp))
+	return true
 
 
 func take_damage(amount: float, from_position: Vector2) -> void:
 	if hp <= 0.0:
 		return
-	hp = max(hp - amount, 0.0)
-	hp_changed.emit(hp, max_hp)
 	hit.emit()
 	_flash_amount = 1.0
 	queue_redraw()
 	if from_position != position:
 		_knockback = position.direction_to(from_position) * -KNOCKBACK_SPEED
+	_set_hp(hp - amount)
+
+
+func _set_hp(new_hp: float) -> void:
+	if hp <= 0.0:
+		return
+	hp = clamp(new_hp, 0.0, max_hp)
+	hp_changed.emit(hp, max_hp)
 	if hp <= 0.0:
 		died.emit()
 		set_physics_process(false)

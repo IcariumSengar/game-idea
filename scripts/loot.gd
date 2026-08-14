@@ -6,8 +6,8 @@ const VALUE: int = 1
 
 
 func collect(player: Player) -> void:
-	player.collect_loot(VALUE)
-	queue_free()
+	if player.collect_loot(VALUE):
+		queue_free()
 
 
 func _on_body_entered(body: Node2D) -> void:
