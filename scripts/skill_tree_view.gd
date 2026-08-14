@@ -6,10 +6,12 @@ extends Control
 
 signal node_clicked(stat_id: StringName)
 
-const NODE_SIZE: Vector2 = Vector2(140.0, 60.0)
-const NODE_SPACING: Vector2 = Vector2(160.0, 100.0)
-const LINE_COLOR: Color = Color(0.5, 0.5, 0.5, 0.6)
-const LINE_WIDTH: float = 2.0
+const NODE_SIZE: Vector2 = Vector2(120.0, 70.0)
+const NODE_SPACING: Vector2 = Vector2(150.0, 110.0)
+const LINE_COLOR: Color = Color(0.4, 0.6, 0.8, 0.5)
+const LINE_WIDTH: float = 2.5
+const NODE_BORDER_WIDTH: float = 2.0
+const PADDING: float = 30.0
 
 var _node_positions: Dictionary = {}
 var _nodes: Array[TreeNode] = []
@@ -157,34 +159,64 @@ func _draw() -> void:
 func _draw_node(node: TreeNode, pos: Vector2) -> void:
 	var color: Color = _get_node_color(node)
 	var rect: Rect2 = Rect2(pos, NODE_SIZE)
+	var border_color: Color = _get_node_border_color(node)
 
-	# Draw background
+	# Draw background with gradient effect
 	draw_rect(rect, color)
-	draw_rect(rect, Color.WHITE, false, 1.0)
+	draw_rect(rect, border_color, false, NODE_BORDER_WIDTH)
 
-	# Draw label
-	var label: String = node.def.display_name.trim_prefix("Compactor: ")
+	# Draw inner highlight for non-locked nodes
+	if not node.is_gated and not node.is_locked_by_currency:
+		var inner_rect := rect.grow(-NODE_BORDER_WIDTH)
+		draw_rect(inner_rect, Color.WHITE, false, 1.0)
+
+	# Draw label with better formatting
+	var display_name: String = node.def.display_name.trim_prefix("Compactor: ")
+	var status: String = ""
+	var status_color: Color = Color.WHITE
+
 	if node.is_gated:
-		label += "\n(LOCKED)"
+		status = "LOCKED"
+		status_color = Color(0.8, 0.4, 0.4)
 	elif node.is_locked_by_currency:
-		label += "\n(No currency)"
+		status = "NEED\nCURRENCY"
+		status_color = Color(0.8, 0.7, 0.3)
 	elif node.is_maxed:
-		label += "\n(MAX)"
+		status = "MAXED"
+		status_color = Color(0.4, 0.8, 0.4)
 	else:
-		label += "\nLvl %d" % node.level
+		status = "Lv %d/%d" % [node.level, node.def.level_cap]
+		status_color = Color(0.7, 0.9, 1.0)
 
 	var font: Font = get_theme_font("font")
-	var font_size: int = get_theme_font_size("font_size")
-	var text_size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	var text_pos: Vector2 = rect.get_center() - text_size / 2.0
-	draw_string(font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
+	var title_size: int = 12
+	var status_size: int = 11
+
+	# Draw title
+	var title_pos: Vector2 = rect.position + Vector2(NODE_SIZE.x / 2.0, 10.0)
+	draw_string(font, title_pos - Vector2(font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, title_size).x / 2.0, 0), display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_size, Color.WHITE)
+
+	# Draw status
+	var status_pos: Vector2 = rect.position + Vector2(NODE_SIZE.x / 2.0, 38.0)
+	var status_size_vec: Vector2 = font.get_string_size(status, HORIZONTAL_ALIGNMENT_CENTER, -1, status_size)
+	draw_string(font, status_pos - status_size_vec / 2.0, status, HORIZONTAL_ALIGNMENT_LEFT, -1, status_size, status_color)
 
 
 func _get_node_color(node: TreeNode) -> Color:
 	if node.is_gated:
-		return Color(0.3, 0.3, 0.3, 0.8)
+		return Color(0.25, 0.25, 0.25, 0.85)
 	if node.is_locked_by_currency:
-		return Color(0.5, 0.3, 0.3, 0.8)
+		return Color(0.55, 0.35, 0.25, 0.85)
 	if node.is_maxed:
-		return Color(0.3, 0.5, 0.3, 0.8)
-	return Color(0.2, 0.4, 0.6, 0.8)
+		return Color(0.25, 0.5, 0.35, 0.85)
+	return Color(0.15, 0.35, 0.55, 0.85)
+
+
+func _get_node_border_color(node: TreeNode) -> Color:
+	if node.is_gated:
+		return Color(0.4, 0.4, 0.4, 0.9)
+	if node.is_locked_by_currency:
+		return Color(0.7, 0.5, 0.3, 0.9)
+	if node.is_maxed:
+		return Color(0.3, 0.7, 0.4, 0.9)
+	return Color(0.3, 0.6, 0.9, 0.9)
