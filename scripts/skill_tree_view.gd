@@ -18,6 +18,20 @@ const LOCKED_BORDER: Color = Color(0.32, 0.32, 0.34, 1.0)
 const LOCKED_FILL: Color = Color(0.14, 0.14, 0.16, 1.0)
 const NO_CURRENCY_TINT: Color = Color(0.9, 0.35, 0.3, 1.0)
 const ICON_DIM: Color = Color(0.5, 0.5, 0.52, 1.0)
+const TOOLTIP_PANEL_STYLE: StyleBoxFlat = preload("res://resources/panel_dark.tres")
+
+const STAT_DESCRIPTIONS: Dictionary = {
+	&"damage": "Increases weapon damage per hit.",
+	&"move_speed": "Increases movement speed.",
+	&"pickup_range": "Increases the magnet radius that pulls loot in.",
+	&"backpack_capacity": "Adds more backpack slots.",
+	&"compactor_common": "Increases the max stack size for Common loot.",
+	&"compactor_uncommon": "Increases the max stack size for Uncommon loot.",
+	&"compactor_rare": "Increases the max stack size for Rare loot.",
+	&"compactor_epic": "Increases the max stack size for Epic loot.",
+	&"compactor_mythic": "Increases the max stack size for Mythic loot.",
+	&"purge": "Auto-discards your lowest-rarity item once the backpack nears full.",
+}
 
 var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)
 var _node_positions: Dictionary = {}
@@ -193,12 +207,70 @@ func _gui_input(event: InputEvent) -> void:
 				return
 	elif event is InputEventMouseMotion:
 		var pos: Vector2 = event.position
-		_hovered_node = StringName()
+		var hovered: TreeNode = null
 		for node in _nodes:
 			if pos.distance_to(_node_positions[node.stat_id]) <= _get_node_radius(node):
-				_hovered_node = node.stat_id
+				hovered = node
 				break
-		queue_redraw()
+		var hovered_id: StringName = hovered.stat_id if hovered != null else StringName()
+		if hovered_id != _hovered_node:
+			_hovered_node = hovered_id
+			tooltip_text = _build_tooltip_text(hovered) if hovered != null else ""
+			queue_redraw()
+
+
+func _build_tooltip_text(node: TreeNode) -> String:
+	var def := node.def
+	var lines: Array[String] = [def.display_name]
+
+	var description: String = STAT_DESCRIPTIONS.get(node.stat_id, "")
+	if description != "":
+		lines.append(description)
+
+	if node.is_gated:
+		lines.append("")
+		lines.append("Locked — buy the previous tier first.")
+		return "\n".join(lines)
+
+	lines.append("")
+	lines.append("Level %d / %d" % [node.level, def.level_cap])
+
+	if node.is_maxed:
+		lines.append("MAXED")
+	else:
+		var cost: int = MetaProgression.get_cost(node.stat_id)
+		var currency_name: String = (
+			"Player" if def.currency == StatDef.Currency.PLAYER else "Backpack"
+		)
+		lines.append("Cost: %d %s Currency" % [cost, currency_name])
+		if node.is_locked_by_currency:
+			lines.append("Not enough currency yet.")
+
+	return "\n".join(lines)
+
+
+func _make_custom_tooltip(for_text: String) -> Object:
+	if for_text == "":
+		return null
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", TOOLTIP_PANEL_STYLE)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
+
+	var label := Label.new()
+	label.text = for_text
+	label.add_theme_font_size_override("font_size", 13)
+	label.custom_minimum_size = Vector2(200, 0)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	margin.add_child(label)
+
+	return panel
 
 
 func _draw() -> void:
