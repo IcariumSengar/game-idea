@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/ui_heart_full.png" id="12_heart_icon"]
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f0.png" id="13_coin_icon"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="14_player_scene"]
+[ext_resource type="Script" path="res://scripts/juicy_button.gd" id="15_juicy"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
 bg_color = Color(0.03, 0.03, 0.03, 0.88)
@@ -144,6 +145,7 @@ theme_override_styles/normal = ExtResource("7_btn_normal")
 theme_override_styles/hover = ExtResource("8_btn_hover")
 theme_override_styles/pressed = ExtResource("9_btn_pressed")
 text = "Continue to Shop"
+script = ExtResource("15_juicy")
 
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]

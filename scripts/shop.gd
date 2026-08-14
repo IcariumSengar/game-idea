@@ -1,9 +1,14 @@
 extends Control
 
+const BOUNCE_SCALE: float = 1.15
+
+var _last_player_currency: int = -1
+var _last_backpack_currency: int = -1
+
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
-@onready var _backpack_tree: Control = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
-@onready var _player_tree: Control = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
+@onready var _backpack_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
+@onready var _player_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
 
 
 func _ready() -> void:
@@ -26,7 +31,9 @@ func _update_trees() -> void:
 	_backpack_tree.set_tree_data(
 		backpack_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency
 	)
-	_player_tree.set_tree_data(player_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency)
+	_player_tree.set_tree_data(
+		player_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency
+	)
 
 	# Disconnect old signals to avoid duplicates
 	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
@@ -39,11 +46,15 @@ func _update_trees() -> void:
 
 
 func _on_backpack_node_clicked(stat_id: StringName) -> void:
-	MetaProgression.buy_upgrade(stat_id)
+	if MetaProgression.buy_upgrade(stat_id):
+		_backpack_tree.pulse(stat_id)
+		AudioManager.play("purchase")
 
 
 func _on_player_node_clicked(stat_id: StringName) -> void:
-	MetaProgression.buy_upgrade(stat_id)
+	if MetaProgression.buy_upgrade(stat_id):
+		_player_tree.pulse(stat_id)
+		AudioManager.play("purchase")
 
 
 func _on_currency_changed() -> void:
@@ -56,12 +67,36 @@ func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
 
 
 func _on_start_run_button_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/arena.tscn")
+	SceneTransition.goto_scene("res://scenes/arena.tscn")
 
 
 func _refresh_currency() -> void:
 	_player_currency_label.text = "Player Currency: %d" % MetaProgression.player_currency
 	_backpack_currency_label.text = "Backpack Currency: %d" % MetaProgression.backpack_currency
+
+	if _last_player_currency != -1 and MetaProgression.player_currency != _last_player_currency:
+		_bounce_label(_player_currency_label)
+	if (
+		_last_backpack_currency != -1
+		and MetaProgression.backpack_currency != _last_backpack_currency
+	):
+		_bounce_label(_backpack_currency_label)
+	_last_player_currency = MetaProgression.player_currency
+	_last_backpack_currency = MetaProgression.backpack_currency
+
+
+func _bounce_label(label: Label) -> void:
+	label.pivot_offset = label.size / 2.0
+	var tween := create_tween()
+	(
+		tween
+		. tween_property(label, "scale", Vector2.ONE * BOUNCE_SCALE, 0.08)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_IN
+	)
 
 
 func _is_stat_gated(stat_id: StringName) -> bool:
@@ -100,4 +135,4 @@ func _find_def(stat_id: StringName) -> StatDef:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/run_prep.tscn")
+	SceneTransition.goto_scene("res://scenes/run_prep.tscn")

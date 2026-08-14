@@ -11,6 +11,8 @@ const HIT_FLASH_COLOR: Color = Color(4.0, 4.0, 4.0)
 const HIT_SPARK_AMOUNT: int = 6
 const DEATH_SPARK_AMOUNT: int = 18
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")
+const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
 
 @export var speed: float = 120.0
 @export var max_hp: float = 30.0
@@ -56,13 +58,16 @@ func _physics_process(delta: float) -> void:
 
 func take_damage(amount: float) -> void:
 	hp -= amount
+	_spawn_damage_text(amount)
 	if hp <= 0.0:
 		_spawn_spark(DEATH_SPARK_AMOUNT)
+		AudioManager.play("enemy_death")
 		died.emit(self)
 		queue_free()
 		return
 	_flash_amount = 1.0
 	_spawn_spark(HIT_SPARK_AMOUNT)
+	AudioManager.play("enemy_hit")
 
 
 func _spawn_spark(amount: int) -> void:
@@ -72,3 +77,10 @@ func _spawn_spark(amount: int) -> void:
 	spark.amount = amount
 	get_parent().add_child(spark)
 	spark.emitting = true
+
+
+func _spawn_damage_text(amount: float) -> void:
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = position + Vector2(0.0, -20.0)
+	get_parent().add_child(text)
+	text.setup("%d" % roundi(amount), DAMAGE_TEXT_COLOR)

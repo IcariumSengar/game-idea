@@ -13,10 +13,14 @@ const AVAILABLE_COLOR: Color = Color(0.85, 0.75, 0.5, 1.0)
 const LOCKED_COLOR: Color = Color(0.35, 0.3, 0.25, 1.0)
 const MAXED_COLOR: Color = Color(0.4, 0.7, 0.4, 1.0)
 const NO_CURRENCY_COLOR: Color = Color(0.7, 0.4, 0.3, 1.0)
+const PULSE_DECAY_PER_SEC: float = 2.5
+const PULSE_SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
+const PULSE_SPARK_COLOR: Color = Color(1.0, 0.9, 0.5)
 
 var _node_positions: Dictionary = {}
 var _nodes: Array[TreeNode] = []
 var _hovered_node: StringName = StringName()
+var _pulse_amount: Dictionary = {}
 
 
 class TreeNode:
@@ -33,9 +37,43 @@ class TreeNode:
 func _ready() -> void:
 	custom_minimum_size = Vector2(0, 550)
 	mouse_filter = MOUSE_FILTER_STOP
+	set_process(false)
 
 
-func set_tree_data(stats: Array[StatDef], level_getter: Callable, gating_checker: Callable, currency_checker: Callable) -> void:
+func pulse(stat_id: StringName) -> void:
+	_pulse_amount[stat_id] = 1.0
+	set_process(true)
+	if stat_id in _node_positions:
+		var center: Vector2 = _node_positions[stat_id] + NODE_SIZE / 2.0
+		var spark: CPUParticles2D = PULSE_SPARK_SCENE.instantiate()
+		spark.position = center
+		spark.color = PULSE_SPARK_COLOR
+		spark.amount = 14
+		spark.scale_amount_min = 1.2
+		spark.scale_amount_max = 2.0
+		add_child(spark)
+		spark.emitting = true
+
+
+func _process(delta: float) -> void:
+	var finished: Array[StringName] = []
+	for stat_id: StringName in _pulse_amount:
+		_pulse_amount[stat_id] = max(_pulse_amount[stat_id] - delta * PULSE_DECAY_PER_SEC, 0.0)
+		if _pulse_amount[stat_id] <= 0.0:
+			finished.append(stat_id)
+	for stat_id in finished:
+		_pulse_amount.erase(stat_id)
+	if _pulse_amount.is_empty():
+		set_process(false)
+	queue_redraw()
+
+
+func set_tree_data(
+	stats: Array[StatDef],
+	level_getter: Callable,
+	gating_checker: Callable,
+	currency_checker: Callable
+) -> void:
 	_nodes.clear()
 	_node_positions.clear()
 
@@ -76,7 +114,7 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 			parent.children.append(child)
 
 
-func _calculate_positions(nodes_by_id: Dictionary) -> void:
+func _calculate_positions(_nodes_by_id: Dictionary) -> void:
 	var roots: Array[TreeNode] = []
 	for node in _nodes:
 		if node.parent == null:
@@ -166,22 +204,48 @@ func _draw_node(node: TreeNode, pos: Vector2) -> void:
 	# Top-left
 	draw_rect(Rect2(rect.position, Vector2(corner_size, corner_size)), corners_color)
 	# Top-right
-	draw_rect(Rect2(rect.position + Vector2(rect.size.x - corner_size, 0), Vector2(corner_size, corner_size)), corners_color)
+	draw_rect(
+		Rect2(
+			rect.position + Vector2(rect.size.x - corner_size, 0), Vector2(corner_size, corner_size)
+		),
+		corners_color
+	)
 	# Bottom-left
-	draw_rect(Rect2(rect.position + Vector2(0, rect.size.y - corner_size), Vector2(corner_size, corner_size)), corners_color)
+	draw_rect(
+		Rect2(
+			rect.position + Vector2(0, rect.size.y - corner_size), Vector2(corner_size, corner_size)
+		),
+		corners_color
+	)
 	# Bottom-right
-	draw_rect(Rect2(rect.position + Vector2(rect.size.x - corner_size, rect.size.y - corner_size), Vector2(corner_size, corner_size)), corners_color)
+	draw_rect(
+		Rect2(
+			rect.position + Vector2(rect.size.x - corner_size, rect.size.y - corner_size),
+			Vector2(corner_size, corner_size)
+		),
+		corners_color
+	)
 
 	# Draw hover effect
 	if is_hovered and not node.is_gated and not node.is_locked_by_currency:
 		draw_rect(rect.grow_individual(-3, -3, -3, -3), Color.WHITE, false, 2.0)
+
+	# Draw purchase pulse (brief gold flash on buy)
+	var pulse: float = _pulse_amount.get(node.stat_id, 0.0)
+	if pulse > 0.0:
+		draw_rect(rect.grow_individual(-3, -3, -3, -3), Color(1.0, 0.95, 0.75, pulse * 0.55))
 
 	# Draw level indicator (filled circles)
 	var level_y: float = rect.position.y + rect.size.y - 15.0
 	var circle_radius: float = 2.5
 	var circle_spacing: float = 8.0
 	for i in range(node.def.level_cap):
-		var circle_x: float = rect.position.x + rect.size.x / 2.0 - (node.def.level_cap * circle_spacing / 2.0) + (i * circle_spacing)
+		var circle_x: float = (
+			rect.position.x
+			+ rect.size.x / 2.0
+			- (node.def.level_cap * circle_spacing / 2.0)
+			+ (i * circle_spacing)
+		)
 		var circle_color: Color = border_color if i < node.level else Color(0.2, 0.2, 0.2, 0.5)
 		draw_circle(Vector2(circle_x, level_y), circle_radius, circle_color)
 
@@ -196,8 +260,18 @@ func _draw_node(node: TreeNode, pos: Vector2) -> void:
 		display_name = display_name.substr(0, 10) + ".."
 
 	var name_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 30.0)
-	var name_width: float = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, name_size).x
-	draw_string(font, name_pos - Vector2(name_width / 2.0, 8.0), display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color.WHITE)
+	var name_width: float = (
+		font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, name_size).x
+	)
+	draw_string(
+		font,
+		name_pos - Vector2(name_width / 2.0, 8.0),
+		display_name,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		name_size,
+		Color.WHITE
+	)
 
 	# Status
 	var status: String = ""
@@ -217,8 +291,18 @@ func _draw_node(node: TreeNode, pos: Vector2) -> void:
 		status_color = Color(0.8, 0.9, 1.0)
 
 	var status_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 60.0)
-	var status_width: float = font.get_string_size(status, HORIZONTAL_ALIGNMENT_CENTER, -1, status_size).x
-	draw_string(font, status_pos - Vector2(status_width / 2.0, 4.0), status, HORIZONTAL_ALIGNMENT_LEFT, -1, status_size, status_color)
+	var status_width: float = (
+		font.get_string_size(status, HORIZONTAL_ALIGNMENT_CENTER, -1, status_size).x
+	)
+	draw_string(
+		font,
+		status_pos - Vector2(status_width / 2.0, 4.0),
+		status,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		status_size,
+		status_color
+	)
 
 
 func _get_node_color(node: TreeNode) -> Color:

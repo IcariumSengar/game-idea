@@ -6,6 +6,11 @@ const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
 const SHAKE_MAGNITUDE: float = 8.0
+const DEATH_SHAKE_DURATION: float = 0.4
+const DEATH_SHAKE_MAGNITUDE: float = 16.0
+const HIT_STOP_DURATION: float = 0.05
+const HIT_STOP_SCALE: float = 0.05
+const DEATH_HIT_STOP_DURATION: float = 0.12
 const RAMP_DURATION: float = 45.0
 const SPAWN_INTERVAL_START: float = 1.0
 const SPAWN_INTERVAL_MIN: float = 0.25
@@ -18,6 +23,7 @@ const FLOOR_ROWS: int = 18
 const FLOOR_VARIANT_CHANCE: float = 0.18
 
 var _shake_time_left: float = 0.0
+var _shake_magnitude: float = SHAKE_MAGNITUDE
 var _run_time: float = 0.0
 
 @onready var _spawn_timer: Timer = $EnemySpawnTimer
@@ -45,13 +51,40 @@ func _process(delta: float) -> void:
 		return
 	_shake_time_left = max(_shake_time_left - delta, 0.0)
 	if _shake_time_left > 0.0:
-		position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * SHAKE_MAGNITUDE
+		position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_magnitude
 	else:
 		position = Vector2.ZERO
 
 
 func _on_player_hit() -> void:
 	_shake_time_left = SHAKE_DURATION
+	_shake_magnitude = SHAKE_MAGNITUDE
+	_hit_stop(HIT_STOP_DURATION)
+
+
+## Self-contained (doesn't rely on _process) so it still plays out fully
+## when awaited by HUD before the tree pauses for the game-over screen.
+func play_death_shake() -> void:
+	Engine.time_scale = HIT_STOP_SCALE
+	await get_tree().create_timer(DEATH_HIT_STOP_DURATION, true, false, true).timeout
+	Engine.time_scale = 1.0
+	var elapsed: float = 0.0
+	while elapsed < DEATH_SHAKE_DURATION:
+		elapsed += get_process_delta_time()
+		var falloff: float = 1.0 - elapsed / DEATH_SHAKE_DURATION
+		position = (
+			Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
+			* DEATH_SHAKE_MAGNITUDE
+			* falloff
+		)
+		await get_tree().process_frame
+	position = Vector2.ZERO
+
+
+func _hit_stop(duration: float) -> void:
+	Engine.time_scale = HIT_STOP_SCALE
+	var timer := get_tree().create_timer(duration, true, false, true)
+	timer.timeout.connect(func() -> void: Engine.time_scale = 1.0)
 
 
 func get_run_time() -> float:

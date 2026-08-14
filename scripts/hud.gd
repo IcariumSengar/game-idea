@@ -51,8 +51,27 @@ func _on_player_died() -> void:
 		"YOU DIED\n\nLoot value collected: %d\nTime survived: %ds"
 		% [total_value, roundi(seconds_survived)]
 	)
-	_game_over_panel.show()
+	AudioManager.play("player_death")
+	await arena.play_death_shake()
+	_show_game_over_panel()
 	get_tree().paused = true
+
+
+func _show_game_over_panel() -> void:
+	_game_over_panel.show()
+	_game_over_panel.pivot_offset = _game_over_panel.size / 2.0
+	_game_over_panel.scale = Vector2.ONE * 0.7
+	_game_over_panel.modulate.a = 0.0
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.set_parallel(true)
+	(
+		tween
+		. tween_property(_game_over_panel, "scale", Vector2.ONE, 0.25)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.tween_property(_game_over_panel, "modulate:a", 1.0, 0.2)
 
 
 func _hp_color(fraction: float) -> Color:
@@ -63,4 +82,4 @@ func _hp_color(fraction: float) -> Color:
 
 func _on_continue_button_pressed() -> void:
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/shop.tscn")
+	SceneTransition.goto_scene("res://scenes/shop.tscn")

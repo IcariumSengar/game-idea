@@ -15,6 +15,8 @@ const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 const MIN_HP_FRACTION: float = 0.2
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")
+const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
@@ -99,6 +101,7 @@ func _check_dash_input() -> void:
 		_dash_direction = _facing
 		_dash_time_left = dash_duration
 		_dash_cooldown_left = dash_cooldown
+		AudioManager.play("dash")
 	_space_was_pressed = space_pressed
 
 
@@ -179,6 +182,8 @@ func take_damage(amount: float, from_position: Vector2) -> void:
 	hit.emit()
 	_flash_amount = 1.0
 	_spawn_spark()
+	_spawn_damage_text(amount)
+	AudioManager.play("player_hit")
 	if from_position != position:
 		_knockback = position.direction_to(from_position) * -KNOCKBACK_SPEED
 	_set_hp(hp - amount)
@@ -202,6 +207,13 @@ func _spawn_spark() -> void:
 	spark.amount = HIT_SPARK_AMOUNT
 	get_parent().add_child(spark)
 	spark.emitting = true
+
+
+func _spawn_damage_text(amount: float) -> void:
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = position + Vector2(0.0, -24.0)
+	get_parent().add_child(text)
+	text.setup("-%d" % roundi(amount), DAMAGE_TEXT_COLOR, 22)
 
 
 func _get_input_direction() -> Vector2:

@@ -9,6 +9,7 @@ const SPRITE_SCALE: float = 2.5
 const PULSE_SCALE_AMOUNT: float = 0.3
 const PICKUP_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")
 
 ## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
 ## below to get the actual homing speed once magnetized.
@@ -61,6 +62,8 @@ func start_magnet(player: Player) -> void:
 func collect(player: Player) -> void:
 	if player.collect_loot(type_id):
 		_spawn_spark()
+		_spawn_value_text()
+		AudioManager.play("pickup")
 		queue_free()
 
 
@@ -78,3 +81,12 @@ func _spawn_spark() -> void:
 	spark.scale_amount_max = 2.0
 	get_parent().add_child(spark)
 	spark.emitting = true
+
+
+func _spawn_value_text() -> void:
+	var def := LootTypes.get_type(type_id)
+	var value: int = def.value if def != null else 1
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = position
+	get_parent().add_child(text)
+	text.setup("+%d" % value, _color, 15)

@@ -2,7 +2,13 @@ extends Control
 
 ## Load/select save slot screen shown at game start.
 
-@onready var _slots_container: VBoxContainer = $ScrollContainer/VBoxContainer/SlotsContainer
+const JUICY_BUTTON_SCRIPT: Script = preload("res://scripts/juicy_button.gd")
+const BTN_NORMAL: StyleBoxFlat = preload("res://resources/button_normal.tres")
+const BTN_HOVER: StyleBoxFlat = preload("res://resources/button_hover.tres")
+const BTN_PRESSED: StyleBoxFlat = preload("res://resources/button_pressed.tres")
+const ROW_PANEL: StyleBoxFlat = preload("res://resources/panel_row.tres")
+
+@onready var _slots_container: VBoxContainer = %SlotsContainer
 
 
 func _ready() -> void:
@@ -16,47 +22,66 @@ func _populate_slots() -> void:
 
 
 func _add_slot_button(slot: int, metadata: Dictionary) -> void:
+	var row_panel := PanelContainer.new()
+	row_panel.add_theme_stylebox_override("panel", ROW_PANEL)
+
 	var button_container := HBoxContainer.new()
-	button_container.custom_minimum_size = Vector2(0, 60)
+	button_container.custom_minimum_size = Vector2(0, 52)
+	button_container.add_theme_constant_override("separation", 10)
+	row_panel.add_child(button_container)
 
 	# Slot info
 	var info_label := Label.new()
 	info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	info_label.add_theme_font_size_override("font_size", 14)
 	info_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
 	if metadata.get("last_played", 0) == 0:
 		info_label.text = "Slot %d — Empty" % (slot + 1)
+		info_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.58, 1))
 	else:
 		var last_played_str := _format_timestamp(metadata.get("last_played", 0))
 		var playtime: float = metadata.get("playtime_hours", 0.0)
 		var preview: String = metadata.get("preview", "No upgrades")
-		info_label.text = "Slot %d — %s | %d h | %s" % [slot + 1, last_played_str, roundi(playtime), preview]
+		info_label.text = (
+			"Slot %d — %s | %d h | %s" % [slot + 1, last_played_str, roundi(playtime), preview]
+		)
+		info_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.85, 1))
 
 	button_container.add_child(info_label)
 
+	var is_empty: bool = metadata.get("last_played", 0) == 0
+
 	# Load button
-	var load_btn := Button.new()
-	load_btn.text = "Load"
-	load_btn.custom_minimum_size = Vector2(80, 0)
+	var load_btn := _make_styled_button("Load", Vector2(80, 40))
 	load_btn.pressed.connect(_on_load_pressed.bind(slot))
-	load_btn.disabled = metadata.get("last_played", 0) == 0
+	load_btn.disabled = is_empty
 	button_container.add_child(load_btn)
 
 	# Delete button
-	var delete_btn := Button.new()
-	delete_btn.text = "Delete"
-	delete_btn.custom_minimum_size = Vector2(80, 0)
+	var delete_btn := _make_styled_button("Delete", Vector2(80, 40))
 	delete_btn.pressed.connect(_on_delete_pressed.bind(slot))
-	delete_btn.disabled = metadata.get("last_played", 0) == 0
+	delete_btn.disabled = is_empty
 	button_container.add_child(delete_btn)
 
-	_slots_container.add_child(button_container)
+	_slots_container.add_child(row_panel)
+
+
+func _make_styled_button(text: String, min_size: Vector2) -> Button:
+	var btn := Button.new()
+	btn.set_script(JUICY_BUTTON_SCRIPT)
+	btn.text = text
+	btn.custom_minimum_size = min_size
+	btn.add_theme_stylebox_override("normal", BTN_NORMAL)
+	btn.add_theme_stylebox_override("hover", BTN_HOVER)
+	btn.add_theme_stylebox_override("pressed", BTN_PRESSED)
+	return btn
 
 
 func _on_load_pressed(slot: int) -> void:
 	MetaProgression.set_slot(slot)
-	get_tree().change_scene_to_file("res://scenes/run_prep.tscn")
+	SceneTransition.goto_scene("res://scenes/run_prep.tscn")
 
 
 func _on_delete_pressed(slot: int) -> void:
@@ -68,7 +93,7 @@ func _on_delete_pressed(slot: int) -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	SceneTransition.goto_scene("res://scenes/main_menu.tscn")
 
 
 func _format_timestamp(timestamp_ms: int) -> String:
@@ -83,9 +108,8 @@ func _format_timestamp(timestamp_ms: int) -> String:
 
 	if diff_days > 0:
 		return "%d days ago" % diff_days
-	elif diff_hours > 0:
+	if diff_hours > 0:
 		return "%d hours ago" % diff_hours
-	elif diff_min > 0:
+	if diff_min > 0:
 		return "%d min ago" % diff_min
-	else:
-		return "Just now"
+	return "Just now"

@@ -1,6 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://main_menu"]
+[gd_scene load_steps=8 format=3 uid="uid://main_menu"]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/juicy_button.gd" id="2_juicy"]
+[ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="3_panel_dark"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="4_btn_normal"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="5_btn_hover"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="6_btn_pressed"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/floor_1.png" id="7_floor_tile"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -11,14 +17,24 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.12, 1)
+texture = ExtResource("7_floor_tile")
+stretch_mode = 1
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.05, 0.55)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -28,54 +44,87 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_styles/panel = ExtResource("3_panel_dark")
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 32
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 48
+theme_override_colors/font_color = Color(0.92, 0.82, 0.55, 1)
 text = "GAME-IDEA"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.75, 0.75, 0.72, 1)
 text = "Top-down auto-attack roguelike"
 horizontal_alignment = 1
 
-[node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer"]
+[node name="Spacer" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(300, 24)
 layout_mode = 2
 
-[node name="NewGameButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="NewGameButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = ExtResource("4_btn_normal")
+theme_override_styles/hover = ExtResource("5_btn_hover")
+theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "NEW GAME"
+script = ExtResource("2_juicy")
 
-[node name="LoadGameButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="LoadGameButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = ExtResource("4_btn_normal")
+theme_override_styles/hover = ExtResource("5_btn_hover")
+theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "LOAD GAME"
+script = ExtResource("2_juicy")
 
-[node name="SettingsButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="SettingsButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = ExtResource("4_btn_normal")
+theme_override_styles/hover = ExtResource("5_btn_hover")
+theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "SETTINGS"
+script = ExtResource("2_juicy")
 
-[node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = ExtResource("4_btn_normal")
+theme_override_styles/hover = ExtResource("5_btn_hover")
+theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "QUIT"
+script = ExtResource("2_juicy")
 
-[node name="VersionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="VersionLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.6, 0.6, 0.58, 1)
 text = "v?"
 horizontal_alignment = 1
 
-[connection signal="pressed" from="CenterContainer/VBoxContainer/NewGameButton" to="." method="_on_new_game_pressed"]
-[connection signal="pressed" from="CenterContainer/VBoxContainer/LoadGameButton" to="." method="_on_load_game_pressed"]
-[connection signal="pressed" from="CenterContainer/VBoxContainer/SettingsButton" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/NewGameButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/LoadGameButton" to="." method="_on_load_game_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/QuitButton" to="." method="_on_quit_pressed"]

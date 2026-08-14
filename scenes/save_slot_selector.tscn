@@ -1,6 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://dsave_slot_selector"]
+[gd_scene load_steps=8 format=3 uid="uid://dsave_slot_selector"]
 
 [ext_resource type="Script" path="res://scripts/save_slot_selector.gd" id="1_selector"]
+[ext_resource type="Script" path="res://scripts/juicy_button.gd" id="2_juicy"]
+[ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="3_panel_dark"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="4_btn_normal"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="5_btn_hover"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="6_btn_pressed"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/floor_1.png" id="7_floor_tile"]
 
 [node name="SaveSlotSelector" type="Control"]
 layout_mode = 3
@@ -11,60 +17,88 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_selector")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.12, 1)
+texture = ExtResource("7_floor_tile")
+stretch_mode = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="Dim" type="ColorRect" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -400.0
-offset_top = -300.0
-offset_right = 400.0
-offset_bottom = 300.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.05, 0.55)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 16
+theme_override_styles/panel = ExtResource("3_panel_dark")
 
-[node name="TitleLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.92, 0.82, 0.55, 1)
 text = "LOAD GAME"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="ScrollContainer/VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.75, 0.75, 0.72, 1)
 text = "Select a save slot"
 horizontal_alignment = 1
 
-[node name="Spacer1" type="Control" parent="ScrollContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 16)
+[node name="Spacer1" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="SlotsContainer" type="VBoxContainer" parent="ScrollContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Spacer2" type="Control" parent="ScrollContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 16)
+[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(680, 380)
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="ScrollContainer/VBoxContainer"]
+[node name="SlotsContainer" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Spacer2" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "BACK TO MENU"
+theme_override_styles/normal = ExtResource("4_btn_normal")
+theme_override_styles/hover = ExtResource("5_btn_hover")
+theme_override_styles/pressed = ExtResource("6_btn_pressed")
+text = "← BACK TO MENU"
+script = ExtResource("2_juicy")
 
-[connection signal="pressed" from="ScrollContainer/VBoxContainer/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/BackButton" to="." method="_on_back_pressed"]

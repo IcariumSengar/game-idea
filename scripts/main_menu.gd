@@ -8,11 +8,11 @@ func _ready() -> void:
 	var last_slot := MetaProgression.get_last_slot()
 	if last_slot >= 0:
 		MetaProgression.set_slot(last_slot)
-		get_tree().change_scene_to_file.call_deferred("res://scenes/run_prep.tscn")
+		SceneTransition.goto_scene.call_deferred("res://scenes/run_prep.tscn")
 		return
 
 	var version := _read_version()
-	$CenterContainer/VBoxContainer/VersionLabel.text = "v%s" % version
+	$CenterContainer/Panel/Margin/VBox/VersionLabel.text = "v%s" % version
 
 
 func _on_new_game_pressed() -> void:
@@ -21,11 +21,11 @@ func _on_new_game_pressed() -> void:
 	MetaProgression.backpack_currency = 0
 	MetaProgression._stat_levels.clear()
 	MetaProgression._initialize_slots()
-	get_tree().change_scene_to_file("res://scenes/arena.tscn")
+	SceneTransition.goto_scene("res://scenes/arena.tscn")
 
 
 func _on_load_game_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/save_slot_selector.tscn")
+	SceneTransition.goto_scene("res://scenes/save_slot_selector.tscn")
 
 
 func _on_settings_pressed() -> void:
