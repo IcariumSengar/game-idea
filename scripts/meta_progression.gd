@@ -26,13 +26,17 @@ const STAT_PURGE: StringName = &"purge"
 ## Placeholder rate -- DESIGN.md leaves this open pending playtesting.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.33
 
-const SAVE_FILE_PATH: String = "user://meta_progression.json"
+const SAVE_SLOTS: int = 4
+const SAVE_DIR: String = "user://saves"
+const SLOT_INDEX_FILE: String = "user://current_slot.txt"
 
 var player_currency: int = 0
 var backpack_currency: int = 0
+var current_slot: int = 0
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
+var _slot_metadata: Array = []  # Array of {date, playtime, stats}
 
 
 func _ready() -> void:
@@ -86,6 +90,8 @@ func _ready() -> void:
 		StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Purge", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	_initialize_slots()
+	_load_slot_metadata()
 	_load()
 
 
@@ -178,10 +184,27 @@ func _find_def(id: StringName) -> StatDef:
 	return null
 
 
+func _initialize_slots() -> void:
+	_slot_metadata.clear()
+	for i in range(SAVE_SLOTS):
+		_slot_metadata.append({"last_played": 0, "playtime_hours": 0.0, "preview": ""})
+
+
+func _load_slot_metadata() -> void:
+	var metadata_file := _get_slot_metadata_path()
+	if ResourceLoader.exists(metadata_file):
+		var file := FileAccess.open(metadata_file, FileAccess.READ)
+		if file != null:
+			var data: Variant = JSON.parse_string(file.get_as_text())
+			if data != null and data is Array:
+				_slot_metadata = data
+
+
 func _load() -> void:
-	if not ResourceLoader.exists(SAVE_FILE_PATH):
+	var slot_file := _get_slot_save_path(current_slot)
+	if not ResourceLoader.exists(slot_file):
 		return
-	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.READ)
+	var file := FileAccess.open(slot_file, FileAccess.READ)
 	if file == null:
 		return
 	var data: Variant = JSON.parse_string(file.get_as_text())
@@ -201,6 +224,59 @@ func save() -> void:
 		"backpack_currency": backpack_currency,
 		"stat_levels": _stat_levels
 	}
-	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.WRITE)
+	var slot_file := _get_slot_save_path(current_slot)
+	var file := FileAccess.open(slot_file, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
+		_update_slot_metadata(current_slot)
+
+
+func set_slot(slot: int) -> void:
+	if slot < 0 or slot >= SAVE_SLOTS:
+		return
+	current_slot = slot
+	_load()
+
+
+func _update_slot_metadata(slot: int) -> void:
+	if slot < 0 or slot >= _slot_metadata.size():
+		return
+	var metadata := _slot_metadata[slot]
+	metadata["last_played"] = Time.get_ticks_msec()
+	metadata["playtime_hours"] = 0.0
+	metadata["preview"] = _get_slot_preview()
+	_save_slot_metadata()
+
+
+func _get_slot_preview() -> String:
+	var preview: Array = []
+	for def in _stat_defs:
+		var level := get_level(def.id)
+		if level > 0:
+			preview.append("%s Lv%d" % [def.display_name.trim_prefix("Compactor: "), level])
+	return " | ".join(preview) if preview.size() > 0 else "No upgrades"
+
+
+func _save_slot_metadata() -> void:
+	var metadata_file := _get_slot_metadata_path()
+	var file := FileAccess.open(metadata_file, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(_slot_metadata))
+
+
+func _get_slot_save_path(slot: int) -> String:
+	return "%s/slot_%d.json" % [SAVE_DIR, slot]
+
+
+func _get_slot_metadata_path() -> String:
+	return "%s/metadata.json" % SAVE_DIR
+
+
+func get_slot_metadata(slot: int) -> Dictionary:
+	if slot < 0 or slot >= _slot_metadata.size():
+		return {}
+	return _slot_metadata[slot]
+
+
+func get_all_slots() -> Array:
+	return _slot_metadata
