@@ -8,6 +8,9 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 16.0
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 60.0
+
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
 
@@ -22,6 +25,11 @@ script = ExtResource("2_player")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
 shape = SubResource("CircleShape2D_player")
+
+[node name="PickupArea" type="Area2D" parent="Player"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/PickupArea"]
+shape = SubResource("CircleShape2D_pickup")
 
 [node name="Weapon" type="Node" parent="Player"]
 script = ExtResource("3_weapon")
@@ -44,6 +52,14 @@ offset_right = 220.0
 offset_bottom = 40.0
 theme_override_font_sizes/font_size = 22
 text = "HP: 100 / 100"
+
+[node name="LootLabel" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 220.0
+offset_bottom = 72.0
+theme_override_font_sizes/font_size = 22
+text = "Loot: 0"
 
 [node name="GameOverLabel" type="Label" parent="HUD"]
 visible = false

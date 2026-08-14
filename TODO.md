@@ -14,7 +14,8 @@ playable/checkable on its own before moving to the next:
 - [x] Combat: auto-attack fires at nearest enemy; enemies damage player on
       contact
 - [x] Player HP + death → run-end state
-- [ ] Loot: drops on enemy death, picked up by player
+- [x] Loot: drops on enemy death, picked up by player (proximity-based,
+      via an upgradeable pickup-range stat)
 - [ ] Backpack: capacity + fill %, max HP shrinks with fill %
 - [ ] Enemy spawn rate/difficulty ramps over run duration
 - [ ] Run summary screen (loot collected this run)

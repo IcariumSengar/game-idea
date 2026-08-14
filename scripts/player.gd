@@ -4,6 +4,7 @@ extends CharacterBody2D
 signal died
 signal hit
 signal hp_changed(current: float, max_hp: float)
+signal loot_changed(current: int)
 
 const RADIUS: float = 16.0
 const BASE_COLOR: Color = Color.CYAN
@@ -14,17 +15,29 @@ const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
 @export var max_hp: float = 100.0
+@export var pickup_range: float = 60.0
 
 var hp: float
+var loot: int = 0
 
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
+
+@onready var _pickup_area: Area2D = $PickupArea
+@onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
 
 
 func _ready() -> void:
 	add_to_group("player")
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
+	(_pickup_shape.shape as CircleShape2D).radius = pickup_range
+	_pickup_area.area_entered.connect(_on_pickup_area_entered)
+
+
+func _on_pickup_area_entered(area: Area2D) -> void:
+	if area is Loot:
+		area.collect(self)
 
 
 func _physics_process(delta: float) -> void:
@@ -36,6 +49,11 @@ func _physics_process(delta: float) -> void:
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 		queue_redraw()
+
+
+func collect_loot(amount: int) -> void:
+	loot += amount
+	loot_changed.emit(loot)
 
 
 func take_damage(amount: float, from_position: Vector2) -> void:

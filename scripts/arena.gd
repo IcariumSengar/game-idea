@@ -1,6 +1,7 @@
 extends Node2D
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
 const SHAKE_MAGNITUDE: float = 8.0
@@ -30,7 +31,14 @@ func _on_player_hit() -> void:
 func _on_enemy_spawn_timer_timeout() -> void:
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.position = _random_edge_position()
+	enemy.died.connect(_on_enemy_died)
 	add_child(enemy)
+
+
+func _on_enemy_died(enemy: Enemy) -> void:
+	var loot: Loot = LOOT_SCENE.instantiate()
+	loot.position = enemy.position
+	add_child(loot)
 
 
 func _random_edge_position() -> Vector2:

@@ -45,8 +45,8 @@ loop between them (the genre Vampire Survivors popularized).
 - Backpack: capacity-limited loot storage; fill % shrinks max HP.
 - Death when HP <= 0 → run-end state.
 - Run summary screen (loot collected).
-- Meta-currency conversion + a minimal shop: one upgrade
-  (backpack capacity).
+- Meta-currency conversion + a minimal shop: backpack capacity and
+  pickup range upgrades.
 - Run restart flow with upgraded stats carried over; everything else in
   the arena resets.
 - Meta-progression persists between play sessions (currency, purchased
@@ -55,7 +55,7 @@ loop between them (the genre Vampire Survivors popularized).
 **Explicitly out of scope (for now):**
 - Multiple enemy/loot types and rarities.
 - Multiple weapon types or weapon upgrades/evolutions.
-- Additional meta-upgrades beyond backpack capacity.
+- Additional meta-upgrades beyond backpack capacity and pickup range.
 - Art/animation polish, sound, music.
 - Multiple arenas/levels.
 
@@ -74,3 +74,7 @@ Short dated entries when a design decision is made and worth remembering
   loot-funds-backpack-upgrades as the meta-progression loop.
 - 2026-08-14 — MVP scoped to one enemy type, one loot type, one weapon,
   one meta-upgrade (capacity) — full loop before any variety.
+- 2026-08-14 — Loot pickup is proximity-based (a magnet-range Area2D on
+  the player), not exact-overlap — and that pickup range is itself an
+  upgradeable stat, so the meta-shop now covers capacity + pickup range
+  rather than capacity alone.
