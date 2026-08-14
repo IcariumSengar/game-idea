@@ -6,13 +6,29 @@ this file should stay short enough to skim.
 
 ## Now
 
-- [ ] Decide on the core mechanic / core loop to prototype first (see DESIGN.md)
+Build order for the MVP loop (see DESIGN.md) — each step should be
+playable/checkable on its own before moving to the next:
+
+- [ ] Player: top-down movement in an arena
+- [ ] Enemy: single type that spawns and chases the player
+- [ ] Combat: auto-attack fires at nearest enemy; enemies damage player on
+      contact
+- [ ] Player HP + death → run-end state
+- [ ] Loot: drops on enemy death, picked up by player
+- [ ] Backpack: capacity + fill %, max HP shrinks with fill %
+- [ ] Enemy spawn rate/difficulty ramps over run duration
+- [ ] Run summary screen (loot collected this run)
+- [ ] Meta-currency conversion + minimal shop (backpack capacity upgrade)
+- [ ] Run restart flow: new run, upgraded stats carried over
+- [ ] Persist meta-progression between sessions (save/load)
 
 ## Later
 
-- (nothing yet)
+- Multiple enemy/loot types, weapon variety, more meta-upgrades (out of
+  scope for MVP — see DESIGN.md)
 
 ## Done
 
 - [x] Godot 4 project scaffold, versioning workflow, engineering practices (v1)
 - [x] Dev environment: Godot Tools VS Code extension, gdformat/gdlint
+- [x] Core concept + MVP scope decided (see DESIGN.md)
