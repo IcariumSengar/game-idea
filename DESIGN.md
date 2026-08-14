@@ -31,6 +31,29 @@ nearby enemies.
 Inspiration: iteration/roguelite games with quick runs + a meta-upgrade
 loop between them (the genre Vampire Survivors popularized).
 
+## Save/Load system
+
+### Slot-based saves (4 slots)
+
+Players see a "Load Game" screen on startup showing all 4 available slots. Each slot displays:
+- **Slot number** (1–4)
+- **Last played date** (e.g., "2 hours ago", "never")
+- **Total playtime** (hours accumulated in that save)
+- **Current max upgrades** (quick preview: Damage lv X, Capacity lv Y, etc.)
+- **Action buttons**: Load, Overwrite (grayed if empty), Delete
+
+Empty slots show "Empty — Start new run" and load defaults. Occupied slots show current progress and let players quickly switch between parallel save series (e.g., "speed-run focused" vs. "greedy loot-stacking" playstyles).
+
+### Cloud sync
+
+**Scope:** Meta-progression only (upgrade levels, currencies, unlock state). Not run history or stats yet — those are nice-to-have later additions.
+
+**Sync point:** On run end (when shop screen appears) and on graceful quit. Saves work fully offline; sync is best-effort when connection returns.
+
+**Conflict resolution:** Last-write-wins. If two devices save simultaneously and conflict, the most recent by server timestamp overwrites the older one. Future: if conflicts become frequent, show a merge dialog letting players pick which device's version to keep.
+
+**Device binding:** Optional — player can link their email (icarium.sengar@gmail.com as default) to enable cloud sync. If unlinked, saves stay local-only.
+
 ## Current implementation
 
 What's actually built and playable today (see `scripts/`, as of v4):
@@ -58,8 +81,9 @@ What's actually built and playable today (see `scripts/`, as of v4):
 - Persistence: 4 save slots available; player selects a slot at game start to
   load/overwrite progress. Save data cloud-syncs for cross-device access.
 
-Not yet built: Compacting (per-tier), Purge, and the skill-tree shop
-layout — see [TODO.md](TODO.md) for the remaining build order.
+Not yet built: save/load system (4 slots + cloud-sync, design above),
+Compacting (per-tier), Purge, and the skill-tree shop layout — see
+[TODO.md](TODO.md) for the remaining build order.
 
 ## Loot, backpack & shop economy
 
@@ -420,7 +444,11 @@ Short dated entries when a design decision is made and worth remembering
   doc's ×1.20/lvl, 12-level-cap numbers — noted as outstanding work, not
   a design question. Remaining undone: Compacting, Purge, and the
   skill-tree shop layout.
-- 2026-08-14 — Save/load persistence redesigned: 4 save slots (player
-  selects at start), cloud-sync for cross-device access. Enables
-  meaningful progression testing and supports casual play patterns where
-  a player might have multiple simultaneous run series.
+- 2026-08-14 — Save/load persistence redesigned: 4 save slots with slot
+  screen at startup showing metadata (last played, playtime, current
+  upgrades). Cloud-sync for cross-device access, syncs on run end and
+  graceful quit, local-first (works offline), last-write-wins conflict
+  resolution. Meta-progression only (upgrades/currencies), not run stats
+  yet. Optional email-based device linking for cloud features; unlinked
+  saves stay local. Enables meaningful progression testing and supports
+  multiple parallel playstyles in same session.

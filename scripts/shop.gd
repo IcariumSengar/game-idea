@@ -1,66 +1,58 @@
 extends Control
 
-const BUTTON_STYLE_NORMAL: StyleBoxFlat = preload("res://resources/button_normal.tres")
-const BUTTON_STYLE_HOVER: StyleBoxFlat = preload("res://resources/button_hover.tres")
-const BUTTON_STYLE_PRESSED: StyleBoxFlat = preload("res://resources/button_pressed.tres")
-const BUTTON_MIN_HEIGHT: float = 44.0
-const BUTTON_FONT_SIZE: int = 16
-
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
-@onready var _backpack_upgrades: VBoxContainer = $ShopPanel/Margin/VBox/TreesContainer/BackpackTree/BackpackUpgrades
-@onready var _player_upgrades: VBoxContainer = $ShopPanel/Margin/VBox/TreesContainer/PlayerTree/PlayerUpgrades
+@onready var _backpack_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
+@onready var _player_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
 
 
 func _ready() -> void:
 	MetaProgression.currency_changed.connect(_on_currency_changed)
 	MetaProgression.stat_changed.connect(_on_stat_changed)
-	for def in MetaProgression.get_stat_defs():
-		var container: VBoxContainer = (
-			_backpack_upgrades
-			if def.currency == StatDef.Currency.BACKPACK
-			else _player_upgrades
-		)
-		_add_upgrade_button(def, container)
+	_update_trees()
 	_refresh_currency()
 
 
-func _add_upgrade_button(def: StatDef, container: VBoxContainer) -> void:
-	var indent := _get_tree_indent(def.id)
-	if indent > 0 and indent < 3:
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(indent * 12.0, 0)
-		var spacer_container := HBoxContainer.new()
-		spacer_container.add_child(spacer)
-		container.add_child(spacer_container)
+func _update_trees() -> void:
+	var backpack_stats: Array[StatDef] = []
+	var player_stats: Array[StatDef] = []
 
-	var button := Button.new()
-	button.name = _button_name(def.id)
-	button.custom_minimum_size = Vector2(0, BUTTON_MIN_HEIGHT)
-	button.add_theme_font_size_override("font_size", BUTTON_FONT_SIZE)
-	button.add_theme_stylebox_override("normal", BUTTON_STYLE_NORMAL)
-	button.add_theme_stylebox_override("hover", BUTTON_STYLE_HOVER)
-	button.add_theme_stylebox_override("pressed", BUTTON_STYLE_PRESSED)
-	button.pressed.connect(_on_upgrade_pressed.bind(def.id))
-	container.add_child(button)
-	_refresh_button(def)
+	for def in MetaProgression.get_stat_defs():
+		if def.currency == StatDef.Currency.BACKPACK:
+			backpack_stats.append(def)
+		else:
+			player_stats.append(def)
+
+	_backpack_tree.set_tree_data(
+		backpack_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency
+	)
+	_player_tree.set_tree_data(player_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency)
+
+	# Disconnect old signals to avoid duplicates
+	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
+		_backpack_tree.node_clicked.disconnect(_on_backpack_node_clicked)
+	if _player_tree.node_clicked.is_connected(_on_player_node_clicked):
+		_player_tree.node_clicked.disconnect(_on_player_node_clicked)
+
+	_backpack_tree.node_clicked.connect(_on_backpack_node_clicked)
+	_player_tree.node_clicked.connect(_on_player_node_clicked)
 
 
-func _on_upgrade_pressed(id: StringName) -> void:
-	MetaProgression.buy_upgrade(id)
+func _on_backpack_node_clicked(stat_id: StringName) -> void:
+	MetaProgression.buy_upgrade(stat_id)
+
+
+func _on_player_node_clicked(stat_id: StringName) -> void:
+	MetaProgression.buy_upgrade(stat_id)
 
 
 func _on_currency_changed() -> void:
 	_refresh_currency()
-	for def in MetaProgression.get_stat_defs():
-		_refresh_button(def)
+	_update_trees()
 
 
-func _on_stat_changed(stat_id: StringName, _level: int) -> void:
-	for def in MetaProgression.get_stat_defs():
-		if def.id == stat_id:
-			_refresh_button(def)
-			return
+func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
+	_update_trees()
 
 
 func _on_start_run_button_pressed() -> void:
@@ -70,47 +62,6 @@ func _on_start_run_button_pressed() -> void:
 func _refresh_currency() -> void:
 	_player_currency_label.text = "Player Currency: %d" % MetaProgression.player_currency
 	_backpack_currency_label.text = "Backpack Currency: %d" % MetaProgression.backpack_currency
-
-
-func _refresh_button(def: StatDef) -> void:
-	var container: VBoxContainer = (
-		_backpack_upgrades if def.currency == StatDef.Currency.BACKPACK else _player_upgrades
-	)
-	var button: Button = container.get_node(_button_name(def.id))
-	var current_value := _format(MetaProgression.get_stat(def.id), def.decimals)
-	var level := MetaProgression.get_level(def.id)
-	var is_gated := _is_stat_gated(def.id)
-
-	if is_gated:
-		button.text = "%s: %s   (LOCKED)" % [def.display_name, current_value]
-		button.disabled = true
-		return
-
-	if MetaProgression.is_maxed(def.id):
-		button.text = "%s: %s   (MAX, Lvl %d)" % [def.display_name, current_value, level]
-		button.disabled = true
-		return
-
-	var cost := MetaProgression.get_cost(def.id)
-	var currency_name := "Player" if def.currency == StatDef.Currency.PLAYER else "Backpack"
-	var available := (
-		MetaProgression.player_currency
-		if def.currency == StatDef.Currency.PLAYER
-		else MetaProgression.backpack_currency
-	)
-	button.text = (
-		"%s: %s   (Lvl %d/%d)   Cost: %d %s"
-		% [def.display_name, current_value, level, def.level_cap, cost, currency_name]
-	)
-	button.disabled = available < cost
-
-
-func _button_name(id: StringName) -> String:
-	return "Upgrade_%s" % id
-
-
-func _format(value: float, decimals: int) -> String:
-	return ("%." + str(decimals) + "f") % value
 
 
 func _is_stat_gated(stat_id: StringName) -> bool:
@@ -128,14 +79,21 @@ func _is_stat_gated(stat_id: StringName) -> bool:
 	return false
 
 
-func _get_tree_indent(stat_id: StringName) -> int:
-	match stat_id:
-		MetaProgression.STAT_BACKPACK_CAPACITY:
-			return 0
-		MetaProgression.STAT_COMPACTOR_COMMON:
-			return 1
-		MetaProgression.STAT_COMPACTOR_UNCOMMON, MetaProgression.STAT_COMPACTOR_RARE, MetaProgression.STAT_COMPACTOR_EPIC, MetaProgression.STAT_COMPACTOR_MYTHIC:
-			return 2
-		MetaProgression.STAT_PURGE:
-			return 2
-	return 0
+func _is_locked_by_currency(stat_id: StringName) -> bool:
+	var def := _find_def(stat_id)
+	if def == null or MetaProgression.is_maxed(stat_id):
+		return false
+	var cost := MetaProgression.get_cost(stat_id)
+	match def.currency:
+		StatDef.Currency.PLAYER:
+			return MetaProgression.player_currency < cost
+		StatDef.Currency.BACKPACK:
+			return MetaProgression.backpack_currency < cost
+	return false
+
+
+func _find_def(stat_id: StringName) -> StatDef:
+	for def in MetaProgression.get_stat_defs():
+		if def.id == stat_id:
+			return def
+	return null

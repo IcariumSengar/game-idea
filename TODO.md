@@ -6,9 +6,12 @@ this file should stay short enough to skim.
 
 ## Now
 
-- [ ] Improve save/load system with 4 save slots and cloud-sync
-  - [ ] Save slot UI: 4 available slots, select/overwrite/delete per slot
-  - [ ] Cloud-sync: player progress syncs to cloud for cross-device access
+- [ ] Implement save/load system with 4 save slots and cloud-sync
+  - [ ] Save slot data structure: track per-slot meta-progression, last-played timestamp, playtime
+  - [ ] Load Game screen UI: show all 4 slots with metadata (last played, playtime, max upgrades), load/overwrite/delete actions
+  - [ ] Save on run end (shop screen) and graceful quit; local file storage with cloud-sync ready
+  - [ ] Cloud-sync backend: optional email-based device linking, last-write-wins conflict resolution, sync on run-end + quit
+  - [ ] Offline support: saves work fully offline, sync is best-effort when connection returns
 
 ## Later
 
