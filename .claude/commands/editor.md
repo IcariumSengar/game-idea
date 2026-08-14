@@ -1,0 +1,1 @@
+Launch the Godot editor (not play mode) for this directory, for VS Code LSP support — add `-e` to the usual launch command. If an editor instance from an earlier/different worktree path is still running, stop it first.
