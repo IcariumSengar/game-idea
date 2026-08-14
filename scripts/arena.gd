@@ -5,8 +5,18 @@ const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
 const SHAKE_MAGNITUDE: float = 8.0
+const RAMP_DURATION: float = 45.0
+const SPAWN_INTERVAL_START: float = 1.0
+const SPAWN_INTERVAL_MIN: float = 0.25
+const ENEMY_HP_SCALE_MIN: float = 1.5
+const ENEMY_HP_SCALE_MAX: float = 3.0
+const ENEMY_SPEED_SCALE_MIN: float = 1.6
+const ENEMY_SPEED_SCALE_MAX: float = 2.4
 
 var _shake_time_left: float = 0.0
+var _run_time: float = 0.0
+
+@onready var _spawn_timer: Timer = $EnemySpawnTimer
 
 
 func _ready() -> void:
@@ -15,6 +25,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_run_time += delta
 	if _shake_time_left <= 0.0:
 		return
 	_shake_time_left = max(_shake_time_left - delta, 0.0)
@@ -29,10 +40,14 @@ func _on_player_hit() -> void:
 
 
 func _on_enemy_spawn_timer_timeout() -> void:
+	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.position = _random_edge_position()
+	enemy.max_hp *= lerp(ENEMY_HP_SCALE_MIN, ENEMY_HP_SCALE_MAX, ramp)
+	enemy.speed *= lerp(ENEMY_SPEED_SCALE_MIN, ENEMY_SPEED_SCALE_MAX, ramp)
 	enemy.died.connect(_on_enemy_died)
 	add_child(enemy)
+	_spawn_timer.wait_time = lerp(SPAWN_INTERVAL_START, SPAWN_INTERVAL_MIN, ramp)
 
 
 func _on_enemy_died(enemy: Enemy) -> void:

@@ -36,6 +36,10 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
   values (`var speed: float = 300.0`, `func move(delta: float) -> void`).
   Untyped/`var x = ...` is only acceptable for rapid throwaway prototyping
   that will be typed before it's committed.
+  - Watch for builtins with a Variant-typed return (`clamp`, `lerp`, `min`,
+    `max`, ...) — `var x := clamp(...)` fails to infer a type and errors
+    out (warnings are treated as errors in this project). Give these an
+    explicit type instead: `var x: float = clamp(...)`.
 - Naming: `snake_case` for variables, functions, and signals; `PascalCase`
   for class names and node names; `SCREAMING_SNAKE_CASE` for constants.
 - Prefer `@export` over hardcoded magic numbers for anything a designer

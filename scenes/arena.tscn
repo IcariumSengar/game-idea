@@ -35,7 +35,7 @@ shape = SubResource("CircleShape2D_pickup")
 script = ExtResource("3_weapon")
 
 [node name="AttackTimer" type="Timer" parent="Player/Weapon"]
-wait_time = 0.5
+wait_time = 0.4
 autostart = true
 
 [node name="EnemySpawnTimer" type="Timer" parent="."]

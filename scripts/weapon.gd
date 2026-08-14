@@ -1,6 +1,6 @@
 extends Node
 
-const DAMAGE: float = 10.0
+const DAMAGE: float = 20.0
 const RANGE: float = 220.0
 
 @onready var _owner_body: Node2D = get_parent()
