@@ -26,6 +26,14 @@ func _ready() -> void:
 
 
 func _add_upgrade_button(def: StatDef, container: VBoxContainer) -> void:
+	var indent := _get_tree_indent(def.id)
+	if indent > 0 and indent < 3:
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(indent * 12.0, 0)
+		var spacer_container := HBoxContainer.new()
+		spacer_container.add_child(spacer)
+		container.add_child(spacer_container)
+
 	var button := Button.new()
 	button.name = _button_name(def.id)
 	button.custom_minimum_size = Vector2(0, BUTTON_MIN_HEIGHT)
@@ -118,3 +126,16 @@ func _is_stat_gated(stat_id: StringName) -> bool:
 		MetaProgression.STAT_PURGE:
 			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_RARE) < 1
 	return false
+
+
+func _get_tree_indent(stat_id: StringName) -> int:
+	match stat_id:
+		MetaProgression.STAT_BACKPACK_CAPACITY:
+			return 0
+		MetaProgression.STAT_COMPACTOR_COMMON:
+			return 1
+		MetaProgression.STAT_COMPACTOR_UNCOMMON, MetaProgression.STAT_COMPACTOR_RARE, MetaProgression.STAT_COMPACTOR_EPIC, MetaProgression.STAT_COMPACTOR_MYTHIC:
+			return 2
+		MetaProgression.STAT_PURGE:
+			return 2
+	return 0
