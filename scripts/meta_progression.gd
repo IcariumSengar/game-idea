@@ -241,7 +241,7 @@ func set_slot(slot: int) -> void:
 func _update_slot_metadata(slot: int) -> void:
 	if slot < 0 or slot >= _slot_metadata.size():
 		return
-	var metadata := _slot_metadata[slot]
+	var metadata: Dictionary = _slot_metadata[slot]
 	metadata["last_played"] = Time.get_ticks_msec()
 	metadata["playtime_hours"] = 0.0
 	metadata["preview"] = _get_slot_preview()
