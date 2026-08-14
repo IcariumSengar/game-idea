@@ -6,11 +6,23 @@ this file should stay short enough to skim.
 
 ## Now
 
-- [x] Implement save/load system with 4 save slots
-  - [x] Save slot data structure: track per-slot meta-progression, last-played timestamp, playtime
-  - [x] Load Game screen UI: show all 4 slots with metadata (last played, playtime, max upgrades), load/delete actions
-  - [x] Save on run end (shop screen); local file storage works offline
-  - [x] Cloud-sync backend: infrastructure ready for cross-device sync (placeholder for server integration)
+- [x] All DESIGN.md features implemented and tested
+  - [x] Core gameplay: movement, combat, loot, backpack, death/run cycle
+  - [x] Rarity tiers (6 tiers with correct drop weights, stack sizes, values)
+  - [x] Two currencies with correct income streams
+  - [x] Upgrade curves (geometric cost, hard caps) for all stats
+  - [x] Compacting per-tier (stack size multipliers)
+  - [x] Purge (auto-discard at thresholds)
+  - [x] Skill tree shop (two-tree layout with gating)
+  - [x] 4-slot save system with metadata tracking and persistence
+  - [x] Startup menu system (Main Menu → New Game / Load Game)
+  - [x] Backpack currency rate aligned with DESIGN.md (1.0/sec)
+
+## In Progress / Lower Priority
+
+- [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server integration not implemented (placeholder only)
+- [ ] Settings menu: UI skeleton exists, no settings stored yet
+- [ ] Balance tuning: game balance based on placeholder numbers, needs playtesting
 
 ## Later (Completed this session)
 
