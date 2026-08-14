@@ -6,30 +6,28 @@ this file should stay short enough to skim.
 
 ## Now
 
-Build order for the MVP loop (see DESIGN.md) — each step should be
-playable/checkable on its own before moving to the next:
-
-- [x] Player: top-down movement in an arena
-- [x] Enemy: single type that spawns and chases the player
-- [x] Combat: auto-attack fires at nearest enemy; enemies damage player on
-      contact
-- [x] Player HP + death → run-end state
-- [x] Loot: drops on enemy death, picked up by player (proximity-based,
-      via an upgradeable pickup-range stat)
-- [x] Backpack: capacity + fill %, max HP shrinks with fill %
-- [x] Enemy spawn rate/difficulty ramps over run duration
-- [x] Run summary screen (loot collected this run)
-- [x] Meta-currency conversion + minimal shop (capacity + pickup range)
-- [x] Run restart flow: new run, upgraded stats carried over
 - [ ] Persist meta-progression between sessions (save/load)
 
 ## Later
 
-- Multiple enemy/loot types, weapon variety, more meta-upgrades (out of
-  scope for MVP — see DESIGN.md)
+Design direction is fleshed out in DESIGN.md; scope/order for building it
+is still being worked out. Rough shape of what's next:
+
+- Loot rarity tiers + slot-grid backpack (Compacting, Purge upgrades) —
+  see DESIGN.md
+- Split the shop into two currencies (player track vs. backpack track) —
+  see DESIGN.md
+- Wire Damage and Move Speed into `MetaProgression` as upgradeable stats
+  (currently hardcoded consts in `weapon.gd`/`player.gd`) — see DESIGN.md
+- Geometric cost curve + level caps for `StatDef`/`MetaProgression`
+  (currently flat-cost, uncapped) — see DESIGN.md
 
 ## Done
 
 - [x] Godot 4 project scaffold, versioning workflow, engineering practices (v1)
 - [x] Dev environment: Godot Tools VS Code extension, gdformat/gdlint
-- [x] Core concept + MVP scope decided (see DESIGN.md)
+- [x] Core concept + initial scope decided (see DESIGN.md)
+- [x] Core loop built end-to-end: movement, one enemy, auto-attack combat,
+      HP/death, proximity loot pickup, backpack fill/HP-shrink, difficulty
+      ramp, run summary, currency + shop (capacity/pickup range), run
+      restart with carried-over upgrades (v2)
