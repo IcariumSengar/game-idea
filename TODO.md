@@ -6,7 +6,9 @@ this file should stay short enough to skim.
 
 ## Now
 
-- [x] Persist meta-progression between sessions (save/load)
+- [ ] Improve save/load system with 4 save slots and cloud-sync
+  - [ ] Save slot UI: 4 available slots, select/overwrite/delete per slot
+  - [ ] Cloud-sync: player progress syncs to cloud for cross-device access
 
 ## Later
 

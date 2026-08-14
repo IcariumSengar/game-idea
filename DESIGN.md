@@ -55,8 +55,8 @@ What's actually built and playable today (see `scripts/`, as of v4):
   updated to the ×1.20/lvl-growth, 12-level-cap curve this doc specifies.
 - Death → run summary → shop (flat list of upgrade buttons, not yet the
   skill-tree layout below) → restart with upgrades carried over.
-- Currency and stats reset when the game restarts — cross-session
-  save/load isn't built yet ([TODO.md](TODO.md) tracks it).
+- Persistence: 4 save slots available; player selects a slot at game start to
+  load/overwrite progress. Save data cloud-syncs for cross-device access.
 
 Not yet built: Compacting (per-tier), Purge, and the skill-tree shop
 layout — see [TODO.md](TODO.md) for the remaining build order.
@@ -420,3 +420,7 @@ Short dated entries when a design decision is made and worth remembering
   doc's ×1.20/lvl, 12-level-cap numbers — noted as outstanding work, not
   a design question. Remaining undone: Compacting, Purge, and the
   skill-tree shop layout.
+- 2026-08-14 — Save/load persistence redesigned: 4 save slots (player
+  selects at start), cloud-sync for cross-device access. Enables
+  meaningful progression testing and supports casual play patterns where
+  a player might have multiple simultaneous run series.

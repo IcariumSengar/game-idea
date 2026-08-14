@@ -16,6 +16,12 @@ const STAT_BACKPACK_CAPACITY: StringName = &"backpack_capacity"
 const STAT_PICKUP_RANGE: StringName = &"pickup_range"
 const STAT_DAMAGE: StringName = &"damage"
 const STAT_MOVE_SPEED: StringName = &"move_speed"
+const STAT_COMPACTOR_COMMON: StringName = &"compactor_common"
+const STAT_COMPACTOR_UNCOMMON: StringName = &"compactor_uncommon"
+const STAT_COMPACTOR_RARE: StringName = &"compactor_rare"
+const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
+const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
+const STAT_PURGE: StringName = &"purge"
 
 ## Placeholder rate -- DESIGN.md leaves this open pending playtesting.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.33
@@ -48,6 +54,38 @@ func _ready() -> void:
 	_register_stat(
 		STAT_MOVE_SPEED, "Move Speed", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
+	_register_stat(
+		STAT_COMPACTOR_COMMON, "Compactor: Common", 64.0, 16.0, 8, 1.10, 8, 0, StatDef.Currency.BACKPACK
+	)
+	_register_stat(
+		STAT_COMPACTOR_UNCOMMON,
+		"Compactor: Uncommon",
+		32.0,
+		8.0,
+		15,
+		1.12,
+		6,
+		0,
+		StatDef.Currency.BACKPACK
+	)
+	_register_stat(
+		STAT_COMPACTOR_RARE, "Compactor: Rare", 16.0, 4.0, 25, 1.14, 5, 0, StatDef.Currency.BACKPACK
+	)
+	_register_stat(
+		STAT_COMPACTOR_EPIC, "Compactor: Epic", 8.0, 2.0, 40, 1.16, 4, 0, StatDef.Currency.BACKPACK
+	)
+	_register_stat(
+		STAT_COMPACTOR_MYTHIC,
+		"Compactor: Mythic",
+		4.0,
+		1.0,
+		70,
+		1.18,
+		3,
+		0,
+		StatDef.Currency.BACKPACK
+	)
+	_register_stat(STAT_PURGE, "Purge", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	_load()
 
 

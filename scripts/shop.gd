@@ -106,7 +106,15 @@ func _format(value: float, decimals: int) -> String:
 
 
 func _is_stat_gated(stat_id: StringName) -> bool:
-	# Compacting tiers are gated by previous tier (not yet implemented).
-	# Purge is gated by Rare Compactor (not yet implemented).
-	# All other stats are ungated.
+	match stat_id:
+		MetaProgression.STAT_COMPACTOR_UNCOMMON:
+			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_COMMON) < 1
+		MetaProgression.STAT_COMPACTOR_RARE:
+			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_UNCOMMON) < 1
+		MetaProgression.STAT_COMPACTOR_EPIC:
+			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_RARE) < 1
+		MetaProgression.STAT_COMPACTOR_MYTHIC:
+			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_EPIC) < 1
+		MetaProgression.STAT_PURGE:
+			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_RARE) < 1
 	return false
