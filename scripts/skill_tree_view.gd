@@ -1,20 +1,22 @@
 class_name SkillTreeView
 extends Control
 
-## Visual skill tree with styled nodes and connections.
+## Medieval-themed skill tree with better visual hierarchy.
 
 signal node_clicked(stat_id: StringName)
 
-const NODE_SIZE: Vector2 = Vector2(140.0, 140.0)
-const NODE_SPACING: Vector2 = Vector2(180.0, 160.0)
-const LINE_COLOR: Color = Color(0.3, 0.6, 0.9, 0.6)
-const LINE_WIDTH: float = 3.0
-const NODE_BORDER_WIDTH: float = 3.0
-const PADDING: float = 30.0
+const NODE_SIZE: Vector2 = Vector2(110.0, 110.0)
+const NODE_SPACING: Vector2 = Vector2(140.0, 140.0)
+const LINE_COLOR: Color = Color(0.6, 0.5, 0.35, 0.7)
+const LINE_WIDTH: float = 2.0
+const AVAILABLE_COLOR: Color = Color(0.85, 0.75, 0.5, 1.0)
+const LOCKED_COLOR: Color = Color(0.35, 0.3, 0.25, 1.0)
+const MAXED_COLOR: Color = Color(0.4, 0.7, 0.4, 1.0)
+const NO_CURRENCY_COLOR: Color = Color(0.7, 0.4, 0.3, 1.0)
 
 var _node_positions: Dictionary = {}
 var _nodes: Array[TreeNode] = []
-var _node_icons: Dictionary = {}
+var _hovered_node: StringName = StringName()
 
 
 class TreeNode:
@@ -29,31 +31,14 @@ class TreeNode:
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 500)
+	custom_minimum_size = Vector2(0, 550)
 	mouse_filter = MOUSE_FILTER_STOP
-	_setup_icons()
-
-
-func _setup_icons() -> void:
-	_node_icons = {
-		&"backpack_capacity": "🎒",
-		&"pickup_range": "🧲",
-		&"damage": "⚔️",
-		&"move_speed": "👟",
-		&"compactor_common": "📦",
-		&"compactor_uncommon": "📦",
-		&"compactor_rare": "📦",
-		&"compactor_epic": "📦",
-		&"compactor_mythic": "📦",
-		&"purge": "🗑️"
-	}
 
 
 func set_tree_data(stats: Array[StatDef], level_getter: Callable, gating_checker: Callable, currency_checker: Callable) -> void:
 	_nodes.clear()
 	_node_positions.clear()
 
-	var root: TreeNode = null
 	var nodes_by_id: Dictionary = {}
 
 	for def in stats:
@@ -97,10 +82,10 @@ func _calculate_positions(nodes_by_id: Dictionary) -> void:
 		if node.parent == null:
 			roots.append(node)
 
-	var current_y: float = 20.0
+	var current_y: float = 30.0
 	for root in roots:
-		_position_subtree(root, 20.0, current_y, NODE_SPACING.x)
-		current_y += _get_subtree_height(root) + 60.0
+		_position_subtree(root, 40.0, current_y, NODE_SPACING.x)
+		current_y += _get_subtree_height(root) + 80.0
 
 
 func _position_subtree(node: TreeNode, x: float, y: float, spacing: float) -> void:
@@ -115,7 +100,7 @@ func _position_subtree(node: TreeNode, x: float, y: float, spacing: float) -> vo
 	for i in range(node.children.size()):
 		var child: TreeNode = node.children[i]
 		var child_x: float = start_x + i * spacing
-		_position_subtree(child, child_x, y + NODE_SPACING.y, spacing * 0.8)
+		_position_subtree(child, child_x, y + NODE_SPACING.y, spacing * 0.85)
 
 
 func _get_subtree_height(node: TreeNode) -> float:
@@ -128,27 +113,33 @@ func _get_subtree_height(node: TreeNode) -> float:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if not event is InputEventMouseButton or not event.pressed:
-		return
-	var pos: Vector2 = event.position
-	for node in _nodes:
-		var node_rect: Rect2 = Rect2(_node_positions[node.stat_id], NODE_SIZE)
-		if node_rect.has_point(pos):
-			node_clicked.emit(node.stat_id)
-			get_tree().root.set_input_as_handled()
-			return
+	if event is InputEventMouseButton and event.pressed:
+		var pos: Vector2 = event.position
+		for node in _nodes:
+			var node_rect: Rect2 = Rect2(_node_positions[node.stat_id], NODE_SIZE)
+			if node_rect.has_point(pos):
+				node_clicked.emit(node.stat_id)
+				get_tree().root.set_input_as_handled()
+				return
+	elif event is InputEventMouseMotion:
+		var pos: Vector2 = event.position
+		_hovered_node = StringName()
+		for node in _nodes:
+			var node_rect: Rect2 = Rect2(_node_positions[node.stat_id], NODE_SIZE)
+			if node_rect.has_point(pos):
+				_hovered_node = node.stat_id
+				break
+		queue_redraw()
 
 
 func _draw() -> void:
-	# Draw connections
+	# Draw connections first (behind nodes)
 	for node in _nodes:
 		if node.parent == null:
 			continue
-		var parent_pos: Vector2 = _node_positions[node.parent.stat_id]
-		var child_pos: Vector2 = _node_positions[node.stat_id]
-		var parent_bottom: Vector2 = parent_pos + Vector2(NODE_SIZE.x / 2.0, NODE_SIZE.y)
-		var child_top: Vector2 = child_pos + Vector2(NODE_SIZE.x / 2.0, 0)
-		draw_line(parent_bottom, child_top, LINE_COLOR, LINE_WIDTH)
+		var parent_pos: Vector2 = _node_positions[node.parent.stat_id] + NODE_SIZE / 2.0
+		var child_pos: Vector2 = _node_positions[node.stat_id] + NODE_SIZE / 2.0
+		draw_line(parent_pos, child_pos, LINE_COLOR, LINE_WIDTH)
 
 	# Draw nodes
 	for node in _nodes:
@@ -156,80 +147,99 @@ func _draw() -> void:
 
 
 func _draw_node(node: TreeNode, pos: Vector2) -> void:
+	var rect: Rect2 = Rect2(pos, NODE_SIZE)
+	var is_hovered: bool = node.stat_id == _hovered_node
+
 	var bg_color: Color = _get_node_color(node)
 	var border_color: Color = _get_node_border_color(node)
-	var rect: Rect2 = Rect2(pos, NODE_SIZE)
 
-	# Draw shadow
-	draw_rect(Rect2(rect.position + Vector2(4, 4), rect.size), Color(0, 0, 0, 0.3))
+	# Draw outer border (stone/medieval frame)
+	draw_rect(rect, border_color, false, 3.0)
 
-	# Draw background with gradient effect
-	draw_rect(rect, bg_color)
+	# Draw background with pattern
+	draw_rect(rect.grow_individual(-3, -3, -3, -3), bg_color)
 
-	# Draw border
-	draw_rect(rect, border_color, false, NODE_BORDER_WIDTH)
+	# Draw decorative corners (medieval style)
+	var corner_size: float = 8.0
+	var corners_color: Color = border_color.lightened(0.2)
 
-	# Draw inner highlight for unlocked nodes
-	if not node.is_gated and not node.is_locked_by_currency:
-		var highlight_rect := rect.grow(-NODE_BORDER_WIDTH)
-		draw_rect(highlight_rect, Color.WHITE, false, 1.0)
+	# Top-left
+	draw_rect(Rect2(rect.position, Vector2(corner_size, corner_size)), corners_color)
+	# Top-right
+	draw_rect(Rect2(rect.position + Vector2(rect.size.x - corner_size, 0), Vector2(corner_size, corner_size)), corners_color)
+	# Bottom-left
+	draw_rect(Rect2(rect.position + Vector2(0, rect.size.y - corner_size), Vector2(corner_size, corner_size)), corners_color)
+	# Bottom-right
+	draw_rect(Rect2(rect.position + Vector2(rect.size.x - corner_size, rect.size.y - corner_size), Vector2(corner_size, corner_size)), corners_color)
 
-	# Draw icon
-	var icon: String = _node_icons.get(node.stat_id, "")
-	if not icon.is_empty():
-		var font: Font = get_theme_font("font")
-		var icon_size: int = 40
-		var icon_pos: Vector2 = rect.position + Vector2(NODE_SIZE.x / 2.0, 25.0)
-		draw_string(font, icon_pos - Vector2(20, 20), icon, HORIZONTAL_ALIGNMENT_CENTER, -1, icon_size, Color.WHITE)
+	# Draw hover effect
+	if is_hovered and not node.is_gated and not node.is_locked_by_currency:
+		draw_rect(rect.grow_individual(-3, -3, -3, -3), Color.WHITE, false, 2.0)
 
-	# Draw label
+	# Draw level indicator (filled circles)
+	var level_y: float = rect.position.y + rect.size.y - 15.0
+	var circle_radius: float = 2.5
+	var circle_spacing: float = 8.0
+	for i in range(node.def.level_cap):
+		var circle_x: float = rect.position.x + rect.size.x / 2.0 - (node.def.level_cap * circle_spacing / 2.0) + (i * circle_spacing)
+		var circle_color: Color = border_color if i < node.level else Color(0.2, 0.2, 0.2, 0.5)
+		draw_circle(Vector2(circle_x, level_y), circle_radius, circle_color)
+
+	# Draw text
+	var font: Font = get_theme_font("font")
+	var name_size: int = 12
+	var status_size: int = 9
+
+	# Name (trimmed for display)
 	var display_name: String = node.def.display_name.trim_prefix("Compactor: ")
+	if display_name.length() > 12:
+		display_name = display_name.substr(0, 10) + ".."
+
+	var name_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 30.0)
+	var name_width: float = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, name_size).x
+	draw_string(font, name_pos - Vector2(name_width / 2.0, 8.0), display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color.WHITE)
+
+	# Status
 	var status: String = ""
 	var status_color: Color = Color.WHITE
 
 	if node.is_gated:
-		status = "LOCKED"
-		status_color = Color(0.9, 0.5, 0.5)
+		status = "[LOCKED]"
+		status_color = Color(0.7, 0.5, 0.5)
 	elif node.is_locked_by_currency:
-		status = "NO $"
-		status_color = Color(0.9, 0.8, 0.3)
+		status = "[NEED $]"
+		status_color = Color(0.8, 0.7, 0.4)
 	elif node.is_maxed:
-		status = "MAX"
-		status_color = Color(0.5, 0.9, 0.5)
+		status = "[MAX]"
+		status_color = Color(0.5, 0.8, 0.5)
 	else:
-		status = "Lv %d" % node.level
-		status_color = Color(0.7, 0.9, 1.0)
+		status = "Lv %d/%d" % [node.level, node.def.level_cap]
+		status_color = Color(0.8, 0.9, 1.0)
 
-	var font: Font = get_theme_font("font")
-	var name_size: int = 11
-	var status_size: int = 10
-
-	# Draw name
-	var name_pos: Vector2 = rect.position + Vector2(NODE_SIZE.x / 2.0, 72.0)
-	var name_width: float = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, name_size).x
-	draw_string(font, name_pos - Vector2(name_width / 2.0, 0), display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Color.WHITE)
-
-	# Draw status
-	var status_pos: Vector2 = rect.position + Vector2(NODE_SIZE.x / 2.0, 105.0)
+	var status_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 60.0)
 	var status_width: float = font.get_string_size(status, HORIZONTAL_ALIGNMENT_CENTER, -1, status_size).x
-	draw_string(font, status_pos - Vector2(status_width / 2.0, 0), status, HORIZONTAL_ALIGNMENT_LEFT, -1, status_size, status_color)
+	draw_string(font, status_pos - Vector2(status_width / 2.0, 4.0), status, HORIZONTAL_ALIGNMENT_LEFT, -1, status_size, status_color)
 
 
 func _get_node_color(node: TreeNode) -> Color:
 	if node.is_gated:
-		return Color(0.2, 0.2, 0.22, 0.9)
+		return LOCKED_COLOR
 	if node.is_locked_by_currency:
-		return Color(0.5, 0.35, 0.25, 0.9)
+		return NO_CURRENCY_COLOR
 	if node.is_maxed:
-		return Color(0.2, 0.45, 0.3, 0.9)
-	return Color(0.15, 0.3, 0.5, 0.9)
+		return MAXED_COLOR
+	return AVAILABLE_COLOR
 
 
 func _get_node_border_color(node: TreeNode) -> Color:
+	var base: Color
 	if node.is_gated:
-		return Color(0.35, 0.35, 0.35, 1.0)
-	if node.is_locked_by_currency:
-		return Color(0.75, 0.55, 0.3, 1.0)
-	if node.is_maxed:
-		return Color(0.3, 0.8, 0.4, 1.0)
-	return Color(0.3, 0.6, 1.0, 1.0)
+		base = Color(0.4, 0.3, 0.3)
+	elif node.is_locked_by_currency:
+		base = Color(0.6, 0.4, 0.2)
+	elif node.is_maxed:
+		base = Color(0.3, 0.6, 0.3)
+	else:
+		base = Color(0.7, 0.6, 0.3)
+
+	return base
