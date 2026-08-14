@@ -70,9 +70,10 @@ at different cadences instead of competing for the same pool:
   independent of what got picked up. Funds backpack-only upgrades: slot
   capacity, per-tier Compacting, and Purge.
 
-The exact backpack-currency rate/curve (how survival time converts to
-currency) is intentionally left open — needs playtesting to find a pace
-that feels rewarding.
+Placeholder rate: `backpack_currency = round(1 × seconds_survived)` — 1
+currency per second alive, banked at run end. Picked only so there's
+something to build against; needs playtesting to find a pace that
+actually feels rewarding.
 
 The two tracks aren't directly linked, but both still answer to the same
 core risk mechanic: a greedy loot run fills the bag (shrinking max HP)
@@ -92,11 +93,12 @@ reinforcing the two-currency split visually as well as economically.
 - **Backpack Tree** is a real chain: Capacity sits at the root (always
   purchasable). Compactor nodes unlock in rarity order — Common →
   Uncommon → Rare → Epic → Mythic — each locked until the previous tier's
-  compactor has at least one level bought. Purge sits as a capstone node,
-  unlocked once Compacting investment crosses some threshold. This
-  resolves the earlier open question about Compacting's purchase order:
-  it's a hard gate now, enforced by the tree, not just a cost-driven
-  nudge.
+  compactor has at least one level bought. Purge unlocks the same way, as
+  a capstone gated behind the Rare Compactor's first level — reusing the
+  same "previous node bought once" gate as everything else rather than a
+  separate threshold rule. This resolves the earlier open question about
+  Compacting's purchase order: it's a hard gate now, enforced by the
+  tree, not just a cost-driven nudge.
 - **Player Tree** is flatter: Damage, Move Speed, and Magnet Range branch
   independently off a shared root with no cross-gating between them,
   since nothing in the design requires one before another.
@@ -177,6 +179,15 @@ current `base_value: 20` / `+5` flat numbers in `scripts/meta_progression.gd`
 are sized for today's flat-count backpack and will need re-basing once
 the slot-grid backpack is actually built.
 
+**Fill %** = slots used ÷ total slots — a slot counts as "used" the
+moment it holds one or more of an item, regardless of how full its stack
+is. So one Common and a maxed-out 192-stack of Commons both count as
+exactly one used slot; only the *number of occupied slots* drives
+fullness, not how densely packed they are. This is what feeds the
+existing HP-shrink formula (`max_hp = base_max_hp × lerp(1.0,
+MIN_HP_FRACTION, fill%)` in `scripts/player.gd`) — the formula itself
+doesn't change, only what `fill%` is computed from.
+
 ### Rarity tiers
 
 Loot comes in six rarity tiers. Three things scale per tier, and they're
@@ -192,6 +203,11 @@ real space gamble, all at once.
 | Epic      | 6%          | 8                 | 40                | 320                | Purple |
 | Mythic    | 2.5%        | 4                 | 150               | 600                | Orange |
 | Legendary | 0.5%        | 1                 | 800               | 800                | Red    |
+
+Every enemy kill drops exactly one loot item; its tier is rolled
+independently each time using the Drop weight column above. Weights are
+flat for now — not adjusted by difficulty, time survived, or enemy type
+— that's a lever to pull later if the drop curve needs shaping.
 
 "Full-slot value" is what one fully-stacked slot of that tier is worth
 (`base value/item × base stack size`). It climbs every tier despite stack
@@ -375,3 +391,11 @@ Short dated entries when a design decision is made and worth remembering
   are lost, not banked — makes Purge a real trade between survival time
   (backpack currency) and the player currency those items would've been
   worth, rather than a free safety net.
+- 2026-08-14 — Filled remaining gaps found in a scope audit: gave
+  backpack currency a placeholder rate (1/sec, needs playtesting),
+  restated the slot-grid fill% formula (slots used ÷ total slots,
+  binary per slot regardless of stack fullness) which had dropped out
+  during an earlier tightening pass, confirmed drop is one item per
+  kill with tier rolled from the flat drop-weight table, and gave Purge
+  a concrete unlock gate (behind the Rare Compactor's first level)
+  instead of a vague "some threshold."
