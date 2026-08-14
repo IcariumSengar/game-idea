@@ -8,6 +8,9 @@ const CONTACT_DAMAGE: float = 10.0
 const CONTACT_COOLDOWN: float = 0.4
 const BASE_COLOR: Color = Color.CRIMSON
 const FLASH_DECAY_PER_SEC: float = 8.0
+const HIT_SPARK_AMOUNT: int = 6
+const DEATH_SPARK_AMOUNT: int = 18
+const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 @export var speed: float = 120.0
 @export var max_hp: float = 30.0
@@ -49,12 +52,26 @@ func _physics_process(delta: float) -> void:
 func take_damage(amount: float) -> void:
 	hp -= amount
 	if hp <= 0.0:
+		_spawn_spark(DEATH_SPARK_AMOUNT)
 		died.emit(self)
 		queue_free()
 		return
 	_flash_amount = 1.0
 	queue_redraw()
+	_spawn_spark(HIT_SPARK_AMOUNT)
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, RADIUS, BASE_COLOR.lerp(Color.WHITE, _flash_amount))
+	var fill := BASE_COLOR.lerp(Color.WHITE, _flash_amount)
+	draw_circle(Vector2(0.0, 4.0), RADIUS * 0.9, Color(0.0, 0.0, 0.0, 0.25))
+	draw_circle(Vector2.ZERO, RADIUS, fill)
+	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 24, fill.darkened(0.4), 2.0, true)
+
+
+func _spawn_spark(amount: int) -> void:
+	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
+	spark.position = position
+	spark.color = BASE_COLOR
+	spark.amount = amount
+	get_parent().add_child(spark)
+	spark.emitting = true
