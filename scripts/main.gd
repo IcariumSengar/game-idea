@@ -2,8 +2,9 @@ extends Control
 
 
 func _ready() -> void:
-	var version := _read_version()
-	$CenterContainer/Label.text = "game-idea v%s" % version
+	# Always show slot selector at startup to let player choose which save to use
+	get_tree().change_scene_to_file("res://scenes/save_slot_selector.tscn")
+	return
 
 
 func _read_version() -> String:
