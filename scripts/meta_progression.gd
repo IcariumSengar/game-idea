@@ -23,8 +23,8 @@ const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
 const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
 const STAT_PURGE: StringName = &"purge"
 
-## Placeholder rate -- DESIGN.md leaves this open pending playtesting.
-const BACKPACK_CURRENCY_PER_SECOND: float = 0.33
+## Placeholder rate per DESIGN.md pending playtesting.
+const BACKPACK_CURRENCY_PER_SECOND: float = 1.0
 
 const SAVE_SLOTS: int = 4
 const SAVE_DIR: String = "user://saves"
