@@ -7,6 +7,10 @@ const RADIUS: float = 16.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
 
 
+func _ready() -> void:
+	add_to_group("player")
+
+
 func _physics_process(_delta: float) -> void:
 	velocity = _get_input_direction() * speed
 	move_and_slide()
