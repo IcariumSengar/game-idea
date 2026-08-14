@@ -45,5 +45,16 @@ offset_bottom = 40.0
 theme_override_font_sizes/font_size = 22
 text = "HP: 100 / 100"
 
+[node name="GameOverLabel" type="Label" parent="HUD"]
+visible = false
+offset_left = 390.0
+offset_top = 300.0
+offset_right = 890.0
+offset_bottom = 380.0
+theme_override_font_sizes/font_size = 48
+text = "YOU DIED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [connection signal="timeout" from="Player/Weapon/AttackTimer" to="Player/Weapon" method="_on_attack_timer_timeout"]
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]

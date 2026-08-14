@@ -13,7 +13,7 @@ playable/checkable on its own before moving to the next:
 - [x] Enemy: single type that spawns and chases the player
 - [x] Combat: auto-attack fires at nearest enemy; enemies damage player on
       contact
-- [ ] Player HP + death → run-end state
+- [x] Player HP + death → run-end state
 - [ ] Loot: drops on enemy death, picked up by player
 - [ ] Backpack: capacity + fill %, max HP shrinks with fill %
 - [ ] Enemy spawn rate/difficulty ramps over run duration
