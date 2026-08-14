@@ -9,7 +9,7 @@ this file should stay short enough to skim.
 Build order for the MVP loop (see DESIGN.md) — each step should be
 playable/checkable on its own before moving to the next:
 
-- [ ] Player: top-down movement in an arena
+- [x] Player: top-down movement in an arena
 - [ ] Enemy: single type that spawns and chases the player
 - [ ] Combat: auto-attack fires at nearest enemy; enemies damage player on
       contact
