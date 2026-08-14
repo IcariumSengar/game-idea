@@ -33,23 +33,33 @@ loop between them (the genre Vampire Survivors popularized).
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`):
+What's actually built and playable today (see `scripts/`, as of v4):
 
-- Top-down movement in a single arena; one enemy type that chases and
-  damages the player on contact, spawning faster/more over run duration.
-- One weapon, auto-firing at the nearest enemy.
-- One loot type, picked up via a proximity-based magnet radius.
-- A flat-count backpack (not the slot-grid design below yet) — a single
-  capacity number, fill % shrinks max HP.
-- Death → run summary (loot collected) → shop (backpack capacity, pickup
-  range, single currency, flat cost, uncapped) → restart with upgrades
-  carried over.
-- Currency and stats reset when the game restarts — cross-session save/load
-  isn't built yet ([TODO.md](TODO.md) tracks it).
+- Top-down movement + dash in a single arena; one enemy type that chases
+  and damages the player on contact, spawning faster/more over run
+  duration.
+- One weapon, auto-firing at the nearest enemy; Damage is upgradeable.
+- Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
+  the Rarity tiers table below. One item drops per kill, tier rolled by
+  drop weight, picked up via a proximity-based magnet radius (Magnet
+  Range upgradeable).
+- A real slot-grid backpack (`backpack_grid.gd`) — one slot per loot
+  type held, colored by rarity, growing with Capacity; fill % shrinks
+  max HP.
+- Two currencies (`meta_progression.gd`): player currency (loot value)
+  funds Damage/Move Speed/Magnet Range; backpack currency (survival
+  time) funds Capacity. Upgrades are leveled with a geometric cost curve
+  and a hard level cap — matches this doc's numbers for Damage, Move
+  Speed, and Magnet Range. **Capacity is the one exception**: it's still
+  flat-cost and effectively uncapped (level cap 999) in code, not yet
+  updated to the ×1.20/lvl-growth, 12-level-cap curve this doc specifies.
+- Death → run summary → shop (flat list of upgrade buttons, not yet the
+  skill-tree layout below) → restart with upgrades carried over.
+- Currency and stats reset when the game restarts — cross-session
+  save/load isn't built yet ([TODO.md](TODO.md) tracks it).
 
-Scope is still being actively worked out — the section below is design
-direction, not a locked backlog. [TODO.md](TODO.md) tracks the concrete
-build order as it's decided.
+Not yet built: Compacting (per-tier), Purge, and the skill-tree shop
+layout — see [TODO.md](TODO.md) for the remaining build order.
 
 ## Loot, backpack & shop economy
 
@@ -151,11 +161,9 @@ overinvesting in them is safer. As a rough pacing check: fully maxing
 Damage alone (20 levels, geometric sum) comes out to roughly 1,500
 currency total — meant to take many runs, not a handful.
 
-Not yet built: `StatDef`/`MetaProgression` (`scripts/stat_def.gd`,
-`scripts/meta_progression.gd`) currently only support a flat cost with no
-cap. Supporting a geometric cost curve and a level cap needs a small
-structural change (cost computed from level rather than stored as one
-flat value, plus a cap field).
+Built: `StatDef`/`MetaProgression` now support geometric cost curves and a
+hard level cap, and Damage/Move Speed/Magnet Range are wired up with the
+exact numbers above.
 
 ### Backpack-track upgrade curve
 
@@ -174,10 +182,12 @@ it's the most directly impactful number for survival (more slots means
 more headroom before the fullness/HP-shrink curve bites), so it's
 deliberately the slowest one to fully grind out.
 
-Base value here is expressed in slot count, not raw loot units — the
-current `base_value: 20` / `+5` flat numbers in `scripts/meta_progression.gd`
-are sized for today's flat-count backpack and will need re-basing once
-the slot-grid backpack is actually built.
+The slot-grid backpack itself is built (`backpack_grid.gd`), but the
+Capacity stat's numbers in `scripts/meta_progression.gd` haven't caught
+up to this table yet — it currently registers as `base_value: 1.0`,
+`per_level_gain: 1.0`, flat cost (`cost_growth: 1.0`), and an effectively
+uncapped `level_cap: 999`. Bringing it in line with the 8/+1/×1.20/cap-12
+numbers above is outstanding work, not a design question.
 
 **Fill %** = slots used ÷ total slots — a slot counts as "used" the
 moment it holds one or more of an item, regardless of how full its stack
@@ -399,3 +409,14 @@ Short dated entries when a design decision is made and worth remembering
   kill with tier rolled from the flat drop-weight table, and gave Purge
   a concrete unlock gate (behind the Rare Compactor's first level)
   instead of a vague "some threshold."
+- 2026-08-14 — Reconciled DESIGN.md with reality: parallel worktree
+  sessions had already shipped v4 while this design conversation was
+  running, implementing rarity tiers, the slot-grid backpack, the
+  two-currency split, and Damage/Move Speed/Magnet Range as upgradeable
+  stats — matching this doc almost exactly. Updated "Current
+  implementation" and the stale "not yet built" notes accordingly.
+  One real gap found: Backpack Capacity's cost curve in
+  `meta_progression.gd` (flat cost, uncapped) hasn't caught up to this
+  doc's ×1.20/lvl, 12-level-cap numbers — noted as outstanding work, not
+  a design question. Remaining undone: Compacting, Purge, and the
+  skill-tree shop layout.

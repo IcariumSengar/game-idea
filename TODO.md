@@ -10,33 +10,24 @@ this file should stay short enough to skim.
 
 ## Later
 
-Next playable iteration: the full economy in DESIGN.md is a lot bigger
-than what's built today, so build it in stages rather than all at once —
-each stage should leave the game playable/checkable before the next
-starts. Order follows dependencies (later stages read data the earlier
-ones define):
+Most of the economy redesign in DESIGN.md shipped already (v4, via
+parallel worktree sessions) — rarity tiers, the slot-grid backpack, the
+two-currency split, and Damage/Move Speed/Magnet Range as upgradeable
+stats. What's actually left:
 
-1. **Rarity + slot-grid backpack** — six rarity tiers, drop-weight roll on
-   kill (one item per kill), stack sizes per tier, fill% = slots used ÷
-   total slots feeding the existing HP-shrink formula. Replaces today's
-   flat-count backpack. See DESIGN.md: Rarity tiers, Backpack UI.
-2. **Two-currency split** — player currency (loot value → Damage/Speed/
-   Magnet) and backpack currency (survival time, placeholder 1/sec →
-   Capacity/Compacting/Purge). Needs stage 1's rarity values for the
-   loot→currency conversion. See DESIGN.md: Two currencies, Loot →
-   currency conversion.
-3. **Player-stat upgrade curve** — wire Damage and Move Speed into
-   `MetaProgression` as upgradeable stats (currently hardcoded consts in
-   `weapon.gd`/`player.gd`); geometric cost curve + level caps for
-   `StatDef`/`MetaProgression` (currently flat-cost, uncapped). Mostly
-   independent of the other stages, could slot in earlier if convenient.
-4. **Skill-tree shop UI** — reorganize the shop into the two-tree layout
-   (Backpack Tree hard-gated by rarity order, Player Tree flat) instead
-   of the current flat button list. A presentation layer on top of
-   stages 2-3.
-5. **Compacting (per-tier) + Purge** — the deepest, most granular content;
-   naturally last since each tier's Compactor only matters once that
-   tier is dropping often enough to care about.
+1. **Fix Backpack Capacity's upgrade curve** — currently flat-cost and
+   effectively uncapped (`level_cap: 999`) in `meta_progression.gd`,
+   doesn't match DESIGN.md's ×1.20/lvl-growth, 12-level-cap numbers. A
+   data fix, not new systems.
+2. **Skill-tree shop UI** — reorganize the shop (`shop.gd`, currently a
+   flat button list) into the two-tree layout: Backpack Tree hard-gated
+   in rarity order, Player Tree flat/ungated. See DESIGN.md: "Shop
+   structure: skill tree."
+3. **Compacting (per-tier) + Purge** — not started. Six per-tier
+   Compactor upgrades (Common through Mythic; Legendary is permanently
+   uncompactable) plus the Purge capstone, gated behind the Rare
+   Compactor per the skill tree. See DESIGN.md: "Compacting upgrades",
+   "Purge upgrade".
 
 ## Done
 
@@ -47,3 +38,10 @@ ones define):
       HP/death, proximity loot pickup, backpack fill/HP-shrink, difficulty
       ramp, run summary, currency + shop (capacity/pickup range), run
       restart with carried-over upgrades (v2)
+- [x] Data-driven `StatDef`/`MetaProgression`, styled HUD with stat
+      readouts and color-graded bars, shared button/panel style
+      resources, magnet-style loot pickup (v3)
+- [x] Rarity tiers + slot-grid backpack, two-currency split with
+      geometric-cost/capped upgrades, Damage + Move Speed upgradeable,
+      player dash, real sprite art, `/play` `/close` `/editor` slash
+      commands (v4)
