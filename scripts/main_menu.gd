@@ -8,7 +8,7 @@ func _ready() -> void:
 	var last_slot := MetaProgression.get_last_slot()
 	if last_slot >= 0:
 		MetaProgression.set_slot(last_slot)
-		get_tree().change_scene_to_file("res://scenes/run_prep.tscn")
+		get_tree().change_scene_to_file.call_deferred("res://scenes/run_prep.tscn")
 		return
 
 	var version := _read_version()
