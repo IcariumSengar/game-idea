@@ -2,6 +2,28 @@
 
 All notable fixed versions of this project are documented here.
 
+## v4 - 2026-08-14
+
+Second round of parallel mechanics + visuals workstreams merged into
+`main`:
+
+- Loot reworked into six rarity tiers (common → legendary) matching
+  DESIGN.md's table exactly: per-tier drop weight, stack size, and
+  value. Backpack is a real slot grid (one slot per item type held),
+  colored by rarity, replacing the old flat-count/abstract-bar model.
+- Meta-progression split into two currencies: player currency (from
+  loot value) funds Damage/Move Speed/Magnet Range; backpack currency
+  (from time survived) funds Backpack Capacity. Upgrades are now
+  leveled with a geometric cost curve and a hard level cap, replacing
+  the old flat/uncapped cost.
+- Damage and Move Speed are upgradeable stats for the first time
+  (previously hardcoded constants).
+- Player dash (spacebar), fixed a bug where loot the player couldn't
+  actually hold still got magnet-pulled toward them.
+- Real sprite art throughout (0x72 DungeonTilesetII), replacing all
+  placeholder procedural shapes; Player extracted into its own scene.
+- `/play`, `/close`, `/editor` slash commands for the run loop.
+
 ## v3 - 2026-08-14
 
 First result of two parallel workstreams (core mechanics + visuals/UI,
