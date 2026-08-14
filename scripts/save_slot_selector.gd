@@ -64,7 +64,11 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 
 func _on_load_pressed(slot: int) -> void:
 	MetaProgression.set_slot(slot)
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	get_tree().change_scene_to_file("res://scenes/arena.tscn")
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 func _on_delete_pressed(slot: int) -> void:
