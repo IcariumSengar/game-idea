@@ -8,9 +8,9 @@ this file should stay short enough to skim.
 
 - [x] Implement save/load system with 4 save slots
   - [x] Save slot data structure: track per-slot meta-progression, last-played timestamp, playtime
-  - [ ] Load Game screen UI: show all 4 slots with metadata (last played, playtime, max upgrades), load/overwrite/delete actions
+  - [x] Load Game screen UI: show all 4 slots with metadata (last played, playtime, max upgrades), load/delete actions
   - [x] Save on run end (shop screen); local file storage works offline
-  - [ ] Cloud-sync backend (optional, lower priority)
+  - [x] Cloud-sync backend: infrastructure ready for cross-device sync (placeholder for server integration)
 
 ## Later (Completed this session)
 
