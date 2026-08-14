@@ -9,9 +9,13 @@ const BOB_AMOUNT: float = 3.0
 const PULSE_SPEED: float = 4.0
 const PULSE_AMOUNT: float = 1.5
 const PICKUP_SPARK_AMOUNT: int = 8
+const PULL_SPEED_BASE: float = 60.0
+const PULL_SPEED_PER_RANGE: float = 4.0
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 var _time: float = randf() * TAU
+var _magnet_target: Player = null
+var _pull_speed: float = 0.0
 
 
 func _ready() -> void:
@@ -22,12 +26,21 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
+	if _magnet_target != null:
+		position = position.move_toward(_magnet_target.position, _pull_speed * delta)
 	queue_redraw()
 
 
 func _enable_pickup() -> void:
 	monitoring = true
 	monitorable = true
+
+
+func start_magnet(player: Player) -> void:
+	if _magnet_target != null:
+		return
+	_magnet_target = player
+	_pull_speed = PULL_SPEED_BASE + player.pickup_range * PULL_SPEED_PER_RANGE
 
 
 func collect(player: Player) -> void:

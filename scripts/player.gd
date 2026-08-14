@@ -48,7 +48,7 @@ func _ready() -> void:
 
 func _on_pickup_area_entered(area: Area2D) -> void:
 	if area is Loot:
-		area.collect(self)
+		area.start_magnet(self)
 
 
 func _physics_process(delta: float) -> void:
