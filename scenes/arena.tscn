@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/weapon.gd" id="3_weapon"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/stat_bar.gd" id="5_statbar"]
+[ext_resource type="Script" path="res://scripts/backpack_grid.gd" id="10_backpackgrid"]
 [ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="6_panel_dark"]
 [ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="7_btn_normal"]
 [ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="8_btn_hover"]
@@ -66,7 +67,7 @@ script = ExtResource("4_hud")
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 320.0
-offset_bottom = 128.0
+offset_bottom = 172.0
 theme_override_styles/panel = ExtResource("6_panel_dark")
 
 [node name="Margin" type="MarginContainer" parent="HUD/StatsPanel"]
@@ -110,11 +111,10 @@ theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
 text = "BAG"
 vertical_alignment = 1
 
-[node name="LootBar" type="Control" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
-custom_minimum_size = Vector2(160, 16)
+[node name="LootGrid" type="Control" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
 layout_mode = 2
 size_flags_vertical = 4
-script = ExtResource("5_statbar")
+script = ExtResource("10_backpackgrid")
 
 [node name="LootValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/LootRow"]
 custom_minimum_size = Vector2(72, 0)

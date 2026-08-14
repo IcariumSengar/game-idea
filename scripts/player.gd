@@ -4,7 +4,7 @@ extends CharacterBody2D
 signal died
 signal hit
 signal hp_changed(current: float, max_hp: float)
-signal loot_changed(current: int)
+signal loot_changed(backpack: Dictionary)
 
 const RADIUS: float = 16.0
 const BASE_COLOR: Color = Color.CYAN
@@ -19,17 +19,24 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
-@export var base_max_hp: float = 100.0
+@export var base_max_hp: float = 60.0
 @export var pickup_range: float = 60.0
 @export var backpack_capacity: int = 20
+@export var dash_speed: float = 700.0
+@export var dash_duration: float = 0.15
+@export var dash_cooldown: float = 0.6
 
 var hp: float
 var max_hp: float
-var loot: int = 0
+var backpack: Dictionary = {}
 
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
 var _facing: Vector2 = Vector2.UP
+var _dash_time_left: float = 0.0
+var _dash_cooldown_left: float = 0.0
+var _dash_direction: Vector2 = Vector2.ZERO
+var _space_was_pressed: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
@@ -39,6 +46,7 @@ func _ready() -> void:
 	add_to_group("player")
 	backpack_capacity = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
 	pickup_range = MetaProgression.get_stat(MetaProgression.STAT_PICKUP_RANGE)
+	speed = MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED)
 	max_hp = base_max_hp
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
@@ -47,33 +55,74 @@ func _ready() -> void:
 
 
 func _on_pickup_area_entered(area: Area2D) -> void:
-	if area is Loot:
+	if area is Loot and can_collect_loot(area.type_id):
 		area.start_magnet(self)
+
+
+func can_collect_loot(type_id: StringName) -> bool:
+	var count: int = backpack.get(type_id, 0)
+	if count > 0:
+		return count < LootTypes.get_type(type_id).stack_size
+	return backpack.size() < backpack_capacity
 
 
 func _physics_process(delta: float) -> void:
 	var input_direction := _get_input_direction()
 	if input_direction != Vector2.ZERO:
 		_facing = input_direction
-	velocity = input_direction * speed + _knockback
+
+	_check_dash_input()
+
+	if _dash_time_left > 0.0:
+		_dash_time_left -= delta
+		velocity = _dash_direction * dash_speed
+	else:
+		velocity = input_direction * speed + _knockback
+
 	move_and_slide()
 	position = position.clamp(Vector2(RADIUS, RADIUS), arena_size - Vector2(RADIUS, RADIUS))
 
+	_dash_cooldown_left = max(_dash_cooldown_left - delta, 0.0)
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 	queue_redraw()
 
 
-func collect_loot(amount: int) -> bool:
-	if loot >= backpack_capacity:
-		return false
-	loot = min(loot + amount, backpack_capacity)
-	loot_changed.emit(loot)
-	var fill_ratio := float(loot) / float(backpack_capacity)
+func _check_dash_input() -> void:
+	var space_pressed := Input.is_physical_key_pressed(KEY_SPACE)
+	if space_pressed and not _space_was_pressed and _dash_cooldown_left <= 0.0:
+		_dash_direction = _facing
+		_dash_time_left = dash_duration
+		_dash_cooldown_left = dash_cooldown
+	_space_was_pressed = space_pressed
+
+
+func collect_loot(type_id: StringName) -> bool:
+	var count: int = backpack.get(type_id, 0)
+	if count > 0:
+		var stack_size: int = LootTypes.get_type(type_id).stack_size
+		if count >= stack_size:
+			return false
+		backpack[type_id] = count + 1
+	else:
+		if backpack.size() >= backpack_capacity:
+			return false
+		backpack[type_id] = 1
+	loot_changed.emit(backpack)
+	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
 	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
 	_set_hp(min(hp, max_hp))
 	return true
+
+
+func get_total_loot_value() -> int:
+	var total := 0
+	for type_id: StringName in backpack:
+		var def := LootTypes.get_type(type_id)
+		var value: int = def.value if def != null else 1
+		total += value * int(backpack[type_id])
+	return total
 
 
 func take_damage(amount: float, from_position: Vector2) -> void:

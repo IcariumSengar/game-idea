@@ -3,15 +3,13 @@ extends CanvasLayer
 const HP_COLOR_HIGH: Color = Color(0.3, 0.85, 0.4)
 const HP_COLOR_MID: Color = Color(0.9, 0.8, 0.2)
 const HP_COLOR_LOW: Color = Color(0.9, 0.25, 0.25)
-const LOOT_COLOR_EMPTY: Color = Color(0.3, 0.65, 0.9)
-const LOOT_COLOR_FULL: Color = Color(0.9, 0.35, 0.2)
 
 var _backpack_capacity: int
-var _current_loot: int = 0
+var _player: Player
 
 @onready var _hp_bar: StatBar = $StatsPanel/Margin/VBox/HPRow/HPBar
 @onready var _hp_value: Label = $StatsPanel/Margin/VBox/HPRow/HPValue
-@onready var _loot_bar: StatBar = $StatsPanel/Margin/VBox/LootRow/LootBar
+@onready var _loot_grid: BackpackGrid = $StatsPanel/Margin/VBox/LootRow/LootGrid
 @onready var _loot_value: Label = $StatsPanel/Margin/VBox/LootRow/LootValue
 @onready var _stats_label: Label = $StatsPanel/Margin/VBox/MetaStatsLabel
 @onready var _game_over_panel: PanelContainer = $GameOverPanel
@@ -19,15 +17,16 @@ var _current_loot: int = 0
 
 
 func _ready() -> void:
-	var player: Player = get_tree().get_first_node_in_group("player")
-	_backpack_capacity = player.backpack_capacity
-	player.hp_changed.connect(_on_hp_changed)
-	player.loot_changed.connect(_on_loot_changed)
-	player.died.connect(_on_player_died)
+	_player = get_tree().get_first_node_in_group("player")
+	_backpack_capacity = _player.backpack_capacity
+	_player.hp_changed.connect(_on_hp_changed)
+	_player.loot_changed.connect(_on_loot_changed)
+	_player.died.connect(_on_player_died)
 	_stats_label.text = (
 		"Speed: %d   Pickup Range: %d   Capacity: %d"
-		% [player.speed, player.pickup_range, player.backpack_capacity]
+		% [_player.speed, _player.pickup_range, _player.backpack_capacity]
 	)
+	_on_loot_changed(_player.backpack)
 
 
 func _on_hp_changed(current: float, max_hp: float) -> void:
@@ -36,16 +35,20 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 	_hp_value.text = "%d/%d" % [roundi(current), roundi(max_hp)]
 
 
-func _on_loot_changed(current: int) -> void:
-	_current_loot = current
-	var fraction: float = float(current) / float(_backpack_capacity) if _backpack_capacity > 0 else 0.0
-	_loot_bar.update(fraction, LOOT_COLOR_EMPTY.lerp(LOOT_COLOR_FULL, fraction))
-	_loot_value.text = "%d/%d" % [current, _backpack_capacity]
+func _on_loot_changed(backpack: Dictionary) -> void:
+	_loot_grid.update(backpack, _backpack_capacity)
+	_loot_value.text = "%d/%d" % [backpack.size(), _backpack_capacity]
 
 
 func _on_player_died() -> void:
-	MetaProgression.add_currency(_current_loot)
-	_game_over_label.text = "YOU DIED\n\nLoot collected: %d" % _current_loot
+	var total_value := _player.get_total_loot_value()
+	var arena: Arena = get_parent()
+	var seconds_survived := arena.get_run_time()
+	MetaProgression.award_run_end_currency(total_value, seconds_survived)
+	_game_over_label.text = (
+		"YOU DIED\n\nLoot value collected: %d\nTime survived: %ds"
+		% [total_value, roundi(seconds_survived)]
+	)
 	_game_over_panel.show()
 	get_tree().paused = true
 

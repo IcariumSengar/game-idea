@@ -1,3 +1,4 @@
+class_name Arena
 extends Node2D
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
@@ -39,6 +40,10 @@ func _on_player_hit() -> void:
 	_shake_time_left = SHAKE_DURATION
 
 
+func get_run_time() -> float:
+	return _run_time
+
+
 func _on_enemy_spawn_timer_timeout() -> void:
 	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
@@ -53,6 +58,7 @@ func _on_enemy_spawn_timer_timeout() -> void:
 func _on_enemy_died(enemy: Enemy) -> void:
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position
+	loot.type_id = LootTypes.pick_random_type().id
 	add_child(loot)
 
 
