@@ -261,13 +261,10 @@ func get_last_slot() -> int:
 	if file == null:
 		return -1
 	var data: Variant = JSON.parse_string(file.get_as_text())
-	if data == null or data.get("last_slot", -1) < 0:
+	if data == null:
 		return -1
 	var slot: int = data.get("last_slot", -1)
 	if slot < 0 or slot >= SAVE_SLOTS:
-		return -1
-	# Verify the slot has a save
-	if not ResourceLoader.exists(_get_slot_save_path(slot)):
 		return -1
 	return slot
 
