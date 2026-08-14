@@ -6,7 +6,7 @@ this file should stay short enough to skim.
 
 ## Now
 
-- [ ] Persist meta-progression between sessions (save/load)
+- [x] Persist meta-progression between sessions (save/load)
 
 ## Later
 
