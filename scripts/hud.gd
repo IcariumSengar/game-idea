@@ -42,8 +42,13 @@ func _on_loot_changed(backpack: Dictionary) -> void:
 
 func _on_player_died() -> void:
 	var total_value := _player.get_total_loot_value()
-	MetaProgression.add_currency(total_value)
-	_game_over_label.text = "YOU DIED\n\nLoot value collected: %d" % total_value
+	var arena: Arena = get_parent()
+	var seconds_survived := arena.get_run_time()
+	MetaProgression.award_run_end_currency(total_value, seconds_survived)
+	_game_over_label.text = (
+		"YOU DIED\n\nLoot value collected: %d\nTime survived: %ds"
+		% [total_value, roundi(seconds_survived)]
+	)
 	_game_over_panel.show()
 	get_tree().paused = true
 

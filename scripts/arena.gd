@@ -1,3 +1,4 @@
+class_name Arena
 extends Node2D
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
@@ -37,6 +38,10 @@ func _process(delta: float) -> void:
 
 func _on_player_hit() -> void:
 	_shake_time_left = SHAKE_DURATION
+
+
+func get_run_time() -> float:
+	return _run_time
 
 
 func _on_enemy_spawn_timer_timeout() -> void:

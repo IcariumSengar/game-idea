@@ -6,7 +6,8 @@ const BUTTON_STYLE_PRESSED: StyleBoxFlat = preload("res://resources/button_press
 const BUTTON_MIN_HEIGHT: float = 44.0
 const BUTTON_FONT_SIZE: int = 16
 
-@onready var _currency_label: Label = $ShopPanel/Margin/VBox/CurrencyLabel
+@onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
+@onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
 @onready var _upgrades_container: VBoxContainer = $ShopPanel/Margin/VBox/UpgradesContainer
 
 
@@ -35,13 +36,13 @@ func _on_upgrade_pressed(id: StringName) -> void:
 	MetaProgression.buy_upgrade(id)
 
 
-func _on_currency_changed(_current: int) -> void:
+func _on_currency_changed() -> void:
 	_refresh_currency()
 	for def in MetaProgression.get_stat_defs():
 		_refresh_button(def)
 
 
-func _on_stat_changed(stat_id: StringName, _new_value: float) -> void:
+func _on_stat_changed(stat_id: StringName, _level: int) -> void:
 	for def in MetaProgression.get_stat_defs():
 		if def.id == stat_id:
 			_refresh_button(def)
@@ -53,22 +54,32 @@ func _on_start_run_button_pressed() -> void:
 
 
 func _refresh_currency() -> void:
-	_currency_label.text = "Currency: %d" % MetaProgression.currency
+	_player_currency_label.text = "Player Currency: %d" % MetaProgression.player_currency
+	_backpack_currency_label.text = "Backpack Currency: %d" % MetaProgression.backpack_currency
 
 
 func _refresh_button(def: StatDef) -> void:
 	var button: Button = _upgrades_container.get_node(_button_name(def.id))
-	var current := MetaProgression.get_stat(def.id)
-	button.text = (
-		"%s: %s   (+%s for %d currency)"
-		% [
-			def.display_name,
-			_format(current, def.decimals),
-			_format(def.upgrade_amount, def.decimals),
-			def.upgrade_cost,
-		]
+	var current_value := _format(MetaProgression.get_stat(def.id), def.decimals)
+	var level := MetaProgression.get_level(def.id)
+
+	if MetaProgression.is_maxed(def.id):
+		button.text = "%s: %s   (MAX, Lvl %d)" % [def.display_name, current_value, level]
+		button.disabled = true
+		return
+
+	var cost := MetaProgression.get_cost(def.id)
+	var currency_name := "Player" if def.currency == StatDef.Currency.PLAYER else "Backpack"
+	var available := (
+		MetaProgression.player_currency
+		if def.currency == StatDef.Currency.PLAYER
+		else MetaProgression.backpack_currency
 	)
-	button.disabled = MetaProgression.currency < def.upgrade_cost
+	button.text = (
+		"%s: %s   (Lvl %d/%d)   Cost: %d %s"
+		% [def.display_name, current_value, level, def.level_cap, cost, currency_name]
+	)
+	button.disabled = available < cost
 
 
 func _button_name(id: StringName) -> String:

@@ -1,15 +1,20 @@
 extends Node
 
-const DAMAGE: float = 20.0
 const RANGE: float = 220.0
 
+var _damage: float = 0.0
+
 @onready var _owner_body: Node2D = get_parent()
+
+
+func _ready() -> void:
+	_damage = MetaProgression.get_stat(MetaProgression.STAT_DAMAGE)
 
 
 func _on_attack_timer_timeout() -> void:
 	var enemy := _find_nearest_enemy()
 	if enemy != null:
-		enemy.take_damage(DAMAGE)
+		enemy.take_damage(_damage)
 
 
 func _find_nearest_enemy() -> Enemy:
