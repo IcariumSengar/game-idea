@@ -45,6 +45,7 @@ func _on_player_died() -> void:
 	var arena: Arena = get_parent()
 	var seconds_survived := arena.get_run_time()
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
+	MetaProgression.save()
 	_game_over_label.text = (
 		"YOU DIED\n\nLoot value collected: %d\nTime survived: %ds"
 		% [total_value, roundi(seconds_survived)]

@@ -20,6 +20,8 @@ const STAT_MOVE_SPEED: StringName = &"move_speed"
 ## Placeholder rate -- DESIGN.md leaves this open pending playtesting.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.33
 
+const SAVE_FILE_PATH: String = "user://meta_progression.json"
+
 var player_currency: int = 0
 var backpack_currency: int = 0
 
@@ -46,6 +48,7 @@ func _ready() -> void:
 	_register_stat(
 		STAT_MOVE_SPEED, "Move Speed", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
+	_load()
 
 
 func get_stat_defs() -> Array[StatDef]:
@@ -135,3 +138,31 @@ func _find_def(id: StringName) -> StatDef:
 		if def.id == id:
 			return def
 	return null
+
+
+func _load() -> void:
+	if not ResourceLoader.exists(SAVE_FILE_PATH):
+		return
+	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	if data == null:
+		return
+	player_currency = data.get("player_currency", 0)
+	backpack_currency = data.get("backpack_currency", 0)
+	var saved_levels: Dictionary = data.get("stat_levels", {})
+	for stat_id: String in saved_levels:
+		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
+	currency_changed.emit()
+
+
+func save() -> void:
+	var data := {
+		"player_currency": player_currency,
+		"backpack_currency": backpack_currency,
+		"stat_levels": _stat_levels
+	}
+	var file := FileAccess.open(SAVE_FILE_PATH, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(data))
