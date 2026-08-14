@@ -204,6 +204,34 @@ Drop weight, stack size, and value are three independent tuning knobs and
 don't have to move in lockstep — this table is a first-pass shape, not a
 locked formula.
 
+### Loot → currency conversion
+
+At run end, player currency earned is the sum of each collected item's
+**base value/item** (from the table above), for whatever is still in the
+backpack when the run ends:
+
+`player_currency = Σ (count_in_backpack[tier] × base_value/item[tier])`
+across all six tiers.
+
+This uses base value/item, not "full-slot value" — full-slot value in the
+rarity table is only a balancing sanity-check (what one maxed-out slot is
+worth), not the conversion formula itself.
+
+Only loot still in the backpack at the moment of death counts. Anything
+discarded mid-run by the Purge upgrade is gone — its value is never
+banked. That makes Purge a genuine trade, not a free safety net: it buys
+more survival time (and so more backpack currency) at the cost of the
+player currency those discarded items would have been worth. Backpack
+currency itself (from survival time) is entirely separate and unaffected
+by any of this — see Two Currencies above.
+
+Worked example (illustrative): a run ends with 40 Commons, 10 Uncommons,
+3 Rares, and 1 Epic still in the bag →
+`40×1 + 10×3 + 3×10 + 1×40 = 140` player currency. Against the Damage
+curve (base cost 15, ×1.15/lvl), that covers the first several levels of
+one stat — a reasonable early pace, a few runs to a first couple of
+upgrades.
+
 ### Compacting upgrades
 
 A **separate upgrade per rarity tier, Common through Mythic**, each
@@ -339,3 +367,11 @@ Short dated entries when a design decision is made and worth remembering
   Deliberately not adding mutually exclusive branches/specializations
   yet — noted as a door left open for later, since it would be a real
   scope addition and cuts against "everything is eventually maxable."
+- 2026-08-14 — Made the loot→currency conversion explicit: player
+  currency = sum of base value/item across whatever's still in the
+  backpack at death (not full-slot value, which is only a balancing
+  check). Confirmed "loot types" means the six rarity tiers already
+  defined, not separate named items. Decided items discarded by Purge
+  are lost, not banked — makes Purge a real trade between survival time
+  (backpack currency) and the player currency those items would've been
+  worth, rather than a free safety net.
