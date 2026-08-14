@@ -80,7 +80,32 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 
-[node name="UpgradesContainer" type="VBoxContainer" parent="ShopPanel/Margin/VBox"]
+[node name="TreesContainer" type="HBoxContainer" parent="ShopPanel/Margin/VBox"]
+theme_override_constants/separation = 20
+size_flags_vertical = 3
+
+[node name="BackpackTree" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer"]
+theme_override_constants/separation = 10
+size_flags_horizontal = 3
+
+[node name="BackpackLabel" type="Label" parent="ShopPanel/Margin/VBox/TreesContainer/BackpackTree"]
+theme_override_font_sizes/font_size = 16
+text = "Backpack"
+horizontal_alignment = 1
+
+[node name="BackpackUpgrades" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer/BackpackTree"]
+theme_override_constants/separation = 10
+
+[node name="PlayerTree" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer"]
+theme_override_constants/separation = 10
+size_flags_horizontal = 3
+
+[node name="PlayerLabel" type="Label" parent="ShopPanel/Margin/VBox/TreesContainer/PlayerTree"]
+theme_override_font_sizes/font_size = 16
+text = "Player"
+horizontal_alignment = 1
+
+[node name="PlayerUpgrades" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer/PlayerTree"]
 theme_override_constants/separation = 10
 
 [node name="Spacer2" type="Control" parent="ShopPanel/Margin/VBox"]

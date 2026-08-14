@@ -8,18 +8,24 @@ const BUTTON_FONT_SIZE: int = 16
 
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
-@onready var _upgrades_container: VBoxContainer = $ShopPanel/Margin/VBox/UpgradesContainer
+@onready var _backpack_upgrades: VBoxContainer = $ShopPanel/Margin/VBox/TreesContainer/BackpackTree/BackpackUpgrades
+@onready var _player_upgrades: VBoxContainer = $ShopPanel/Margin/VBox/TreesContainer/PlayerTree/PlayerUpgrades
 
 
 func _ready() -> void:
 	MetaProgression.currency_changed.connect(_on_currency_changed)
 	MetaProgression.stat_changed.connect(_on_stat_changed)
 	for def in MetaProgression.get_stat_defs():
-		_add_upgrade_button(def)
+		var container: VBoxContainer = (
+			_backpack_upgrades
+			if def.currency == StatDef.Currency.BACKPACK
+			else _player_upgrades
+		)
+		_add_upgrade_button(def, container)
 	_refresh_currency()
 
 
-func _add_upgrade_button(def: StatDef) -> void:
+func _add_upgrade_button(def: StatDef, container: VBoxContainer) -> void:
 	var button := Button.new()
 	button.name = _button_name(def.id)
 	button.custom_minimum_size = Vector2(0, BUTTON_MIN_HEIGHT)
@@ -28,7 +34,7 @@ func _add_upgrade_button(def: StatDef) -> void:
 	button.add_theme_stylebox_override("hover", BUTTON_STYLE_HOVER)
 	button.add_theme_stylebox_override("pressed", BUTTON_STYLE_PRESSED)
 	button.pressed.connect(_on_upgrade_pressed.bind(def.id))
-	_upgrades_container.add_child(button)
+	container.add_child(button)
 	_refresh_button(def)
 
 
@@ -59,9 +65,18 @@ func _refresh_currency() -> void:
 
 
 func _refresh_button(def: StatDef) -> void:
-	var button: Button = _upgrades_container.get_node(_button_name(def.id))
+	var container: VBoxContainer = (
+		_backpack_upgrades if def.currency == StatDef.Currency.BACKPACK else _player_upgrades
+	)
+	var button: Button = container.get_node(_button_name(def.id))
 	var current_value := _format(MetaProgression.get_stat(def.id), def.decimals)
 	var level := MetaProgression.get_level(def.id)
+	var is_gated := _is_stat_gated(def.id)
+
+	if is_gated:
+		button.text = "%s: %s   (LOCKED)" % [def.display_name, current_value]
+		button.disabled = true
+		return
 
 	if MetaProgression.is_maxed(def.id):
 		button.text = "%s: %s   (MAX, Lvl %d)" % [def.display_name, current_value, level]
@@ -88,3 +103,10 @@ func _button_name(id: StringName) -> String:
 
 func _format(value: float, decimals: int) -> String:
 	return ("%." + str(decimals) + "f") % value
+
+
+func _is_stat_gated(stat_id: StringName) -> bool:
+	# Compacting tiers are gated by previous tier (not yet implemented).
+	# Purge is gated by Rare Compactor (not yet implemented).
+	# All other stats are ungated.
+	return false
