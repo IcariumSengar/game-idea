@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 var _backpack_capacity: int
+var _current_loot: int = 0
 
 @onready var _hp_label: Label = $HPLabel
 @onready var _loot_label: Label = $LootLabel
@@ -20,9 +21,11 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 
 
 func _on_loot_changed(current: int) -> void:
+	_current_loot = current
 	_loot_label.text = "Backpack: %d / %d" % [current, _backpack_capacity]
 
 
 func _on_player_died() -> void:
+	_game_over_label.text = "YOU DIED\n\nLoot collected: %d" % _current_loot
 	_game_over_label.show()
 	get_tree().paused = true

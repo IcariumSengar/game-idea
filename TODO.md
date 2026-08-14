@@ -18,7 +18,7 @@ playable/checkable on its own before moving to the next:
       via an upgradeable pickup-range stat)
 - [x] Backpack: capacity + fill %, max HP shrinks with fill %
 - [x] Enemy spawn rate/difficulty ramps over run duration
-- [ ] Run summary screen (loot collected this run)
+- [x] Run summary screen (loot collected this run)
 - [ ] Meta-currency conversion + minimal shop (backpack capacity upgrade)
 - [ ] Run restart flow: new run, upgraded stats carried over
 - [ ] Persist meta-progression between sessions (save/load)
