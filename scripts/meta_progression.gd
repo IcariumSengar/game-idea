@@ -235,7 +235,7 @@ func save() -> void:
 func _ensure_save_dir() -> void:
 	var dir := DirAccess.open(SAVE_DIR)
 	if dir == null:
-		DirAccess.make_absolute_path(SAVE_DIR)
+		DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 
 
 func set_slot(slot: int) -> void:
