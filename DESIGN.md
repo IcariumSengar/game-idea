@@ -92,6 +92,16 @@ direction isn't lost; details likely to change as the MVP proves out.
   full. Intended as a super-late-game unlock — only relevant once slot
   count and stack depth are both near their ceiling and fullness is still
   the thing killing you.
+- **UI**: the backpack should be visible on-screen as a real slot grid
+  (Minecraft-style), not an abstract fill bar. This makes upgrades
+  self-explanatory in play: Compacting is *seen* as a stack climbing
+  higher in the same slot, Capacity is *seen* as the grid growing, and
+  rarity is *seen* via a color-coded item border (common → legendary).
+  Fill% and HP shrink should feel visually linked (e.g. slots trending
+  red as the bag nears full, in sync with the HP bar draining) so the
+  core risk mechanic reads at a glance without any tutorial text.
+  Longer-term idea: show locked/ghost slots for not-yet-purchased
+  capacity, so the next shop upgrade is previewable right in the HUD.
 
 ## Decisions log
 
