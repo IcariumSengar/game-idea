@@ -5,24 +5,16 @@
 [ext_resource type="Script" path="res://scripts/weapon.gd" id="3_weapon"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/stat_bar.gd" id="5_statbar"]
+[ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="6_panel_dark"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="7_btn_normal"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="8_btn_hover"]
+[ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="9_btn_pressed"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 16.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
 radius = 60.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stats"]
-bg_color = Color(0.05, 0.06, 0.05, 0.72)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 1, 1, 0.08)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
 bg_color = Color(0.03, 0.03, 0.03, 0.88)
@@ -35,27 +27,6 @@ corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
-bg_color = Color(0.16, 0.42, 0.24, 0.95)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
-bg_color = Color(0.21, 0.52, 0.3, 0.95)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
-bg_color = Color(0.12, 0.32, 0.18, 0.95)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
@@ -96,7 +67,7 @@ offset_left = 16.0
 offset_top = 12.0
 offset_right = 296.0
 offset_bottom = 96.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_stats")
+theme_override_styles/panel = ExtResource("6_panel_dark")
 
 [node name="Margin" type="MarginContainer" parent="HUD/StatsPanel"]
 theme_override_constants/margin_left = 12
@@ -187,9 +158,9 @@ horizontal_alignment = 1
 process_mode = 3
 custom_minimum_size = Vector2(0, 44)
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/normal = ExtResource("7_btn_normal")
+theme_override_styles/hover = ExtResource("8_btn_hover")
+theme_override_styles/pressed = ExtResource("9_btn_pressed")
 text = "Continue to Shop"
 
 [connection signal="timeout" from="Player/Weapon/AttackTimer" to="Player/Weapon" method="_on_attack_timer_timeout"]

@@ -1,8 +1,8 @@
 extends Control
 
-@onready var _currency_label: Label = $CurrencyLabel
-@onready var _capacity_button: Button = $BuyCapacityButton
-@onready var _pickup_button: Button = $BuyPickupRangeButton
+@onready var _currency_label: Label = $ShopPanel/Margin/VBox/CurrencyLabel
+@onready var _capacity_button: Button = $ShopPanel/Margin/VBox/BuyCapacityButton
+@onready var _pickup_button: Button = $ShopPanel/Margin/VBox/BuyPickupRangeButton
 
 
 func _ready() -> void:
