@@ -2,8 +2,8 @@ extends Control
 
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
-@onready var _backpack_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
-@onready var _player_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
+@onready var _backpack_tree: Control = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
+@onready var _player_tree: Control = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
 
 
 func _ready() -> void:
