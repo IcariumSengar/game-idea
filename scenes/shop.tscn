@@ -38,27 +38,18 @@ theme_override_font_sizes/font_size = 22
 text = "Currency: 0"
 horizontal_alignment = 1
 
-[node name="BuyCapacityButton" type="Button" parent="."]
+[node name="UpgradesContainer" type="VBoxContainer" parent="."]
 offset_left = 390.0
 offset_top = 220.0
 offset_right = 890.0
-offset_bottom = 264.0
-text = "Upgrade Capacity"
-
-[node name="BuyPickupRangeButton" type="Button" parent="."]
-offset_left = 390.0
-offset_top = 284.0
-offset_right = 890.0
-offset_bottom = 328.0
-text = "Upgrade Pickup Range"
+offset_bottom = 400.0
+theme_override_constants/separation = 12
 
 [node name="StartRunButton" type="Button" parent="."]
 offset_left = 490.0
-offset_top = 420.0
+offset_top = 440.0
 offset_right = 790.0
-offset_bottom = 470.0
+offset_bottom = 490.0
 text = "Start Run"
 
-[connection signal="pressed" from="BuyCapacityButton" to="." method="_on_buy_capacity_button_pressed"]
-[connection signal="pressed" from="BuyPickupRangeButton" to="." method="_on_buy_pickup_range_button_pressed"]
 [connection signal="pressed" from="StartRunButton" to="." method="_on_start_run_button_pressed"]
