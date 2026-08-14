@@ -97,3 +97,7 @@ func _find_def(stat_id: StringName) -> StatDef:
 		if def.id == stat_id:
 			return def
 	return null
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/run_prep.tscn")
