@@ -1,13 +1,13 @@
 class_name Loot
 extends Area2D
 
-const RADIUS: float = 8.0
 const VALUE: int = 1
 const SPAWN_GRACE: float = 0.15
 const BOB_SPEED: float = 3.0
 const BOB_AMOUNT: float = 3.0
 const PULSE_SPEED: float = 4.0
-const PULSE_AMOUNT: float = 1.5
+const SPRITE_SCALE: float = 2.5
+const PULSE_SCALE_AMOUNT: float = 0.3
 const PICKUP_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
@@ -22,6 +22,8 @@ var _time: float = randf() * TAU
 var _magnet_target: Player = null
 var _pull_speed: float = 0.0
 
+@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+
 
 func _ready() -> void:
 	monitoring = false
@@ -33,7 +35,9 @@ func _process(delta: float) -> void:
 	_time += delta
 	if _magnet_target != null:
 		position = position.move_toward(_magnet_target.position, _pull_speed * delta)
-	queue_redraw()
+	_sprite.position.y = sin(_time * BOB_SPEED) * BOB_AMOUNT
+	var pulse: float = SPRITE_SCALE + sin(_time * PULSE_SPEED) * PULSE_SCALE_AMOUNT
+	_sprite.scale = Vector2(pulse, pulse)
 
 
 func _enable_pickup() -> void:
@@ -57,14 +61,6 @@ func collect(player: Player) -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
 		collect(body)
-
-
-func _draw() -> void:
-	var bob_offset := Vector2(0.0, sin(_time * BOB_SPEED) * BOB_AMOUNT)
-	var pulse_radius: float = RADIUS + sin(_time * PULSE_SPEED) * PULSE_AMOUNT
-	draw_circle(Vector2(0.0, 6.0), RADIUS * 0.8, Color(0.0, 0.0, 0.0, 0.2))
-	draw_circle(bob_offset, pulse_radius, Color.GOLD)
-	draw_arc(bob_offset, pulse_radius, 0.0, TAU, 16, Color.GOLD.darkened(0.35), 1.5, true)
 
 
 func _spawn_spark() -> void:
