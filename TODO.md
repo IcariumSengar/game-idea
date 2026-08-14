@@ -15,10 +15,8 @@ parallel worktree sessions) — rarity tiers, the slot-grid backpack, the
 two-currency split, and Damage/Move Speed/Magnet Range as upgradeable
 stats. What's actually left:
 
-1. **Fix Backpack Capacity's upgrade curve** — currently flat-cost and
-   effectively uncapped (`level_cap: 999`) in `meta_progression.gd`,
-   doesn't match DESIGN.md's ×1.20/lvl-growth, 12-level-cap numbers. A
-   data fix, not new systems.
+1. ~~**Fix Backpack Capacity's upgrade curve**~~ — Done. Now uses
+   ×1.20/lvl geometric growth with 12-level cap per DESIGN.md.
 2. **Skill-tree shop UI** — reorganize the shop (`shop.gd`, currently a
    flat button list) into the two-tree layout: Backpack Tree hard-gated
    in rarity order, Player Tree flat/ungated. See DESIGN.md: "Shop

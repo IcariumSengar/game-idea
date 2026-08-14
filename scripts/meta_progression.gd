@@ -33,7 +33,7 @@ func _ready() -> void:
 	_register_stat(
 		STAT_BACKPACK_CAPACITY,
 		"Backpack Capacity",
-		8.0,
+		1.0,
 		1.0,
 		20,
 		1.20,
