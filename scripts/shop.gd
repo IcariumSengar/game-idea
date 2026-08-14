@@ -1,7 +1,13 @@
 extends Control
 
-@onready var _currency_label: Label = $CurrencyLabel
-@onready var _upgrades_container: VBoxContainer = $UpgradesContainer
+const BUTTON_STYLE_NORMAL: StyleBoxFlat = preload("res://resources/button_normal.tres")
+const BUTTON_STYLE_HOVER: StyleBoxFlat = preload("res://resources/button_hover.tres")
+const BUTTON_STYLE_PRESSED: StyleBoxFlat = preload("res://resources/button_pressed.tres")
+const BUTTON_MIN_HEIGHT: float = 44.0
+const BUTTON_FONT_SIZE: int = 16
+
+@onready var _currency_label: Label = $ShopPanel/Margin/VBox/CurrencyLabel
+@onready var _upgrades_container: VBoxContainer = $ShopPanel/Margin/VBox/UpgradesContainer
 
 
 func _ready() -> void:
@@ -15,6 +21,11 @@ func _ready() -> void:
 func _add_upgrade_button(def: StatDef) -> void:
 	var button := Button.new()
 	button.name = _button_name(def.id)
+	button.custom_minimum_size = Vector2(0, BUTTON_MIN_HEIGHT)
+	button.add_theme_font_size_override("font_size", BUTTON_FONT_SIZE)
+	button.add_theme_stylebox_override("normal", BUTTON_STYLE_NORMAL)
+	button.add_theme_stylebox_override("hover", BUTTON_STYLE_HOVER)
+	button.add_theme_stylebox_override("pressed", BUTTON_STYLE_PRESSED)
 	button.pressed.connect(_on_upgrade_pressed.bind(def.id))
 	_upgrades_container.add_child(button)
 	_refresh_button(def)

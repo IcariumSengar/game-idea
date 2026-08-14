@@ -12,3 +12,6 @@ mono_crash.*
 # System/tooling
 .DS_Store
 Thumbs.db
+
+# Claude Code worktree sessions (each is its own git checkout, not a submodule)
+.claude/worktrees/

@@ -11,7 +11,16 @@ const PULSE_AMOUNT: float = 1.5
 const PICKUP_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
+## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
+## below to get the actual homing speed once magnetized.
+@export var pull_speed_base: float = 60.0
+## Extra pull speed (px/s) added per point of the player's pickup_range —
+## this is what makes upgrading the magnet stat visibly pull loot in faster.
+@export var pull_speed_per_range: float = 4.0
+
 var _time: float = randf() * TAU
+var _magnet_target: Player = null
+var _pull_speed: float = 0.0
 
 
 func _ready() -> void:
@@ -22,12 +31,21 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
+	if _magnet_target != null:
+		position = position.move_toward(_magnet_target.position, _pull_speed * delta)
 	queue_redraw()
 
 
 func _enable_pickup() -> void:
 	monitoring = true
 	monitorable = true
+
+
+func start_magnet(player: Player) -> void:
+	if _magnet_target != null:
+		return
+	_magnet_target = player
+	_pull_speed = pull_speed_base + player.pickup_range * pull_speed_per_range
 
 
 func collect(player: Player) -> void:
