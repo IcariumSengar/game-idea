@@ -29,6 +29,7 @@ const BACKPACK_CURRENCY_PER_SECOND: float = 1.0
 const SAVE_SLOTS: int = 4
 const SAVE_DIR: String = "user://saves"
 const SLOT_INDEX_FILE: String = "user://current_slot.txt"
+const LAST_SLOT_FILE: String = "user://last_slot.json"
 
 var player_currency: int = 0
 var backpack_currency: int = 0
@@ -242,7 +243,33 @@ func set_slot(slot: int) -> void:
 	if slot < 0 or slot >= SAVE_SLOTS:
 		return
 	current_slot = slot
+	_save_last_slot(slot)
 	_load()
+
+
+func _save_last_slot(slot: int) -> void:
+	var data := {"last_slot": slot}
+	var file := FileAccess.open(LAST_SLOT_FILE, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(data))
+
+
+func get_last_slot() -> int:
+	if not ResourceLoader.exists(LAST_SLOT_FILE):
+		return -1
+	var file := FileAccess.open(LAST_SLOT_FILE, FileAccess.READ)
+	if file == null:
+		return -1
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	if data == null or data.get("last_slot", -1) < 0:
+		return -1
+	var slot: int = data.get("last_slot", -1)
+	if slot < 0 or slot >= SAVE_SLOTS:
+		return -1
+	# Verify the slot has a save
+	if not ResourceLoader.exists(_get_slot_save_path(slot)):
+		return -1
+	return slot
 
 
 func _update_slot_metadata(slot: int) -> void:
