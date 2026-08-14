@@ -17,7 +17,7 @@ var _stat_values: Dictionary = {}
 
 
 func _ready() -> void:
-	_register_stat(STAT_BACKPACK_CAPACITY, "Backpack Capacity", 20.0, 5.0, 10, 0)
+	_register_stat(STAT_BACKPACK_CAPACITY, "Backpack Capacity", 1.0, 1.0, 10, 0)
 	_register_stat(STAT_PICKUP_RANGE, "Pickup Range", 60.0, 15.0, 10, 0)
 
 

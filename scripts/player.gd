@@ -4,7 +4,7 @@ extends CharacterBody2D
 signal died
 signal hit
 signal hp_changed(current: float, max_hp: float)
-signal loot_changed(current: int)
+signal loot_changed(backpack: Dictionary)
 
 const RADIUS: float = 16.0
 const BASE_COLOR: Color = Color.CYAN
@@ -19,7 +19,7 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
-@export var base_max_hp: float = 100.0
+@export var base_max_hp: float = 60.0
 @export var pickup_range: float = 60.0
 @export var backpack_capacity: int = 20
 @export var dash_speed: float = 700.0
@@ -28,7 +28,7 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 
 var hp: float
 var max_hp: float
-var loot: int = 0
+var backpack: Dictionary = {}
 
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
@@ -54,8 +54,15 @@ func _ready() -> void:
 
 
 func _on_pickup_area_entered(area: Area2D) -> void:
-	if area is Loot:
+	if area is Loot and can_collect_loot(area.type_id):
 		area.start_magnet(self)
+
+
+func can_collect_loot(type_id: StringName) -> bool:
+	var count: int = backpack.get(type_id, 0)
+	if count > 0:
+		return count < LootTypes.get_type(type_id).stack_size
+	return backpack.size() < backpack_capacity
 
 
 func _physics_process(delta: float) -> void:
@@ -90,15 +97,31 @@ func _check_dash_input() -> void:
 	_space_was_pressed = space_pressed
 
 
-func collect_loot(amount: int) -> bool:
-	if loot >= backpack_capacity:
-		return false
-	loot = min(loot + amount, backpack_capacity)
-	loot_changed.emit(loot)
-	var fill_ratio := float(loot) / float(backpack_capacity)
+func collect_loot(type_id: StringName) -> bool:
+	var count: int = backpack.get(type_id, 0)
+	if count > 0:
+		var stack_size: int = LootTypes.get_type(type_id).stack_size
+		if count >= stack_size:
+			return false
+		backpack[type_id] = count + 1
+	else:
+		if backpack.size() >= backpack_capacity:
+			return false
+		backpack[type_id] = 1
+	loot_changed.emit(backpack)
+	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
 	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
 	_set_hp(min(hp, max_hp))
 	return true
+
+
+func get_total_loot_value() -> int:
+	var total := 0
+	for type_id: StringName in backpack:
+		var def := LootTypes.get_type(type_id)
+		var value: int = def.value if def != null else 1
+		total += value * int(backpack[type_id])
+	return total
 
 
 func take_damage(amount: float, from_position: Vector2) -> void:

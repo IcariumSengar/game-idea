@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 MetaProgression="*res://scripts/meta_progression.gd"
+LootTypes="*res://scripts/loot_registry.gd"
 
 [display]
 

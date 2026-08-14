@@ -2,7 +2,6 @@ class_name Loot
 extends Area2D
 
 const RADIUS: float = 8.0
-const VALUE: int = 1
 const SPAWN_GRACE: float = 0.15
 const BOB_SPEED: float = 3.0
 const BOB_AMOUNT: float = 3.0
@@ -18,12 +17,18 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 ## this is what makes upgrading the magnet stat visibly pull loot in faster.
 @export var pull_speed_per_range: float = 4.0
 
+var type_id: StringName = &"common"
+
 var _time: float = randf() * TAU
 var _magnet_target: Player = null
 var _pull_speed: float = 0.0
+var _color: Color = Color.WHITE
 
 
 func _ready() -> void:
+	var def := LootTypes.get_type(type_id)
+	if def != null:
+		_color = def.color
 	monitoring = false
 	monitorable = false
 	get_tree().create_timer(SPAWN_GRACE).timeout.connect(_enable_pickup)
@@ -49,7 +54,7 @@ func start_magnet(player: Player) -> void:
 
 
 func collect(player: Player) -> void:
-	if player.collect_loot(VALUE):
+	if player.collect_loot(type_id):
 		_spawn_spark()
 		queue_free()
 
@@ -63,14 +68,14 @@ func _draw() -> void:
 	var bob_offset := Vector2(0.0, sin(_time * BOB_SPEED) * BOB_AMOUNT)
 	var pulse_radius: float = RADIUS + sin(_time * PULSE_SPEED) * PULSE_AMOUNT
 	draw_circle(Vector2(0.0, 6.0), RADIUS * 0.8, Color(0.0, 0.0, 0.0, 0.2))
-	draw_circle(bob_offset, pulse_radius, Color.GOLD)
-	draw_arc(bob_offset, pulse_radius, 0.0, TAU, 16, Color.GOLD.darkened(0.35), 1.5, true)
+	draw_circle(bob_offset, pulse_radius, _color)
+	draw_arc(bob_offset, pulse_radius, 0.0, TAU, 16, _color.darkened(0.35), 1.5, true)
 
 
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = Color.GOLD
+	spark.color = _color
 	spark.amount = PICKUP_SPARK_AMOUNT
 	spark.scale_amount_min = 1.0
 	spark.scale_amount_max = 2.0
