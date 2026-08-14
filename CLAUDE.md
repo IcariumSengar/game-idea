@@ -23,6 +23,12 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 - Purely editor-generated diffs (e.g. `project.godot` version/feature bumps
   from opening in a newer Godot build) are fine as their own plain commit —
   don't bundle them with real feature work, don't tag them as a version.
+- Iteration loop: make a change, run the game to check it, close it, repeat.
+  Prefer this tight loop over batching up many changes before checking any
+  of them.
+- Track backlog items in [TODO.md](TODO.md) once there's more to remember
+  than fits in your head; record *what the game is* (mechanics, scope) in
+  [DESIGN.md](DESIGN.md) as those decisions get made, not upfront.
 
 ## GDScript style
 
@@ -36,6 +42,15 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
   (i.e. future you) might want to tune from the editor.
 - One script per scene/node responsibility — avoid god-objects that own
   unrelated systems. Split into child nodes/scripts as behavior grows.
+- Favor signals and a small autoload (singleton) for cross-scene state over
+  deep node-path references (`$Parent/Other/Node`), which break silently
+  when a scene gets restructured.
+- Once there's repeated data to model (item types, level configs, enemy
+  stats), define it as a custom `Resource` class rather than hardcoding it
+  in scripts. Not worth doing before there's actually repeated data.
+- Format with `gdformat` and check with `gdlint` (gdtoolkit) before
+  committing — both are installed; run `gdformat scripts/*.gd` and
+  `gdlint scripts/*.gd` (or point at whatever paths changed).
 
 ## Project structure
 
@@ -47,6 +62,8 @@ icon.svg             project icon
 VERSION              current released version
 CHANGELOG.md         release history
 VERSIONING.md        full release/rollback workflow
+TODO.md              short-term backlog
+DESIGN.md            what the game is: core loop, scope, design decisions
 ```
 
 Keep this pairing as the project grows: a scene's primary script lives in
@@ -54,6 +71,15 @@ Keep this pairing as the project grows: a scene's primary script lives in
 Once there are enough scenes to warrant it, introduce subfolders
 (`scenes/ui/`, `scripts/player/`, etc.) rather than flattening everything
 into the two top-level folders indefinitely.
+
+## Dev environment
+
+- VS Code extension: **Godot Tools** (`geequlim.godot-tools`) — GDScript
+  syntax/debugging/go-to-definition. `.vscode/settings.json` points it at
+  the local Godot install and the default LSP port (6005); the extension
+  connects whenever the Godot editor is open in the background.
+- **gdformat** / **gdlint** (`gdtoolkit`) — formatter and linter enforcing
+  the style rules above. Installed via `pip install gdtoolkit`.
 
 ## Testing
 
