@@ -63,6 +63,7 @@ theme_override_constants/separation = 16
 [node name="ContentVBox" type="VBoxContainer" parent="ShopPanel/Margin/MainBox"]
 theme_override_constants/separation = 14
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="TitleLabel" type="Label" parent="ShopPanel/Margin/MainBox/ContentVBox"]
 theme_override_font_sizes/font_size = 32
@@ -87,7 +88,7 @@ layout_mode = 2
 
 [node name="TreesContainer" type="HBoxContainer" parent="ShopPanel/Margin/MainBox/ContentVBox"]
 theme_override_constants/separation = 20
-size_flags_vertical = 3
+size_flags_vertical = 4
 size_flags_horizontal = 3
 
 [node name="BackpackTreeView" type="Control" parent="ShopPanel/Margin/MainBox/ContentVBox/TreesContainer"]
