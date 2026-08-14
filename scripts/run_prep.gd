@@ -36,4 +36,11 @@ func _on_view_tree_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
+	_clear_last_slot()
 	get_tree().change_scene_to_file("res://scenes/save_slot_selector.tscn")
+
+
+func _clear_last_slot() -> void:
+	var file := FileAccess.open(MetaProgression.LAST_SLOT_FILE, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify({"last_slot": -1}))
