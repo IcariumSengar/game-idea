@@ -22,6 +22,9 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 @export var base_max_hp: float = 100.0
 @export var pickup_range: float = 60.0
 @export var backpack_capacity: int = 20
+@export var dash_speed: float = 700.0
+@export var dash_duration: float = 0.15
+@export var dash_cooldown: float = 0.6
 
 var hp: float
 var max_hp: float
@@ -30,6 +33,10 @@ var loot: int = 0
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
 var _facing: Vector2 = Vector2.UP
+var _dash_time_left: float = 0.0
+var _dash_cooldown_left: float = 0.0
+var _dash_direction: Vector2 = Vector2.ZERO
+var _space_was_pressed: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
@@ -55,14 +62,32 @@ func _physics_process(delta: float) -> void:
 	var input_direction := _get_input_direction()
 	if input_direction != Vector2.ZERO:
 		_facing = input_direction
-	velocity = input_direction * speed + _knockback
+
+	_check_dash_input()
+
+	if _dash_time_left > 0.0:
+		_dash_time_left -= delta
+		velocity = _dash_direction * dash_speed
+	else:
+		velocity = input_direction * speed + _knockback
+
 	move_and_slide()
 	position = position.clamp(Vector2(RADIUS, RADIUS), arena_size - Vector2(RADIUS, RADIUS))
 
+	_dash_cooldown_left = max(_dash_cooldown_left - delta, 0.0)
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 	queue_redraw()
+
+
+func _check_dash_input() -> void:
+	var space_pressed := Input.is_physical_key_pressed(KEY_SPACE)
+	if space_pressed and not _space_was_pressed and _dash_cooldown_left <= 0.0:
+		_dash_direction = _facing
+		_dash_time_left = dash_duration
+		_dash_cooldown_left = dash_cooldown
+	_space_was_pressed = space_pressed
 
 
 func collect_loot(amount: int) -> bool:
