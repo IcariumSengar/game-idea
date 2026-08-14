@@ -62,7 +62,7 @@ func _on_pickup_area_entered(area: Area2D) -> void:
 func can_collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
 	if count > 0:
-		return count < LootTypes.get_type(type_id).stack_size
+		return count < LootTypes.get_effective_stack_size(type_id)
 	return backpack.size() < backpack_capacity
 
 
@@ -105,19 +105,63 @@ func _check_dash_input() -> void:
 func collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
 	if count > 0:
-		var stack_size: int = LootTypes.get_type(type_id).stack_size
+		var stack_size: int = LootTypes.get_effective_stack_size(type_id)
 		if count >= stack_size:
 			return false
 		backpack[type_id] = count + 1
 	else:
 		if backpack.size() >= backpack_capacity:
-			return false
+			_try_purge()
+			if backpack.size() >= backpack_capacity:
+				return false
 		backpack[type_id] = 1
+	_update_hp_from_backpack()
 	loot_changed.emit(backpack)
+	return true
+
+
+func _try_purge() -> void:
+	var purge_level := MetaProgression.get_level(MetaProgression.STAT_PURGE)
+	if purge_level == 0:
+		return
+	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
+	var threshold := _get_purge_threshold(purge_level)
+	if fill_ratio < threshold:
+		return
+	var lowest_tier := _find_lowest_rarity_type()
+	if lowest_tier != StringName():
+		var count: int = backpack.get(lowest_tier, 0)
+		if count > 0:
+			backpack[lowest_tier] = count - 1
+			if backpack[lowest_tier] == 0:
+				backpack.erase(lowest_tier)
+
+
+func _get_purge_threshold(level: int) -> float:
+	match level:
+		1:
+			return 0.90
+		2:
+			return 0.85
+		3:
+			return 0.80
+		4:
+			return 0.70
+	return 0.90
+
+
+func _find_lowest_rarity_type() -> StringName:
+	var tiers := [&"legendary", &"mythic", &"epic", &"rare", &"uncommon", &"common"]
+	for tier in tiers:
+		if tier in backpack:
+			return tier
+	return StringName()
+
+
+func _update_hp_from_backpack() -> void:
 	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
 	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
 	_set_hp(min(hp, max_hp))
-	return true
 
 
 func get_total_loot_value() -> int:

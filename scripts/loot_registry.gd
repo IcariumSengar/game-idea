@@ -41,6 +41,36 @@ func pick_random_type() -> LootTypeDef:
 	return _types[-1]
 
 
+func get_effective_stack_size(type_id: StringName) -> int:
+	var def := get_type(type_id)
+	if def == null:
+		return 1
+	if type_id == &"legendary":
+		return 1
+	var compactor_stat := _get_compactor_stat_for_tier(type_id)
+	if compactor_stat == StringName():
+		return def.stack_size
+	var compactor_level := MetaProgression.get_level(compactor_stat)
+	if compactor_level == 0:
+		return def.stack_size
+	return roundi(MetaProgression.get_stat(compactor_stat))
+
+
+func _get_compactor_stat_for_tier(type_id: StringName) -> StringName:
+	match type_id:
+		&"common":
+			return MetaProgression.STAT_COMPACTOR_COMMON
+		&"uncommon":
+			return MetaProgression.STAT_COMPACTOR_UNCOMMON
+		&"rare":
+			return MetaProgression.STAT_COMPACTOR_RARE
+		&"epic":
+			return MetaProgression.STAT_COMPACTOR_EPIC
+		&"mythic":
+			return MetaProgression.STAT_COMPACTOR_MYTHIC
+	return StringName()
+
+
 func _register(
 	id: StringName,
 	display_name: String,
