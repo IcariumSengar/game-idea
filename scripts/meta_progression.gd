@@ -219,6 +219,7 @@ func _load() -> void:
 
 
 func save() -> void:
+	_ensure_save_dir()
 	var data := {
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
@@ -229,6 +230,12 @@ func save() -> void:
 	if file != null:
 		file.store_string(JSON.stringify(data))
 		_update_slot_metadata(current_slot)
+
+
+func _ensure_save_dir() -> void:
+	var dir := DirAccess.open(SAVE_DIR)
+	if dir == null:
+		DirAccess.make_absolute_path(SAVE_DIR)
 
 
 func set_slot(slot: int) -> void:
