@@ -6,6 +6,7 @@ var _current_loot: int = 0
 @onready var _hp_label: Label = $HPLabel
 @onready var _loot_label: Label = $LootLabel
 @onready var _game_over_label: Label = $GameOverLabel
+@onready var _continue_button: Button = $ContinueButton
 
 
 func _ready() -> void:
@@ -26,6 +27,13 @@ func _on_loot_changed(current: int) -> void:
 
 
 func _on_player_died() -> void:
+	MetaProgression.add_currency(_current_loot)
 	_game_over_label.text = "YOU DIED\n\nLoot collected: %d" % _current_loot
 	_game_over_label.show()
+	_continue_button.show()
 	get_tree().paused = true
+
+
+func _on_continue_button_pressed() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/shop.tscn")

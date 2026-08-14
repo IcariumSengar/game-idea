@@ -32,6 +32,8 @@ var _knockback: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("player")
+	backpack_capacity = MetaProgression.backpack_capacity
+	pickup_range = MetaProgression.pickup_range
 	max_hp = base_max_hp
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)

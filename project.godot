@@ -20,6 +20,10 @@ run/main_scene="res://scenes/arena.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+MetaProgression="*res://scripts/meta_progression.gd"
+
 [display]
 
 window/size/viewport_width=1280

@@ -72,5 +72,15 @@ text = "YOU DIED"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="ContinueButton" type="Button" parent="HUD"]
+process_mode = 3
+visible = false
+offset_left = 490.0
+offset_top = 470.0
+offset_right = 790.0
+offset_bottom = 514.0
+text = "Continue to Shop"
+
 [connection signal="timeout" from="Player/Weapon/AttackTimer" to="Player/Weapon" method="_on_attack_timer_timeout"]
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
+[connection signal="pressed" from="HUD/ContinueButton" to="HUD" method="_on_continue_button_pressed"]

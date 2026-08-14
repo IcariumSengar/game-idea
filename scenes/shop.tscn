@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/shop.gd" id="1_shop"]
+
+[node name="Shop" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_shop")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.11, 0.09, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 440.0
+offset_top = 80.0
+offset_right = 840.0
+offset_bottom = 130.0
+theme_override_font_sizes/font_size = 36
+text = "SHOP"
+horizontal_alignment = 1
+
+[node name="CurrencyLabel" type="Label" parent="."]
+offset_left = 440.0
+offset_top = 140.0
+offset_right = 840.0
+offset_bottom = 170.0
+theme_override_font_sizes/font_size = 22
+text = "Currency: 0"
+horizontal_alignment = 1
+
+[node name="BuyCapacityButton" type="Button" parent="."]
+offset_left = 390.0
+offset_top = 220.0
+offset_right = 890.0
+offset_bottom = 264.0
+text = "Upgrade Capacity"
+
+[node name="BuyPickupRangeButton" type="Button" parent="."]
+offset_left = 390.0
+offset_top = 284.0
+offset_right = 890.0
+offset_bottom = 328.0
+text = "Upgrade Pickup Range"
+
+[node name="StartRunButton" type="Button" parent="."]
+offset_left = 490.0
+offset_top = 420.0
+offset_right = 790.0
+offset_bottom = 470.0
+text = "Start Run"
+
+[connection signal="pressed" from="BuyCapacityButton" to="." method="_on_buy_capacity_button_pressed"]
+[connection signal="pressed" from="BuyPickupRangeButton" to="." method="_on_buy_pickup_range_button_pressed"]
+[connection signal="pressed" from="StartRunButton" to="." method="_on_start_run_button_pressed"]
