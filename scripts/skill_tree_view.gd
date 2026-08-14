@@ -1,22 +1,25 @@
 class_name SkillTreeView
 extends Control
 
-## Medieval-themed skill tree with better visual hierarchy.
+## Circular chained skill tree, styled after mobile-RPG skill trees:
+## per-branch accent color, glowing filled nodes for purchased tiers,
+## dim outlines for locked ones, and a bigger "capstone" node at the end
+## of each chain.
 
 signal node_clicked(stat_id: StringName)
 
-const NODE_SIZE: Vector2 = Vector2(110.0, 110.0)
-const NODE_SPACING: Vector2 = Vector2(140.0, 140.0)
-const LINE_COLOR: Color = Color(0.6, 0.5, 0.35, 0.7)
-const LINE_WIDTH: float = 2.0
-const AVAILABLE_COLOR: Color = Color(0.85, 0.75, 0.5, 1.0)
-const LOCKED_COLOR: Color = Color(0.35, 0.3, 0.25, 1.0)
-const MAXED_COLOR: Color = Color(0.4, 0.7, 0.4, 1.0)
-const NO_CURRENCY_COLOR: Color = Color(0.7, 0.4, 0.3, 1.0)
+const NODE_RADIUS: float = 24.0
+const CAPSTONE_RADIUS: float = 30.0
+const NODE_SPACING: Vector2 = Vector2(66.0, 84.0)
+const ZIGZAG_AMOUNT: float = 15.0
 const PULSE_DECAY_PER_SEC: float = 2.5
 const PULSE_SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
-const PULSE_SPARK_COLOR: Color = Color(1.0, 0.9, 0.5)
+const LOCKED_BORDER: Color = Color(0.32, 0.32, 0.34, 1.0)
+const LOCKED_FILL: Color = Color(0.14, 0.14, 0.16, 1.0)
+const NO_CURRENCY_TINT: Color = Color(0.9, 0.35, 0.3, 1.0)
+const ICON_DIM: Color = Color(0.5, 0.5, 0.52, 1.0)
 
+var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)
 var _node_positions: Dictionary = {}
 var _nodes: Array[TreeNode] = []
 var _hovered_node: StringName = StringName()
@@ -32,10 +35,11 @@ class TreeNode:
 	var is_locked_by_currency: bool
 	var children: Array[TreeNode] = []
 	var parent: TreeNode = null
+	var is_real_gate: bool = false
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 550)
+	custom_minimum_size = Vector2(0, 460)
 	mouse_filter = MOUSE_FILTER_STOP
 	set_process(false)
 
@@ -44,10 +48,9 @@ func pulse(stat_id: StringName) -> void:
 	_pulse_amount[stat_id] = 1.0
 	set_process(true)
 	if stat_id in _node_positions:
-		var center: Vector2 = _node_positions[stat_id] + NODE_SIZE / 2.0
 		var spark: CPUParticles2D = PULSE_SPARK_SCENE.instantiate()
-		spark.position = center
-		spark.color = PULSE_SPARK_COLOR
+		spark.position = _node_positions[stat_id]
+		spark.color = _accent_color
 		spark.amount = 14
 		spark.scale_amount_min = 1.2
 		spark.scale_amount_max = 2.0
@@ -72,8 +75,10 @@ func set_tree_data(
 	stats: Array[StatDef],
 	level_getter: Callable,
 	gating_checker: Callable,
-	currency_checker: Callable
+	currency_checker: Callable,
+	accent_color: Color
 ) -> void:
+	_accent_color = accent_color
 	_nodes.clear()
 	_node_positions.clear()
 
@@ -91,7 +96,8 @@ func set_tree_data(
 		_nodes.append(node)
 
 	_build_tree_relationships(nodes_by_id)
-	_calculate_positions(nodes_by_id)
+	_chain_remaining_roots()
+	_calculate_positions()
 	queue_redraw()
 
 
@@ -111,25 +117,48 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 			var child: TreeNode = nodes_by_id[child_id]
 			var parent: TreeNode = nodes_by_id[parent_id]
 			child.parent = parent
+			child.is_real_gate = true
 			parent.children.append(child)
 
 
-func _calculate_positions(_nodes_by_id: Dictionary) -> void:
+## Stats with no real prerequisite (e.g. the flat Player Tree) still get
+## chained into a single visual line, drawn with a thin cosmetic link
+## instead of a solid gate line, so every tree reads as one flowing branch.
+func _chain_remaining_roots() -> void:
+	var previous_root: TreeNode = null
+	for node in _nodes:
+		if node.parent == null:
+			if previous_root != null:
+				node.parent = previous_root
+				previous_root.children.append(node)
+			previous_root = node
+
+
+func _calculate_positions() -> void:
 	var roots: Array[TreeNode] = []
 	for node in _nodes:
 		if node.parent == null:
 			roots.append(node)
 
-	var current_y: float = 30.0
+	# Fixed anchor rather than size.x / 2.0: the container layout pass
+	# hasn't run yet when set_tree_data() is first called from _ready(),
+	# so size.x reads as 0 at that point.
+	var center_x: float = CAPSTONE_RADIUS + ZIGZAG_AMOUNT + 20.0
+	var current_y: float = 36.0
 	for root in roots:
-		_position_subtree(root, 40.0, current_y, NODE_SPACING.x)
-		current_y += _get_subtree_height(root) + 80.0
+		_position_subtree(root, center_x, current_y, NODE_SPACING.x, 0)
+		current_y += _get_subtree_height(root) + 60.0
 
 
-func _position_subtree(node: TreeNode, x: float, y: float, spacing: float) -> void:
+func _position_subtree(node: TreeNode, x: float, y: float, spacing: float, depth: int) -> void:
 	_node_positions[node.stat_id] = Vector2(x, y)
 
 	if node.children.is_empty():
+		return
+
+	if node.children.size() == 1:
+		var offset: float = ZIGZAG_AMOUNT if depth % 2 == 0 else -ZIGZAG_AMOUNT
+		_position_subtree(node.children[0], x + offset, y + NODE_SPACING.y, spacing, depth + 1)
 		return
 
 	var children_width: float = node.children.size() * spacing
@@ -138,24 +167,27 @@ func _position_subtree(node: TreeNode, x: float, y: float, spacing: float) -> vo
 	for i in range(node.children.size()):
 		var child: TreeNode = node.children[i]
 		var child_x: float = start_x + i * spacing
-		_position_subtree(child, child_x, y + NODE_SPACING.y, spacing * 0.85)
+		_position_subtree(child, child_x, y + NODE_SPACING.y, spacing * 0.85, depth + 1)
 
 
 func _get_subtree_height(node: TreeNode) -> float:
 	if node.children.is_empty():
-		return NODE_SIZE.y
+		return NODE_RADIUS * 2.0
 	var max_child_height: float = 0.0
 	for child in node.children:
 		max_child_height = max(max_child_height, _get_subtree_height(child))
-	return NODE_SIZE.y + NODE_SPACING.y + max_child_height
+	return NODE_RADIUS * 2.0 + NODE_SPACING.y + max_child_height
+
+
+func _get_node_radius(node: TreeNode) -> float:
+	return CAPSTONE_RADIUS if node.children.is_empty() else NODE_RADIUS
 
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		var pos: Vector2 = event.position
 		for node in _nodes:
-			var node_rect: Rect2 = Rect2(_node_positions[node.stat_id], NODE_SIZE)
-			if node_rect.has_point(pos):
+			if pos.distance_to(_node_positions[node.stat_id]) <= _get_node_radius(node):
 				node_clicked.emit(node.stat_id)
 				get_tree().root.set_input_as_handled()
 				return
@@ -163,167 +195,202 @@ func _gui_input(event: InputEvent) -> void:
 		var pos: Vector2 = event.position
 		_hovered_node = StringName()
 		for node in _nodes:
-			var node_rect: Rect2 = Rect2(_node_positions[node.stat_id], NODE_SIZE)
-			if node_rect.has_point(pos):
+			if pos.distance_to(_node_positions[node.stat_id]) <= _get_node_radius(node):
 				_hovered_node = node.stat_id
 				break
 		queue_redraw()
 
 
 func _draw() -> void:
-	# Draw connections first (behind nodes)
 	for node in _nodes:
 		if node.parent == null:
 			continue
-		var parent_pos: Vector2 = _node_positions[node.parent.stat_id] + NODE_SIZE / 2.0
-		var child_pos: Vector2 = _node_positions[node.stat_id] + NODE_SIZE / 2.0
-		draw_line(parent_pos, child_pos, LINE_COLOR, LINE_WIDTH)
+		var parent_pos: Vector2 = _node_positions[node.parent.stat_id]
+		var child_pos: Vector2 = _node_positions[node.stat_id]
+		if node.is_real_gate:
+			draw_line(parent_pos, child_pos, _accent_color.lerp(Color.BLACK, 0.15), 3.0)
+		else:
+			_draw_dashed_line(parent_pos, child_pos, _accent_color * Color(1, 1, 1, 0.35))
 
-	# Draw nodes
 	for node in _nodes:
-		_draw_node(node, _node_positions[node.stat_id])
+		_draw_node(node)
 
 
-func _draw_node(node: TreeNode, pos: Vector2) -> void:
-	var rect: Rect2 = Rect2(pos, NODE_SIZE)
+func _draw_dashed_line(from: Vector2, to: Vector2, color: Color) -> void:
+	var dash_len: float = 5.0
+	var gap_len: float = 4.0
+	var total: float = from.distance_to(to)
+	var direction: Vector2 = (to - from).normalized()
+	var distance: float = 0.0
+	while distance < total:
+		var seg_end: float = min(distance + dash_len, total)
+		draw_line(from + direction * distance, from + direction * seg_end, color, 2.0)
+		distance += dash_len + gap_len
+
+
+func _draw_node(node: TreeNode) -> void:
+	var center: Vector2 = _node_positions[node.stat_id]
+	var radius: float = _get_node_radius(node)
 	var is_hovered: bool = node.stat_id == _hovered_node
-
-	var bg_color: Color = _get_node_color(node)
-	var border_color: Color = _get_node_border_color(node)
-
-	# Draw outer border (stone/medieval frame)
-	draw_rect(rect, border_color, false, 3.0)
-
-	# Draw background with pattern
-	draw_rect(rect.grow_individual(-3, -3, -3, -3), bg_color)
-
-	# Draw decorative corners (medieval style)
-	var corner_size: float = 8.0
-	var corners_color: Color = border_color.lightened(0.2)
-
-	# Top-left
-	draw_rect(Rect2(rect.position, Vector2(corner_size, corner_size)), corners_color)
-	# Top-right
-	draw_rect(
-		Rect2(
-			rect.position + Vector2(rect.size.x - corner_size, 0), Vector2(corner_size, corner_size)
-		),
-		corners_color
-	)
-	# Bottom-left
-	draw_rect(
-		Rect2(
-			rect.position + Vector2(0, rect.size.y - corner_size), Vector2(corner_size, corner_size)
-		),
-		corners_color
-	)
-	# Bottom-right
-	draw_rect(
-		Rect2(
-			rect.position + Vector2(rect.size.x - corner_size, rect.size.y - corner_size),
-			Vector2(corner_size, corner_size)
-		),
-		corners_color
-	)
-
-	# Draw hover effect
-	if is_hovered and not node.is_gated and not node.is_locked_by_currency:
-		draw_rect(rect.grow_individual(-3, -3, -3, -3), Color.WHITE, false, 2.0)
-
-	# Draw purchase pulse (brief gold flash on buy)
 	var pulse: float = _pulse_amount.get(node.stat_id, 0.0)
-	if pulse > 0.0:
-		draw_rect(rect.grow_individual(-3, -3, -3, -3), Color(1.0, 0.95, 0.75, pulse * 0.55))
 
-	# Draw level indicator (filled circles)
-	var level_y: float = rect.position.y + rect.size.y - 15.0
-	var circle_radius: float = 2.5
-	var circle_spacing: float = 8.0
-	for i in range(node.def.level_cap):
-		var circle_x: float = (
-			rect.position.x
-			+ rect.size.x / 2.0
-			- (node.def.level_cap * circle_spacing / 2.0)
-			+ (i * circle_spacing)
+	if node.level > 0 or pulse > 0.0:
+		var glow_alpha: float = (0.18 if node.is_maxed else 0.1) + pulse * 0.35
+		draw_circle(
+			center,
+			radius + 6.0,
+			Color(_accent_color.r, _accent_color.g, _accent_color.b, glow_alpha)
 		)
-		var circle_color: Color = border_color if i < node.level else Color(0.2, 0.2, 0.2, 0.5)
-		draw_circle(Vector2(circle_x, level_y), circle_radius, circle_color)
 
-	# Draw text
-	var font: Font = get_theme_font("font")
-	var name_size: int = 12
-	var status_size: int = 9
-
-	# Name (trimmed for display)
-	var display_name: String = node.def.display_name.trim_prefix("Compactor: ")
-	if display_name.length() > 12:
-		display_name = display_name.substr(0, 10) + ".."
-
-	var name_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 30.0)
-	var name_width: float = (
-		font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, name_size).x
-	)
-	draw_string(
-		font,
-		name_pos - Vector2(name_width / 2.0, 8.0),
-		display_name,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		name_size,
-		Color.WHITE
-	)
-
-	# Status
-	var status: String = ""
-	var status_color: Color = Color.WHITE
+	var fill_color: Color
+	var border_color: Color
+	var icon_color: Color
 
 	if node.is_gated:
-		status = "[LOCKED]"
-		status_color = Color(0.7, 0.5, 0.5)
+		fill_color = LOCKED_FILL
+		border_color = LOCKED_BORDER
+		icon_color = ICON_DIM
+	elif node.level > 0:
+		fill_color = _accent_color * Color(1, 1, 1, 0.9 if node.is_maxed else 0.7)
+		border_color = _accent_color.lightened(0.3 if node.is_maxed else 0.1)
+		icon_color = Color(0.08, 0.08, 0.08, 1.0)
 	elif node.is_locked_by_currency:
-		status = "[NEED $]"
-		status_color = Color(0.8, 0.7, 0.4)
-	elif node.is_maxed:
-		status = "[MAX]"
-		status_color = Color(0.5, 0.8, 0.5)
+		fill_color = LOCKED_FILL
+		border_color = _accent_color.lerp(NO_CURRENCY_TINT, 0.6)
+		icon_color = border_color
 	else:
-		status = "Lv %d/%d" % [node.level, node.def.level_cap]
-		status_color = Color(0.8, 0.9, 1.0)
+		fill_color = LOCKED_FILL
+		border_color = _accent_color
+		icon_color = _accent_color
 
-	var status_pos: Vector2 = rect.position + Vector2(rect.size.x / 2.0, 60.0)
-	var status_width: float = (
-		font.get_string_size(status, HORIZONTAL_ALIGNMENT_CENTER, -1, status_size).x
+	draw_circle(center, radius, fill_color)
+	draw_arc(center, radius - 1.5, 0.0, TAU, 28, border_color, 3.0)
+	if is_hovered and not node.is_gated:
+		draw_arc(center, radius + 3.0, 0.0, TAU, 28, Color.WHITE, 1.5)
+
+	_draw_stat_icon(node.stat_id, center, radius * 0.62, icon_color)
+	_draw_level_pips(node, center, radius)
+
+
+func _draw_level_pips(node: TreeNode, center: Vector2, radius: float) -> void:
+	var cap: int = node.def.level_cap
+	if cap <= 1:
+		return
+	var pip_radius: float = 2.0
+	var pip_spacing: float = 7.0
+	var row_y: float = center.y + radius + 8.0
+	var start_x: float = center.x - (cap * pip_spacing) / 2.0 + pip_spacing / 2.0
+	for i in range(cap):
+		var pip_color: Color = _accent_color if i < node.level else Color(0.3, 0.3, 0.32, 0.6)
+		draw_circle(Vector2(start_x + i * pip_spacing, row_y), pip_radius, pip_color)
+
+
+func _draw_stat_icon(stat_id: StringName, center: Vector2, s: float, color: Color) -> void:
+	match stat_id:
+		MetaProgression.STAT_DAMAGE:
+			_draw_sword_icon(center, s, color)
+		MetaProgression.STAT_MOVE_SPEED:
+			_draw_speed_icon(center, s, color)
+		MetaProgression.STAT_PICKUP_RANGE:
+			_draw_magnet_icon(center, s, color)
+		MetaProgression.STAT_BACKPACK_CAPACITY:
+			_draw_bag_icon(center, s, color)
+		MetaProgression.STAT_PURGE:
+			_draw_purge_icon(center, s, color)
+		_:
+			_draw_gem_icon(stat_id, center, s, color)
+
+
+func _draw_sword_icon(center: Vector2, s: float, color: Color) -> void:
+	var tip: Vector2 = center + Vector2(-s * 0.85, -s * 0.85)
+	var pommel: Vector2 = center + Vector2(s * 0.65, s * 0.65)
+	draw_line(tip, pommel, color, 3.5)
+	var guard_point: Vector2 = tip.lerp(pommel, 0.62)
+	var perp: Vector2 = Vector2(1.0, -1.0).normalized() * s * 0.4
+	draw_line(guard_point - perp, guard_point + perp, color, 3.5)
+	draw_circle(pommel, s * 0.14, color)
+
+
+func _draw_speed_icon(center: Vector2, s: float, color: Color) -> void:
+	for i in range(2):
+		var ox: float = -s * 0.55 + i * s * 0.7
+		var top: Vector2 = center + Vector2(ox, -s * 0.6)
+		var mid: Vector2 = center + Vector2(ox + s * 0.55, 0.0)
+		var bottom: Vector2 = center + Vector2(ox, s * 0.6)
+		draw_line(top, mid, color, 3.5)
+		draw_line(mid, bottom, color, 3.5)
+
+
+func _draw_magnet_icon(center: Vector2, s: float, color: Color) -> void:
+	var leg_top: float = -s * 0.85
+	var leg_bottom: float = s * 0.25
+	var left_x: float = -s * 0.5
+	var right_x: float = s * 0.5
+	draw_line(center + Vector2(left_x, leg_top), center + Vector2(left_x, leg_bottom), color, 3.5)
+	draw_line(center + Vector2(right_x, leg_top), center + Vector2(right_x, leg_bottom), color, 3.5)
+	draw_arc(center + Vector2(0.0, leg_bottom), s * 0.5, 0.0, PI, 16, color, 3.5)
+	draw_line(
+		center + Vector2(left_x - s * 0.18, leg_top),
+		center + Vector2(left_x + s * 0.18, leg_top),
+		color,
+		3.5
 	)
-	draw_string(
-		font,
-		status_pos - Vector2(status_width / 2.0, 4.0),
-		status,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		status_size,
-		status_color
+	draw_line(
+		center + Vector2(right_x - s * 0.18, leg_top),
+		center + Vector2(right_x + s * 0.18, leg_top),
+		color,
+		3.5
 	)
 
 
-func _get_node_color(node: TreeNode) -> Color:
-	if node.is_gated:
-		return LOCKED_COLOR
-	if node.is_locked_by_currency:
-		return NO_CURRENCY_COLOR
-	if node.is_maxed:
-		return MAXED_COLOR
-	return AVAILABLE_COLOR
+func _draw_bag_icon(center: Vector2, s: float, color: Color) -> void:
+	var pts := PackedVector2Array(
+		[
+			center + Vector2(-s * 0.55, -s * 0.1),
+			center + Vector2(-s * 0.75, s * 0.8),
+			center + Vector2(s * 0.75, s * 0.8),
+			center + Vector2(s * 0.55, -s * 0.1),
+			center + Vector2(-s * 0.55, -s * 0.1)
+		]
+	)
+	draw_polyline(pts, color, 2.8, true)
+	draw_arc(center + Vector2(0.0, -s * 0.1), s * 0.32, PI, TAU, 12, color, 2.8)
 
 
-func _get_node_border_color(node: TreeNode) -> Color:
-	var base: Color
-	if node.is_gated:
-		base = Color(0.4, 0.3, 0.3)
-	elif node.is_locked_by_currency:
-		base = Color(0.6, 0.4, 0.2)
-	elif node.is_maxed:
-		base = Color(0.3, 0.6, 0.3)
-	else:
-		base = Color(0.7, 0.6, 0.3)
+func _draw_purge_icon(center: Vector2, s: float, color: Color) -> void:
+	draw_line(center + Vector2(-s * 0.6, -s * 0.6), center + Vector2(s * 0.6, s * 0.6), color, 3.5)
+	draw_line(center + Vector2(-s * 0.6, s * 0.6), center + Vector2(s * 0.6, -s * 0.6), color, 3.5)
 
-	return base
+
+func _draw_gem_icon(stat_id: StringName, center: Vector2, s: float, color: Color) -> void:
+	var tier_color := _get_compactor_tier_color(stat_id)
+	var gem_color: Color = tier_color if tier_color != Color.TRANSPARENT else color
+	var gem := PackedVector2Array(
+		[
+			center + Vector2(0.0, -s),
+			center + Vector2(s * 0.8, 0.0),
+			center + Vector2(0.0, s),
+			center + Vector2(-s * 0.8, 0.0)
+		]
+	)
+	draw_colored_polygon(gem, gem_color)
+	draw_polyline(gem + PackedVector2Array([gem[0]]), gem_color.darkened(0.35), 1.5, true)
+
+
+func _get_compactor_tier_color(stat_id: StringName) -> Color:
+	var tier_id: StringName = StringName()
+	match stat_id:
+		MetaProgression.STAT_COMPACTOR_COMMON:
+			tier_id = &"common"
+		MetaProgression.STAT_COMPACTOR_UNCOMMON:
+			tier_id = &"uncommon"
+		MetaProgression.STAT_COMPACTOR_RARE:
+			tier_id = &"rare"
+		MetaProgression.STAT_COMPACTOR_EPIC:
+			tier_id = &"epic"
+		MetaProgression.STAT_COMPACTOR_MYTHIC:
+			tier_id = &"mythic"
+		_:
+			return Color.TRANSPARENT
+	var def := LootTypes.get_type(tier_id)
+	return def.color if def != null else Color.TRANSPARENT

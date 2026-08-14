@@ -1,14 +1,18 @@
 extends Control
 
 const BOUNCE_SCALE: float = 1.15
+const PLAYER_ACCENT: Color = Color(0.85, 0.7, 0.35, 1.0)
+const BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
 
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
-@onready var _backpack_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/BackpackTreeView
-@onready var _player_tree: SkillTreeView = $ShopPanel/Margin/VBox/TreesContainer/PlayerTreeView
+@onready var _backpack_tree: SkillTreeView = %BackpackTreeView
+@onready var _player_tree: SkillTreeView = %PlayerTreeView
+@onready var _backpack_header: Label = %BackpackHeader
+@onready var _player_header: Label = %PlayerHeader
 
 
 func _ready() -> void:
@@ -29,11 +33,21 @@ func _update_trees() -> void:
 			player_stats.append(def)
 
 	_backpack_tree.set_tree_data(
-		backpack_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency
+		backpack_stats,
+		MetaProgression.get_level,
+		_is_stat_gated,
+		_is_locked_by_currency,
+		BACKPACK_ACCENT
 	)
 	_player_tree.set_tree_data(
-		player_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency
+		player_stats,
+		MetaProgression.get_level,
+		_is_stat_gated,
+		_is_locked_by_currency,
+		PLAYER_ACCENT
 	)
+	_backpack_header.text = "BACKPACK TREE\n%d levels bought" % _total_levels(backpack_stats)
+	_player_header.text = "PLAYER TREE\n%d levels bought" % _total_levels(player_stats)
 
 	# Disconnect old signals to avoid duplicates
 	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
@@ -43,6 +57,13 @@ func _update_trees() -> void:
 
 	_backpack_tree.node_clicked.connect(_on_backpack_node_clicked)
 	_player_tree.node_clicked.connect(_on_player_node_clicked)
+
+
+func _total_levels(stats: Array[StatDef]) -> int:
+	var total := 0
+	for def in stats:
+		total += MetaProgression.get_level(def.id)
+	return total
 
 
 func _on_backpack_node_clicked(stat_id: StringName) -> void:

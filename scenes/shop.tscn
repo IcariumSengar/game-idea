@@ -92,15 +92,45 @@ theme_override_constants/separation = 20
 size_flags_vertical = 3
 size_flags_horizontal = 3
 
-[node name="BackpackTreeView" type="Control" parent="ShopPanel/Margin/VBox/TreesContainer"]
+[node name="BackpackColumn" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer"]
 layout_mode = 2
-script = ExtResource("1_skill_tree")
+theme_override_constants/separation = 4
 size_flags_horizontal = 3
 
-[node name="PlayerTreeView" type="Control" parent="ShopPanel/Margin/VBox/TreesContainer"]
+[node name="BackpackHeader" type="Label" parent="ShopPanel/Margin/VBox/TreesContainer/BackpackColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.35, 0.75, 0.85, 1)
+text = "BACKPACK TREE
+0 levels bought"
+horizontal_alignment = 1
+
+[node name="BackpackTreeView" type="Control" parent="ShopPanel/Margin/VBox/TreesContainer/BackpackColumn"]
+unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("1_skill_tree")
+size_flags_vertical = 3
+
+[node name="PlayerColumn" type="VBoxContainer" parent="ShopPanel/Margin/VBox/TreesContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
 size_flags_horizontal = 3
+
+[node name="PlayerHeader" type="Label" parent="ShopPanel/Margin/VBox/TreesContainer/PlayerColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.85, 0.7, 0.35, 1)
+text = "PLAYER TREE
+0 levels bought"
+horizontal_alignment = 1
+
+[node name="PlayerTreeView" type="Control" parent="ShopPanel/Margin/VBox/TreesContainer/PlayerColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("1_skill_tree")
+size_flags_vertical = 3
 
 [node name="Spacer2" type="Control" parent="ShopPanel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 16)
