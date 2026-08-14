@@ -1,0 +1,63 @@
+# game-idea — Engineering Practices
+
+A Godot 4 project. This file is the standing reference for how this repo is
+worked on — check it before making structural or workflow decisions.
+
+## Versioning & rollback
+
+Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
+
+- Regular commits land straight on `main` (see "Workflow" below).
+- A git tag (`v1`, `v2`, ...) is only cut at a real milestone — something
+  stable you'd want to roll back to — not on every commit or every push.
+- `VERSION` and [CHANGELOG.md](CHANGELOG.md) are updated together with each
+  tag and mirror what the tag records.
+
+## Workflow
+
+- Solo project: commit directly to `main`, no feature branches or PRs.
+- Keep commits small and working — each one should leave the project in a
+  state that opens and runs without errors.
+- Commit messages: short, present-tense summary line; explain *why* in the
+  body only when it's not obvious from the diff.
+- Purely editor-generated diffs (e.g. `project.godot` version/feature bumps
+  from opening in a newer Godot build) are fine as their own plain commit —
+  don't bundle them with real feature work, don't tag them as a version.
+
+## GDScript style
+
+- **Static typing is required.** Type all variables, parameters, and return
+  values (`var speed: float = 300.0`, `func move(delta: float) -> void`).
+  Untyped/`var x = ...` is only acceptable for rapid throwaway prototyping
+  that will be typed before it's committed.
+- Naming: `snake_case` for variables, functions, and signals; `PascalCase`
+  for class names and node names; `SCREAMING_SNAKE_CASE` for constants.
+- Prefer `@export` over hardcoded magic numbers for anything a designer
+  (i.e. future you) might want to tune from the editor.
+- One script per scene/node responsibility — avoid god-objects that own
+  unrelated systems. Split into child nodes/scripts as behavior grows.
+
+## Project structure
+
+```
+project.godot       Godot project config
+scenes/              .tscn scene files
+scripts/             .gd scripts, filename matches the node/scene it drives
+icon.svg             project icon
+VERSION              current released version
+CHANGELOG.md         release history
+VERSIONING.md        full release/rollback workflow
+```
+
+Keep this pairing as the project grows: a scene's primary script lives in
+`scripts/` under the same base name as the scene (`main.tscn` ↔ `main.gd`).
+Once there are enough scenes to warrant it, introduce subfolders
+(`scenes/ui/`, `scripts/player/`, etc.) rather than flattening everything
+into the two top-level folders indefinitely.
+
+## Testing
+
+No automated test framework yet — the project is too early-stage to warrant
+one. Before that changes, verify changes by running the game and checking
+the specific behavior touched. Revisit this once there's real gameplay
+logic worth regression-testing (e.g. via GUT or gdUnit4).
