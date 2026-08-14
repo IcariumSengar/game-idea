@@ -15,7 +15,12 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 
 ## Workflow
 
-- Solo project: commit directly to `main`, no feature branches or PRs.
+- `main` is the stable trunk — `vN` tags are always cut here. Parallel
+  workstreams (e.g. separate chats working on different concerns at the
+  same time) each get their own git worktree/branch via Claude Code's
+  worktree feature, and merge into `main` at deliberate checkpoints, not
+  continuously. When there's only one active workstream, committing
+  straight to `main` is still fine.
 - Keep commits small and working — each one should leave the project in a
   state that opens and runs without errors.
 - Commit messages: short, present-tense summary line; explain *why* in the
