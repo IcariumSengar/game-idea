@@ -33,11 +33,11 @@ func _ready() -> void:
 	_register_stat(
 		STAT_BACKPACK_CAPACITY,
 		"Backpack Capacity",
+		8.0,
 		1.0,
-		1.0,
-		10,
-		1.0,
-		999,
+		20,
+		1.20,
+		12,
 		0,
 		StatDef.Currency.BACKPACK
 	)
