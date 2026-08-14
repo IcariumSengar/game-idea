@@ -5,7 +5,7 @@ extends Control
 
 func _ready() -> void:
 	var version := _read_version()
-	$PanelContainer/MarginContainer/VBoxContainer/VersionLabel.text = "v%s" % version
+	$CenterContainer/VBoxContainer/VersionLabel.text = "v%s" % version
 
 
 func _on_new_game_pressed() -> void:
