@@ -65,7 +65,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 14
 text = "Select a save slot to continue"
 horizontal_alignment = 1
-add_theme_color_override.font_color = Color(0.7, 0.7, 0.7)
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7)
 
 [node name="Spacer1" type="Control" parent="PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 12)

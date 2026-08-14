@@ -25,7 +25,7 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 	# Slot info
 	var info_label := Label.new()
 	info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_label.theme_override_font_sizes/font_size = SLOT_BUTTON_FONT_SIZE
+	info_label.add_theme_font_size_override("font_size", SLOT_BUTTON_FONT_SIZE)
 	info_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
 	if metadata.get("last_played", 0) == 0:
