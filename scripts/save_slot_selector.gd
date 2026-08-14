@@ -2,10 +2,7 @@ extends Control
 
 ## Load/select save slot screen shown at game start.
 
-const SLOT_BUTTON_HEIGHT: float = 80.0
-const SLOT_BUTTON_FONT_SIZE: int = 14
-
-@onready var _slots_container: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/SlotsContainer
+@onready var _slots_container: VBoxContainer = $ScrollContainer/VBoxContainer/SlotsContainer
 
 
 func _ready() -> void:
@@ -20,26 +17,21 @@ func _populate_slots() -> void:
 
 func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 	var button_container := HBoxContainer.new()
-	button_container.custom_minimum_size = Vector2(0, SLOT_BUTTON_HEIGHT)
+	button_container.custom_minimum_size = Vector2(0, 60)
 
 	# Slot info
 	var info_label := Label.new()
 	info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_label.add_theme_font_size_override("font_size", SLOT_BUTTON_FONT_SIZE)
+	info_label.add_theme_font_size_override("font_size", 14)
 	info_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
 	if metadata.get("last_played", 0) == 0:
 		info_label.text = "Slot %d — Empty" % (slot + 1)
-		info_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	else:
 		var last_played_str := _format_timestamp(metadata.get("last_played", 0))
 		var playtime: float = metadata.get("playtime_hours", 0.0)
 		var preview: String = metadata.get("preview", "No upgrades")
-		info_label.text = (
-			"Slot %d — %s | %d hours | %s"
-			% [slot + 1, last_played_str, roundi(playtime), preview]
-		)
-		info_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
+		info_label.text = "Slot %d — %s | %d h | %s" % [slot + 1, last_played_str, roundi(playtime), preview]
 
 	button_container.add_child(info_label)
 
@@ -67,16 +59,16 @@ func _on_load_pressed(slot: int) -> void:
 	get_tree().change_scene_to_file("res://scenes/arena.tscn")
 
 
-func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
-
-
 func _on_delete_pressed(slot: int) -> void:
 	var file_path := "user://saves/slot_%d.json" % slot
 	if ResourceLoader.exists(file_path):
 		DirAccess.remove_absolute(file_path)
 	MetaProgression.get_slot_metadata(slot).clear()
 	get_tree().reload_current_scene()
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 func _format_timestamp(timestamp_ms: int) -> String:
