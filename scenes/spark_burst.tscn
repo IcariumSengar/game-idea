@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/spark_burst.gd" id="1_spark"]
+[ext_resource type="Texture2D" path="res://assets/vfx/spark_dot.png" id="2_spark_dot"]
 
 [node name="SparkBurst" type="CPUParticles2D"]
 emitting = false
@@ -13,7 +14,8 @@ spread = 180.0
 gravity = Vector2(0, 260)
 initial_velocity_min = 60.0
 initial_velocity_max = 140.0
-scale_amount_min = 2.0
-scale_amount_max = 4.0
+scale_amount_min = 1.4
+scale_amount_max = 2.6
 color = Color(1, 1, 1, 1)
+texture = ExtResource("2_spark_dot")
 script = ExtResource("1_spark")

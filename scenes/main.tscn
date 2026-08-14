@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bmain001"]
+[gd_scene load_steps=3 format=3 uid="uid://bmain001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/floor_1.png" id="2_floor_tile"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -10,6 +11,25 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_floor_tile")
+stretch_mode = 1
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.05, 0.45)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
