@@ -63,6 +63,36 @@ Revisit this list as the prototype clarifies what the game actually needs.
 The goal is the full loop working end-to-end and *feeling* right before
 adding any variety on top of it.
 
+## Post-MVP direction: loot rarity & backpack economy (tentative)
+
+Not yet in scope — MVP ships with one loot type first. Captured here so the
+direction isn't lost; details likely to change as the MVP proves out.
+
+- Loot gets six rarity tiers: common, uncommon, rare, epic, mythic,
+  legendary. Drop weighting falls off sharply per tier (each tier much
+  rarer than the last).
+- Backpack becomes a Minecraft-style slot grid rather than an abstract
+  capacity number. Fill % = slots used / total slots, so players can see
+  the bag filling tile by tile.
+- Each rarity tier has its own max stack size per slot, shrinking as
+  rarity increases (commons stack deep, legendaries stack little/not at
+  all). This means rarer loot inherently takes up more backpack space per
+  item — no separate "bulk" rule needed, it falls out of the stack model.
+- Loot value (what it converts to in meta-currency at run end) scales up
+  with rarity, and that value scaling needs to outpace the space-cost
+  scaling — otherwise rarer loot stops feeling like a good gamble and just
+  becomes a tax on fullness. Curve shape matters more than exact numbers.
+- **Compacting upgrades**: raise the max stack size for one specific
+  rarity tier. Unlockable per-tier in the shop, and meant to be unlocked
+  in tier order (common first) — since low-tier loot floods the bag
+  constantly, a common compactor stays useful for a long stretch, while a
+  legendary compactor only starts mattering once legendaries show up
+  often enough (i.e. once earlier tiers stop being the bottleneck).
+- **Purge upgrade**: auto-discards lowest-rarity loot once the bag nears
+  full. Intended as a super-late-game unlock — only relevant once slot
+  count and stack depth are both near their ceiling and fullness is still
+  the thing killing you.
+
 ## Decisions log
 
 Short dated entries when a design decision is made and worth remembering
@@ -78,3 +108,8 @@ Short dated entries when a design decision is made and worth remembering
   the player), not exact-overlap — and that pickup range is itself an
   upgradeable stat, so the meta-shop now covers capacity + pickup range
   rather than capacity alone.
+- 2026-08-14 — Sketched a tentative post-MVP direction for loot rarity and
+  a slot-based backpack (see section above): six rarity tiers, stack-size
+  limits that shrink with rarity so rarer loot costs more space, and two
+  new upgrade types (per-tier Compacting, late-game Purge). Not committed
+  scope yet — MVP still ships with one loot type first.
