@@ -56,6 +56,11 @@ func _process(delta: float) -> void:
 
 
 func _on_player_hit() -> void:
+	# Screen shake/hit-stop are camera juice for a human viewer -- pointless
+	# for a headless bot and would fight the playtest harness's speedup
+	# (every hit resets Engine.time_scale to 1.0 for its duration).
+	if PlaytestHarness.active:
+		return
 	_shake_time_left = SHAKE_DURATION
 	_shake_magnitude = SHAKE_MAGNITUDE
 	_hit_stop(HIT_STOP_DURATION)
@@ -136,7 +141,13 @@ func _on_enemy_died(enemy: Enemy) -> void:
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position
 	loot.type_id = LootTypes.pick_random_weighted(enemy.loot_weights).id
-	add_child(loot)
+	# Deferred: a killing blow can arrive from inside a physics signal
+	# callback (a projectile's body_entered) -- adding an Area2D+shape to
+	# the tree synchronously there fails against the physics server's
+	# active query flush. Rare enough with one projectile at a time that
+	# it likely went unnoticed in normal play; constant under the playtest
+	# harness's sped-up multi-kill AOE casts.
+	add_child.call_deferred(loot)
 
 
 func _random_edge_position() -> Vector2:

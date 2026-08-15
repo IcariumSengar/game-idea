@@ -44,6 +44,10 @@ const SAVE_SLOTS: int = 4
 const SAVE_DIR: String = "user://saves"
 const SLOT_INDEX_FILE: String = "user://current_slot.txt"
 const LAST_SLOT_FILE: String = "user://last_slot.json"
+## Outside the 0-3 range the Load Game screen manages, so a playtest batch
+## (see playtest_harness.gd) never shows up there and never touches the
+## player's real slots -- it gets its own save file, reset fresh every run.
+const PLAYTEST_SLOT: int = 99
 
 var player_currency: int = 0
 var backpack_currency: int = 0
@@ -54,6 +58,7 @@ var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
 var _slot_metadata: Array = []  # Array of {date, playtime, stats}
 var _session_start_msec: int = 0
+var _playtest_mode: bool = false
 
 
 func _ready() -> void:
@@ -141,6 +146,9 @@ func _ready() -> void:
 		0,
 		StatDef.Currency.PLAYER
 	)
+	_playtest_mode = "--playtest" in OS.get_cmdline_user_args()
+	if _playtest_mode:
+		current_slot = PLAYTEST_SLOT
 	_initialize_slots()
 	_load_slot_metadata()
 	_load()
@@ -306,7 +314,16 @@ func _reset_to_defaults() -> void:
 		_stat_levels[stat_id] = 0
 
 
+## Directly sets a stat's level without spending currency -- used only to
+## seed a playtest batch's starting loadout (e.g. unlocking a spell so the
+## bot actually exercises it), never reachable from normal play.
+func debug_set_level(id: StringName, level: int) -> void:
+	_stat_levels[id] = level
+
+
 func save() -> void:
+	if _playtest_mode:
+		return
 	_ensure_save_dir()
 	var data := {
 		"player_currency": player_currency,

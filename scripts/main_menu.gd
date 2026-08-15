@@ -4,6 +4,11 @@ extends Control
 
 
 func _ready() -> void:
+	# playtest_harness.gd drives its own navigation/save-slot sandboxing and
+	# would otherwise race this auto-load (and get its slot/seed clobbered
+	# by it loading the player's real last-used slot).
+	if PlaytestHarness.active:
+		return
 	# Auto-load last save if it exists
 	var last_slot := MetaProgression.get_last_slot()
 	if last_slot >= 0:

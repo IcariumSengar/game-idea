@@ -33,8 +33,12 @@ func _ready() -> void:
 	if def != null:
 		_color = def.color
 	_sprite.modulate = _color
-	monitoring = false
-	monitorable = false
+	# Deferred: loot can spawn synchronously from inside a physics signal
+	# callback (an AOE spell killing an enemy mid body_entered), and setting
+	# these directly there is rejected by the physics server as "flushing
+	# queries" -- see enemy.gd's take_damage() -> arena.gd's _on_enemy_died().
+	set_deferred("monitoring", false)
+	set_deferred("monitorable", false)
 	get_tree().create_timer(SPAWN_GRACE).timeout.connect(_enable_pickup)
 
 
@@ -48,8 +52,10 @@ func _process(delta: float) -> void:
 
 
 func _enable_pickup() -> void:
-	monitoring = true
-	monitorable = true
+	# Deferred for the same reason as _ready() above -- this timer can land
+	# back inside an active physics flush during dense combat.
+	set_deferred("monitoring", true)
+	set_deferred("monitorable", true)
 
 
 func start_magnet(player: Player) -> void:

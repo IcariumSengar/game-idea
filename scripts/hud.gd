@@ -71,6 +71,9 @@ func _on_player_died() -> void:
 	MetaProgression.save()
 	CloudSync.sync_now()
 
+	if PlaytestHarness.active:
+		return
+
 	_summary_body.text = _build_summary_bbcode(
 		total_value, stardust_earned, seconds_survived, previous_best
 	)

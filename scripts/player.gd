@@ -44,6 +44,9 @@ var _dash_time_left: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _dash_direction: Vector2 = Vector2.ZERO
 var _space_was_pressed: bool = false
+var _bot_active: bool = false
+var _bot_direction: Vector2 = Vector2.ZERO
+var _bot_dash_requested: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
@@ -104,13 +107,28 @@ func _physics_process(delta: float) -> void:
 
 
 func _check_dash_input() -> void:
-	var space_pressed := Input.is_physical_key_pressed(KEY_SPACE)
-	if space_pressed and not _space_was_pressed and _dash_cooldown_left <= 0.0:
+	var want_dash: bool = (
+		_bot_dash_requested if _bot_active else Input.is_physical_key_pressed(KEY_SPACE)
+	)
+	if _bot_active:
+		_bot_dash_requested = false
+	if want_dash and not _space_was_pressed and _dash_cooldown_left <= 0.0:
 		_dash_direction = _facing
 		_dash_time_left = dash_duration
 		_dash_cooldown_left = dash_cooldown
 		AudioManager.play("dash")
-	_space_was_pressed = space_pressed
+	_space_was_pressed = want_dash
+
+
+## Playtest-only hook (see playtest_harness.gd/playtest_bot_ai.gd): once
+## enabled, movement/dash come from bot_set_input() instead of real input.
+func set_bot_control(active: bool) -> void:
+	_bot_active = active
+
+
+func bot_set_input(direction: Vector2, want_dash: bool) -> void:
+	_bot_direction = direction
+	_bot_dash_requested = want_dash
 
 
 func collect_loot(type_id: StringName) -> bool:
@@ -231,6 +249,8 @@ func _spawn_damage_text(amount: float) -> void:
 
 
 func _get_input_direction() -> Vector2:
+	if _bot_active:
+		return _bot_direction
 	var dir := Vector2.ZERO
 	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
 		dir.y -= 1.0
