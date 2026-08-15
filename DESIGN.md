@@ -188,7 +188,10 @@ Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
 - All enemy types use existing difficulty ramp (no new scaling curves)
 - Difficulty is *tactical variety*, not stat bloat
 - Loot weighting creates clear progression: reach Phase 3 (40+ sec) → Elites appear → better loot → upgrades → can reach 40+ sec more reliably
-- Each tier has distinct visual/audio (not yet designed)
+- Each tier now has a distinct sprite (goblin/orc_warrior/orc_shaman/
+  big_demon from the existing DungeonTilesetII pack); distinct
+  per-tier audio is still generic (shared `enemy_hit`/`enemy_death`/
+  `enemy_cast` cues) and not yet designed
 
 ### Future Expansions (Enemy Types)
 

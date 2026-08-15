@@ -41,9 +41,11 @@ this file should stay short enough to skim.
 
 ### Enemy Types follow-up (not blocking v7)
 
-- [ ] Visuals/audio: Bruiser/Elite still reuse the shared Minion sprite
-      frames, tinted red/blue and rescaled -- real distinct sprite art
-      not done yet (placeholder OK initially)
+- [x] Visuals: Bruiser/Elite/Boss now use their own distinct sprite sheets
+      (orc_warrior/orc_shaman/big_demon from the existing DungeonTilesetII
+      pack, already imported but previously unused) instead of a tinted
+      reuse of the Minion's goblin frames. Audio (distinct hit/cast
+      sounds per tier) still not done.
 - [ ] Verify progression: early runs (Phase 1 only) feel accessible,
       reaching Phase 3 feels like milestone -- needs real playtesting.
       Playtest harness data so far: a heavily-seeded bot reaches Phase 3

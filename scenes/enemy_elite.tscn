@@ -1,14 +1,13 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy_elite.gd" id="1_elite"]
-[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/enemy_sprite_frames.tres" id="2_enemy_frames"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/elite_sprite_frames.tres" id="2_elite_frames"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_elite"]
 radius = 13.0
 
 [node name="EnemyElite" type="CharacterBody2D"]
 script = ExtResource("1_elite")
-modulate = Color(0.35, 0.4, 2.4, 1)
 speed = 120.0
 max_hp = 40.0
 
@@ -18,7 +17,7 @@ polygon = PackedVector2Array(13, 13, 11.26, 14.86, 6.5, 16.35, 0, 16.71, -6.5, 1
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 scale = Vector2(2.3, 2.3)
-sprite_frames = ExtResource("2_enemy_frames")
+sprite_frames = ExtResource("2_elite_frames")
 animation = &"run"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
