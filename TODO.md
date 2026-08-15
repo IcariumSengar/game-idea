@@ -112,6 +112,11 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
       usage. Runs N bot-played runs back to back, sandboxed save slot,
       prints an aggregate report; found and fixed two latent physics-flush
       bugs (`loot.gd`, `arena.gd`'s `_on_enemy_died`) along the way.
+- [x] Early-game rebalance from playtest harness data — fixed Minion's
+      HP/speed (120/30 code vs 100/20 documented spec) and eased
+      `CONTACT_DAMAGE` 10→8; 20-run baseline went 10.1s/1.8 kills avg →
+      12.2s/4.7 kills avg, zero-loot runs 10/20 → 3/20. See DESIGN.md's
+      decision log for the full before/after numbers.
 
 ## Done
 

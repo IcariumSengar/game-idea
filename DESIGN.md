@@ -897,3 +897,26 @@ Short dated entries when a design decision is made and worth remembering
   there's nothing to switch. The shop's spell panel changed from three
   switch buttons to a read-only status list (locked/unlocked, no click
   behavior) since picking one is no longer a choice the player makes.
+- 2026-08-15 — Early-game rebalance, driven by data from the new headless
+  playtest harness (`scripts/playtest_harness.gd`) rather than guesswork.
+  A 20-run fresh-save baseline batch averaged only 10.1s survival / 1.8
+  kills, with half the runs collecting zero loot before dying. Two
+  changes, measured one at a time:
+  - **Bug fix:** Minion's actual stats (`enemy.gd`'s `speed`/`max_hp`
+    defaults, since `enemy.tscn` never overrode them) were 120/30 --
+    this doc's Enemy Types table has always said 100/20. Restored to
+    match the documented spec. Re-running the same baseline batch: kills
+    nearly tripled (1.8→4.3 avg) and survival rose modestly (10.1s→11.6s).
+  - **Balance call (not a spec value -- `CONTACT_DAMAGE` was an invented
+    v7 constant, never documented):** kills roughly tripling while
+    survival barely moved showed contact lethality, not weak player
+    offense, was now the bottleneck. Eased 10→8 damage per hit (25→20
+    effective DPS while in contact). Re-measured again: 11.6s→12.2s
+    survival, 4.3→4.7 kills, zero-loot runs down to 3/20 from 10/20.
+  Diminishing returns from the second lever suggests this is a reasonable
+  stopping point for now -- further easing (e.g. the difficulty ramp's
+  1.5×/1.6× floor at t=0, still per this doc's own "×1.5–3.0 by end"
+  spec) would be a bigger, more deliberate softening of the documented
+  "hard early game" philosophy rather than a bug fix or a small tweak,
+  and is left for a follow-up round if the player still finds it too
+  punishing after these two changes.

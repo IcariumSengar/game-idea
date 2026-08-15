@@ -8,7 +8,12 @@ extends CharacterBody2D
 
 signal died(enemy: Enemy)
 
-const CONTACT_DAMAGE: float = 10.0
+## Balance call (not a documented spec value): playtest data showed kill
+## count roughly tripling after the Minion HP/speed fix above while
+## survival time barely moved -- contact lethality, not the player's own
+## weak offense, was the actual bottleneck. Eased 10->8 (25->20 effective
+## DPS while in contact) to let the offense fix actually extend survival.
+const CONTACT_DAMAGE: float = 8.0
 const CONTACT_COOLDOWN: float = 0.4
 const SPARK_COLOR: Color = Color.CRIMSON
 const FLASH_DECAY_PER_SEC: float = 8.0
@@ -22,8 +27,12 @@ const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const ARENA_MARGIN: float = 16.0
 const FROST_TINT: Color = Color(0.6, 0.9, 1.3, 1.0)
 
-@export var speed: float = 120.0
-@export var max_hp: float = 30.0
+## Minion (Tier 1) baseline -- per DESIGN.md's Enemy Types table (Base HP
+## 20, Base speed 100). enemy.tscn doesn't override these, so they'd
+## drifted to 120/30 at some point, making every Phase 1 encounter ~50%
+## tankier and 20% faster than the documented design.
+@export var speed: float = 100.0
+@export var max_hp: float = 20.0
 
 ## Loot tier -> drop weight for kills of this enemy, per DESIGN.md's
 ## "Enemy Types & Loot Tiers" table. Only tiers listed here can drop.
