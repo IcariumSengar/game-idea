@@ -272,12 +272,12 @@ Only **1 active spell at a time** (v7). Switched in shop screen, persists across
 
 **Base stats:**
 - Power: 20 (scales with Spellpower)
-- Cast rate: 0.5 sec/shot
+- Cast rate: 0.33 sec/shot (+50% vs the original 0.5, per balance feedback)
 - Projectile speed: 400 pixels/sec
 
 **Upgrades:**
 - Spellpower: (shared with Player Tree root stat)
-- Haste (cast speed): -0.05 sec/lvl, cap 0.15 sec
+- Haste (cast speed): -0.033 sec/lvl, cap 0.1 sec
 - Projectile Speed: +50/lvl, cap 600
 
 ### Spell 2: Inferno Blade (unlock at Spell Unlock L1)
@@ -875,3 +875,7 @@ Short dated entries when a design decision is made and worth remembering
   (~1/sec) regardless of whether it hit anything, reading as constant
   background noise — gated it to actual hits only and swapped the tone
   for a sharper whoosh/crackle sweep more fitting for a fire spell.
+- 2026-08-15 — Balance feedback: Arcane Bolt's default fire rate felt too
+  slow. Scaled its cast-rate curve (base and per-level Haste gain both)
+  by 1/1.5 -- 0.5→0.33 sec/shot at level 0, 0.15→0.1 sec/shot at Haste's
+  cap -- so it's 50% faster at every level, not just the starting point.

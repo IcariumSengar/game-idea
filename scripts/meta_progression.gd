@@ -102,7 +102,12 @@ func _ready() -> void:
 	_register_stat(
 		STAT_SPELL_UNLOCK, "Spell Unlock", 0.0, 0.0, 25, 1.20, 5, 0, StatDef.Currency.PLAYER
 	)
-	_register_stat(STAT_ARCANE_HASTE, "Haste", 0.5, -0.05, 15, 1.15, 7, 2, StatDef.Currency.PLAYER)
+	# Base/per-level both scaled by 1/1.5 vs the original curve (0.5, -0.05) so
+	# Arcane Bolt fires 50% faster by default and at every upgrade level, per
+	# player balance feedback.
+	_register_stat(
+		STAT_ARCANE_HASTE, "Haste", 0.5 / 1.5, -0.05 / 1.5, 15, 1.15, 7, 2, StatDef.Currency.PLAYER
+	)
 	_register_stat(
 		STAT_ARCANE_PROJECTILE_SPEED,
 		"Velocity",
