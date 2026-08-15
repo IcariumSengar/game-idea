@@ -26,6 +26,7 @@ const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const ARENA_MARGIN: float = 16.0
 const FROST_TINT: Color = Color(0.6, 0.9, 1.3, 1.0)
+const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 
 ## Minion (Tier 1) baseline -- per DESIGN.md's Enemy Types table (Base HP
 ## 20, Base speed 100). enemy.tscn doesn't override these, so they'd
@@ -49,6 +50,7 @@ var _approach_offset: Vector2 = Vector2.ZERO
 var _base_modulate: Color = Color.WHITE
 var _slow_multiplier: float = 1.0
 var _slow_time_left: float = 0.0
+var _knockback: Vector2 = Vector2.ZERO
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -85,6 +87,14 @@ func _physics_process(delta: float) -> void:
 		if _slow_time_left <= 0.0:
 			_slow_multiplier = 1.0
 			modulate = _base_modulate
+	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
+
+
+## Applied by Inferno Blade (and any future knockback source). Same
+## decaying-velocity shape as Player's own knockback in player.gd.
+func apply_knockback(from_position: Vector2, strength: float) -> void:
+	if from_position != position:
+		_knockback = position.direction_to(from_position) * -strength
 
 
 ## Frost Nova's slow -- a re-cast while already slowed takes whichever
@@ -112,7 +122,9 @@ func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
 ## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
 ## this for their own movement/attack pattern.
 func _update_behavior(delta: float) -> void:
-	velocity = position.direction_to(target.position + _approach_offset) * _slowed(speed)
+	velocity = (
+		position.direction_to(target.position + _approach_offset) * _slowed(speed) + _knockback
+	)
 	move_and_slide()
 	_apply_contact_damage(delta)
 

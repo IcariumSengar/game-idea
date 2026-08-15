@@ -15,6 +15,7 @@ extends Node
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/spell_projectile.tscn")
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const INFERNO_BURST_SCENE: PackedScene = preload("res://scenes/inferno_burst.tscn")
+const FROST_BURST_SCENE: PackedScene = preload("res://scenes/frost_burst.tscn")
 
 const SPELLPOWER_BASE: float = 20.0
 const ARCANE_RANGE: float = 220.0
@@ -25,6 +26,7 @@ const INFERNO_BURN_DURATION: float = 1.5
 const INFERNO_TICK_INTERVAL: float = 0.5
 const INFERNO_TICK_COUNT: int = 3
 const INFERNO_COLOR: Color = Color(0.95, 0.4, 0.15)
+const INFERNO_KNOCKBACK_STRENGTH: float = 200.0
 const FROST_BASE_POWER: float = 15.0
 const FROST_FREEZE_DURATION: float = 0.8
 const FROST_COLOR: Color = Color(0.5, 0.85, 1.0)
@@ -118,6 +120,7 @@ func _cast_inferno_blade() -> void:
 			continue
 		hit_any = true
 		enemy.take_damage(damage)
+		enemy.apply_knockback(_owner_body.position, INFERNO_KNOCKBACK_STRENGTH)
 		if burn_total > 0.0:
 			_apply_burn(enemy, burn_total)
 	if hit_any:
@@ -144,7 +147,8 @@ func _cast_frost_nova() -> void:
 		enemy.apply_slow(1.0 - slow_strength, FROST_FREEZE_DURATION)
 	if hit_any:
 		_spawn_burst(_owner_body.position, FROST_COLOR)
-	AudioManager.play("frost_cast")
+		_spawn_frost_graphic(_owner_body.position, radius)
+		AudioManager.play("frost_cast")
 
 
 func _apply_burn(enemy: Enemy, total_damage: float) -> void:
@@ -158,6 +162,13 @@ func _apply_burn(enemy: Enemy, total_damage: float) -> void:
 func _spawn_inferno_graphic(at_position: Vector2) -> void:
 	var burst: InfernoBurst = INFERNO_BURST_SCENE.instantiate()
 	burst.position = at_position
+	_owner_body.get_parent().add_child(burst)
+
+
+func _spawn_frost_graphic(at_position: Vector2, radius: float) -> void:
+	var burst: FrostBurst = FROST_BURST_SCENE.instantiate()
+	burst.position = at_position
+	burst.target_radius = radius
 	_owner_body.get_parent().add_child(burst)
 
 

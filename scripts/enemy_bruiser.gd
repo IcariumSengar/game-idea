@@ -33,7 +33,8 @@ func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
 func _update_behavior(delta: float) -> void:
 	match _state:
 		State.PAUSE:
-			velocity = Vector2.ZERO
+			velocity = _knockback
+			move_and_slide()
 			_state_timer -= delta
 			if _state_timer <= 0.0:
 				_charge_direction = position.direction_to(target.position)
@@ -41,7 +42,7 @@ func _update_behavior(delta: float) -> void:
 				_state = State.CHARGE
 		State.CHARGE:
 			var effective_speed: float = _slowed(charge_speed)
-			velocity = _charge_direction * effective_speed
+			velocity = _charge_direction * effective_speed + _knockback
 			move_and_slide()
 			_charge_distance_left -= effective_speed * delta
 			_apply_contact_damage(delta)

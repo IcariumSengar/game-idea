@@ -297,8 +297,7 @@ has had.
 - Power: 25 (scales with Spellpower)
 - Swing rate: 1.0 sec/swing
 - Range: 120px, omnidirectional
-- Knockback: 200 pixels (not yet implemented -- Enemy has no
-  knockback-velocity system yet)
+- Knockback: 200 pixels
 - Burn duration: 1.5 sec
 
 **Upgrades:**

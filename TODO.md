@@ -27,9 +27,6 @@ this file should stay short enough to skim.
 
 ### Magic Spells (v9/v10) follow-up
 
-- [ ] Inferno Blade's "Knockback: 200 pixels" not implemented -- Enemy has
-      no knockback-velocity system yet (only Player does). Damage, burn
-      DOT, and arc-hit detection all work without it.
 - [ ] Verify feel in a full playtest: with all unlocked spells now firing
       together, check they don't step on each other visually/audibly once
       the player has two or three going at once -- individual spells were
