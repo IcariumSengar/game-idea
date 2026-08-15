@@ -119,30 +119,34 @@ layout_mode = 2
 script = ExtResource("1_skill_tree")
 size_flags_vertical = 3
 
-[node name="Spacer2" type="Control" parent="ShopPanel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
+[node name="ButtonContainer" type="VBoxContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 350.0
+offset_top = -40.0
+offset_right = 610.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
 
-[node name="ButtonContainer" type="HBoxContainer" parent="ShopPanel/Margin/VBox"]
+[node name="StartRunButton" type="Button" parent="ButtonContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
 custom_minimum_size = Vector2(0, 36)
-
-[node name="StartRunButton" type="Button" parent="ShopPanel/Margin/VBox/ButtonContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-custom_minimum_size = Vector2(100, 36)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 22
 text = "Start Run"
 script = ExtResource("7_link")
 
-[node name="BackButton" type="Button" parent="ShopPanel/Margin/VBox/ButtonContainer"]
+[node name="BackButton" type="Button" parent="ButtonContainer"]
 layout_mode = 2
-size_flags_horizontal = 1
-custom_minimum_size = Vector2(80, 36)
-theme_override_font_sizes/font_size = 14
+custom_minimum_size = Vector2(0, 36)
+theme_override_font_sizes/font_size = 16
 text = "← BACK"
 script = ExtResource("7_link")
 
-[connection signal="pressed" from="ShopPanel/Margin/VBox/ButtonContainer/StartRunButton" to="." method="_on_start_run_button_pressed"]
-[connection signal="pressed" from="ShopPanel/Margin/VBox/ButtonContainer/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="ButtonContainer/StartRunButton" to="." method="_on_start_run_button_pressed"]
+[connection signal="pressed" from="ButtonContainer/BackButton" to="." method="_on_back_pressed"]
