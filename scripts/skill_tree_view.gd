@@ -18,7 +18,11 @@ const LOCKED_BORDER: Color = Color(0.32, 0.32, 0.34, 1.0)
 const LOCKED_FILL: Color = Color(0.14, 0.14, 0.16, 1.0)
 const NO_CURRENCY_TINT: Color = Color(0.9, 0.35, 0.3, 1.0)
 const ICON_DIM: Color = Color(0.5, 0.5, 0.52, 1.0)
-const TOOLTIP_PANEL_STYLE: StyleBoxFlat = preload("res://resources/panel_dark.tres")
+const TOOLTIP_GOLD: Color = Color(0.92, 0.82, 0.4, 1.0)
+const TOOLTIP_CYAN: Color = Color(0.3, 0.75, 0.9, 1.0)
+const STATUS_GREEN: Color = Color(0.3, 0.72, 0.32, 1.0)
+const STATUS_RED: Color = Color(0.85, 0.3, 0.28, 1.0)
+const STATUS_MUTED: Color = Color(0.6, 0.6, 0.62, 1.0)
 
 const STAT_DESCRIPTIONS: Dictionary = {
 	&"damage": "Strengthens your spellblade, dealing more damage per strike.",
@@ -232,54 +236,123 @@ func _gui_input(event: InputEvent) -> void:
 
 func _build_tooltip_text(node: TreeNode) -> String:
 	var def := node.def
-	var lines: Array[String] = [def.display_name]
-
-	var description: String = STAT_DESCRIPTIONS.get(node.stat_id, "")
-	if description != "":
-		lines.append(description)
+	var lines: Array[String] = ["[b]%s[/b]" % def.display_name]
 
 	if node.is_gated:
 		lines.append("")
-		lines.append("Locked — buy the previous tier first.")
+		lines.append("[color=#%s]LOCKED[/color]" % STATUS_RED.to_html(false))
+		if node.parent != null:
+			lines.append(
+				(
+					"[color=#%s]Requires: %s[/color]"
+					% [STATUS_MUTED.to_html(false), node.parent.def.display_name]
+				)
+			)
 		return "\n".join(lines)
 
+	lines.append(
+		(
+			"[color=#%s]Level %d / %d[/color]"
+			% [STATUS_MUTED.to_html(false), node.level, def.level_cap]
+		)
+	)
 	lines.append("")
-	lines.append("Level %d / %d" % [node.level, def.level_cap])
+
+	if not node.is_maxed:
+		var current_value: float = def.base_value + float(node.level) * def.per_level_gain
+		var next_value: float = current_value + def.per_level_gain
+		lines.append(
+			(
+				"Current: %s → %s"
+				% [
+					_format_stat_value(current_value, def.decimals),
+					_format_stat_value(next_value, def.decimals)
+				]
+			)
+		)
+		lines.append("")
 
 	if node.is_maxed:
-		lines.append("MAXED")
+		lines.append("[color=#%s]✓ MAXED[/color]" % STATUS_GREEN.to_html(false))
 	else:
 		var cost: int = MetaProgression.get_cost(node.stat_id)
-		var currency_name: String = (
-			"Essence" if def.currency == StatDef.Currency.PLAYER else "Stardust"
+		var is_player_currency: bool = def.currency == StatDef.Currency.PLAYER
+		var currency_name: String = "Essence" if is_player_currency else "Stardust"
+		var owned: int = (
+			MetaProgression.player_currency
+			if is_player_currency
+			else MetaProgression.backpack_currency
 		)
 		lines.append("Cost: %d %s" % [cost, currency_name])
-		if node.is_locked_by_currency:
-			lines.append("Not enough %s yet." % currency_name)
+		if owned >= cost:
+			lines.append("[color=#%s]✓ Affordable[/color]" % STATUS_GREEN.to_html(false))
+		else:
+			lines.append(
+				(
+					"[color=#%s]Need %d more %s[/color]"
+					% [STATUS_MUTED.to_html(false), cost - owned, currency_name]
+				)
+			)
+
+	var description: String = STAT_DESCRIPTIONS.get(node.stat_id, "")
+	if description != "":
+		lines.append("")
+		lines.append("[color=#%s]────────────[/color]" % STATUS_MUTED.to_html(false))
+		lines.append("[color=#%s][i]%s[/i][/color]" % [STATUS_MUTED.to_html(false), description])
 
 	return "\n".join(lines)
+
+
+func _format_stat_value(value: float, decimals: int) -> String:
+	if decimals <= 0:
+		return str(roundi(value))
+	return ("%." + str(decimals) + "f") % value
+
+
+func _find_node(stat_id: StringName) -> TreeNode:
+	for node in _nodes:
+		if node.stat_id == stat_id:
+			return node
+	return null
 
 
 func _make_custom_tooltip(for_text: String) -> Object:
 	if for_text == "":
 		return null
 
+	var hovered_node := _find_node(_hovered_node)
+	var border_color: Color = TOOLTIP_GOLD
+	if hovered_node != null and hovered_node.def.currency == StatDef.Currency.BACKPACK:
+		border_color = TOOLTIP_CYAN
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.03, 0.07, 0.92)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = border_color
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	style.content_margin_left = 10
+	style.content_margin_top = 8
+	style.content_margin_right = 10
+	style.content_margin_bottom = 8
+
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", TOOLTIP_PANEL_STYLE)
+	panel.add_theme_stylebox_override("panel", style)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 10)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	panel.add_child(margin)
-
-	var label := Label.new()
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
 	label.text = for_text
-	label.add_theme_font_size_override("font_size", 13)
-	label.custom_minimum_size = Vector2(200, 0)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	margin.add_child(label)
+	label.fit_content = true
+	label.scroll_active = false
+	label.custom_minimum_size = Vector2(220, 0)
+	label.add_theme_font_size_override("normal_font_size", 13)
+	label.add_theme_font_size_override("bold_font_size", 13)
+	panel.add_child(label)
 
 	return panel
 

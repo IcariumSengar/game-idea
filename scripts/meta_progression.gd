@@ -34,6 +34,7 @@ const LAST_SLOT_FILE: String = "user://last_slot.json"
 
 var player_currency: int = 0
 var backpack_currency: int = 0
+var best_run_time: float = 0.0
 var current_slot: int = 0
 
 var _stat_defs: Array[StatDef] = []
@@ -133,6 +134,15 @@ func award_run_end_currency(loot_value: int, seconds_survived: float) -> void:
 	currency_changed.emit()
 
 
+## Returns the previous best (before this run), so callers can compare
+## against what just happened before the record gets overwritten.
+func update_best_run(seconds_survived: float) -> float:
+	var previous_best := best_run_time
+	if seconds_survived > best_run_time:
+		best_run_time = seconds_survived
+	return previous_best
+
+
 func buy_upgrade(id: StringName) -> bool:
 	var def := _find_def(id)
 	if def == null or is_maxed(id):
@@ -214,6 +224,7 @@ func _load() -> void:
 		return
 	player_currency = data.get("player_currency", 0)
 	backpack_currency = data.get("backpack_currency", 0)
+	best_run_time = data.get("best_run_time", 0.0)
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
@@ -225,6 +236,7 @@ func save() -> void:
 	var data := {
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
+		"best_run_time": best_run_time,
 		"stat_levels": _stat_levels
 	}
 	var slot_file := _get_slot_save_path(current_slot)

@@ -3,10 +3,19 @@ extends CanvasLayer
 const HP_COLOR_HIGH: Color = Color(0.3, 0.85, 0.4)
 const HP_COLOR_MID: Color = Color(0.9, 0.8, 0.2)
 const HP_COLOR_LOW: Color = Color(0.9, 0.25, 0.25)
+const STARDUST_UPDATE_INTERVAL: float = 0.1
+const TIER_ORDER: Array[StringName] = [
+	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
+]
 
 var _backpack_capacity: int
 var _player: Player
+var _stardust_update_timer: float = 0.0
 
+@onready var _arena: Arena = get_parent()
+@onready var _time_value: Label = %TimeValue
+@onready var _essence_value: Label = %EssenceValue
+@onready var _stardust_value: Label = %StardustValue
 @onready var _hp_bar: StatBar = $StatsPanel/Margin/VBox/HPRow/HPBar
 @onready var _hp_value: Label = $StatsPanel/Margin/VBox/HPRow/HPValue
 @onready var _loot_grid: BackpackGrid = $StatsPanel/Margin/VBox/LootRow/LootGrid
@@ -14,7 +23,7 @@ var _player: Player
 @onready var _stats_label: Label = $StatsPanel/Margin/VBox/MetaStatsLabel
 @onready var _game_over_panel: PanelContainer = $GameOverPanel
 @onready var _game_over_circle: Control = $GameOverCircle
-@onready var _game_over_label: Label = $GameOverPanel/GameOverMargin/GameOverVBox/GameOverLabel
+@onready var _summary_body: RichTextLabel = %SummaryBody
 
 
 func _ready() -> void:
@@ -30,6 +39,16 @@ func _ready() -> void:
 	_on_loot_changed(_player.backpack)
 
 
+func _process(delta: float) -> void:
+	_time_value.text = _format_time(_arena.get_run_time())
+
+	_stardust_update_timer += delta
+	if _stardust_update_timer >= STARDUST_UPDATE_INTERVAL:
+		_stardust_update_timer = 0.0
+		var stardust: float = _arena.get_run_time() * MetaProgression.BACKPACK_CURRENCY_PER_SECOND
+		_stardust_value.text = "%.1f" % stardust
+
+
 func _on_hp_changed(current: float, max_hp: float) -> void:
 	var fraction: float = current / max_hp if max_hp > 0.0 else 0.0
 	_hp_bar.update(fraction, _hp_color(fraction))
@@ -39,23 +58,87 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 func _on_loot_changed(backpack: Dictionary) -> void:
 	_loot_grid.update(backpack, _backpack_capacity)
 	_loot_value.text = "%d/%d" % [backpack.size(), _backpack_capacity]
+	_essence_value.text = "%d" % _player.get_total_loot_value()
 
 
 func _on_player_died() -> void:
 	var total_value := _player.get_total_loot_value()
-	var arena: Arena = get_parent()
-	var seconds_survived := arena.get_run_time()
+	var seconds_survived := _arena.get_run_time()
+	var stardust_earned := roundi(seconds_survived * MetaProgression.BACKPACK_CURRENCY_PER_SECOND)
+	var previous_best := MetaProgression.update_best_run(seconds_survived)
+
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
 	MetaProgression.save()
 	CloudSync.sync_now()
-	_game_over_label.text = (
-		"LOST TO THE VOID\n\nEssence collected: %d\nTime survived: %ds"
-		% [total_value, roundi(seconds_survived)]
+
+	_summary_body.text = _build_summary_bbcode(
+		total_value, stardust_earned, seconds_survived, previous_best
 	)
+
 	AudioManager.play("player_death")
-	await arena.play_death_shake()
+	await _arena.play_death_shake()
 	_show_game_over_panel()
 	get_tree().paused = true
+
+
+func _build_summary_bbcode(
+	total_value: int, stardust_earned: int, seconds_survived: float, previous_best: float
+) -> String:
+	var lines: Array[String] = []
+	lines.append("[color=#e066a3]Lost to the Void[/color]")
+	lines.append("")
+	lines.append("Time Survived: [b]%s[/b]" % _format_time(seconds_survived))
+	lines.append("Difficulty Reached: [b]Phase %d[/b]" % _arena.get_phase())
+	lines.append("")
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[b]REWARDS THIS RUN[/b]")
+	lines.append("[color=#e6cc4d]Essence:[/color] ↑ %d" % total_value)
+	lines.append("[color=#4dbfe6]Stardust:[/color] ↑ %d" % stardust_earned)
+
+	var loot_lines := _build_loot_breakdown()
+	if not loot_lines.is_empty():
+		lines.append("")
+		lines.append("[color=#666666]────────────────────────[/color]")
+		lines.append("[b]LOOT COLLECTED[/b]")
+		lines.append_array(loot_lines)
+
+	lines.append("")
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append(
+		(
+			"[color=#999999]Max Backpack Fill: %d%%[/color]"
+			% roundi(_player.get_max_fill_ratio() * 100.0)
+		)
+	)
+	lines.append("[color=#999999]Enemies Killed: %d[/color]" % _arena.get_enemies_killed())
+
+	if previous_best > 0.0:
+		lines.append("")
+		lines.append(
+			"[color=#888888]Highest Previous Run: %s[/color]" % _format_time(previous_best)
+		)
+
+	return "\n".join(lines)
+
+
+func _build_loot_breakdown() -> Array[String]:
+	var lines: Array[String] = []
+	for tier_id: StringName in TIER_ORDER:
+		var count: int = _player.backpack.get(tier_id, 0)
+		if count <= 0:
+			continue
+		var def := LootTypes.get_type(tier_id)
+		var color_hex: String = def.color.to_html(false) if def != null else "eeeeee"
+		var tier_name: String = def.display_name if def != null else String(tier_id).capitalize()
+		lines.append("[color=#%s]%s[/color]  x%d" % [color_hex, tier_name, count])
+	return lines
+
+
+func _format_time(seconds: float) -> String:
+	var total_sec: int = roundi(seconds)
+	var minutes: int = total_sec / 60
+	var secs: int = total_sec % 60
+	return "%02d:%02d" % [minutes, secs]
 
 
 func _show_game_over_panel() -> void:

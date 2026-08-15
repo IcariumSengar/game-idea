@@ -22,6 +22,7 @@ const ENEMY_SPEED_SCALE_MAX: float = 2.4
 var _shake_time_left: float = 0.0
 var _shake_magnitude: float = SHAKE_MAGNITUDE
 var _run_time: float = 0.0
+var _enemies_killed: int = 0
 
 @onready var _spawn_timer: Timer = $EnemySpawnTimer
 
@@ -77,6 +78,21 @@ func get_run_time() -> float:
 	return _run_time
 
 
+func get_enemies_killed() -> int:
+	return _enemies_killed
+
+
+## Difficulty phase (1/2/3) purely as a time-elapsed indicator, matching
+## the phase timing already locked in for v7's enemy-tier spawn mix --
+## usable now even though the enemy tiers themselves aren't built yet.
+func get_phase() -> int:
+	if _run_time < 20.0:
+		return 1
+	if _run_time < 40.0:
+		return 2
+	return 3
+
+
 func _on_enemy_spawn_timer_timeout() -> void:
 	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
@@ -89,6 +105,7 @@ func _on_enemy_spawn_timer_timeout() -> void:
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
+	_enemies_killed += 1
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position
 	loot.type_id = LootTypes.pick_random_type().id

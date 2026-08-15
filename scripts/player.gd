@@ -31,6 +31,7 @@ var hp: float
 var max_hp: float
 var backpack: Dictionary = {}
 
+var _max_fill_ratio: float = 0.0
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
 var _facing: Vector2 = Vector2.UP
@@ -164,8 +165,13 @@ func _find_lowest_rarity_type() -> StringName:
 
 func _update_hp_from_backpack() -> void:
 	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
+	_max_fill_ratio = max(_max_fill_ratio, fill_ratio)
 	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
 	_set_hp(min(hp, max_hp))
+
+
+func get_max_fill_ratio() -> float:
+	return _max_fill_ratio
 
 
 func get_total_loot_value() -> int:

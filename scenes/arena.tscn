@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/menu_link_button.gd" id="15_link"]
 [ext_resource type="Script" path="res://scripts/vignette.gd" id="16_vignette"]
 [ext_resource type="Script" path="res://scripts/magic_circle_decor.gd" id="17_circle"]
+[ext_resource type="Script" path="res://scripts/hud_stat_icon.gd" id="18_staticon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
 bg_color = Color(0.04, 0.03, 0.07, 0.88)
@@ -76,7 +77,7 @@ script = ExtResource("16_vignette")
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 320.0
-offset_bottom = 172.0
+offset_bottom = 268.0
 theme_override_styles/panel = ExtResource("6_panel_dark")
 
 [node name="Margin" type="MarginContainer" parent="HUD/StatsPanel"]
@@ -87,6 +88,63 @@ theme_override_constants/margin_bottom = 10
 
 [node name="VBox" type="VBoxContainer" parent="HUD/StatsPanel/Margin"]
 theme_override_constants/separation = 6
+
+[node name="TimeRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
+theme_override_constants/separation = 8
+
+[node name="TimeIcon" type="Control" parent="HUD/StatsPanel/Margin/VBox/TimeRow"]
+custom_minimum_size = Vector2(20, 20)
+script = ExtResource("18_staticon")
+kind = 0
+icon_color = Color(0.9, 0.9, 0.9, 1)
+
+[node name="TimeValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/TimeRow"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 22
+text = "00:00"
+vertical_alignment = 1
+
+[node name="EssenceRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
+theme_override_constants/separation = 8
+
+[node name="EssenceIcon" type="TextureRect" parent="HUD/StatsPanel/Margin/VBox/EssenceRow"]
+custom_minimum_size = Vector2(20, 20)
+texture = ExtResource("13_coin_icon")
+expand_mode = 1
+stretch_mode = 4
+
+[node name="EssenceValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/EssenceRow"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.9, 0.8, 0.3, 1)
+text = "0"
+vertical_alignment = 1
+
+[node name="StardustRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
+theme_override_constants/separation = 8
+
+[node name="StardustIcon" type="Control" parent="HUD/StatsPanel/Margin/VBox/StardustRow"]
+custom_minimum_size = Vector2(20, 20)
+script = ExtResource("18_staticon")
+kind = 1
+icon_color = Color(0.3, 0.75, 0.9, 1)
+
+[node name="StardustValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/StardustRow"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.3, 0.75, 0.9, 1)
+text = "0.0"
+vertical_alignment = 1
+
+[node name="StardustRateLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox/StardustRow"]
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+text = "(+0.05/sec)"
+vertical_alignment = 1
+
+[node name="Divider1" type="ColorRect" parent="HUD/StatsPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 1)
+color = Color(0.3, 0.3, 0.3, 0.6)
 
 [node name="HPRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_constants/separation = 8
@@ -137,16 +195,16 @@ text = "Speed: 250   Pickup Range: 60   Capacity: 20"
 [node name="GameOverCircle" type="Control" parent="HUD"]
 process_mode = 3
 visible = false
-custom_minimum_size = Vector2(420, 420)
+custom_minimum_size = Vector2(560, 560)
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -210.0
-offset_top = -210.0
-offset_right = 210.0
-offset_bottom = 210.0
+offset_left = -280.0
+offset_top = -280.0
+offset_right = 280.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -160,31 +218,51 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -140.0
-offset_right = 260.0
-offset_bottom = 140.0
+offset_left = -240.0
+offset_top = -300.0
+offset_right = 240.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_gameover")
 
 [node name="GameOverMargin" type="MarginContainer" parent="HUD/GameOverPanel"]
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 20
 
 [node name="GameOverVBox" type="VBoxContainer" parent="HUD/GameOverPanel/GameOverMargin"]
-theme_override_constants/separation = 16
-alignment = 1
+theme_override_constants/separation = 10
+alignment = 0
 
 [node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
-theme_override_font_sizes/font_size = 32
-theme_override_colors/font_color = Color(0.88, 0.4, 0.6, 1)
-theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_constants/outline_size = 3
 theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
-text = "LOST TO THE VOID"
+text = "RUN SUMMARY"
 horizontal_alignment = 1
+
+[node name="HeaderDivider" type="ColorRect" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
+custom_minimum_size = Vector2(0, 2)
+color = Color(0.92, 0.82, 0.4, 0.85)
+
+[node name="Spacer1" type="Control" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
+custom_minimum_size = Vector2(0, 4)
+
+[node name="SummaryBody" type="RichTextLabel" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 380)
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+theme_override_font_sizes/normal_font_size = 14
+theme_override_font_sizes/bold_font_size = 14
+
+[node name="Spacer2" type="Control" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
+custom_minimum_size = Vector2(0, 4)
 
 [node name="ContinueButton" type="Button" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
 process_mode = 3
