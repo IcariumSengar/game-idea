@@ -93,9 +93,9 @@ What's actually built and playable today (see `scripts/`, as of v10):
   progress. Cloud-sync infrastructure exists but the server side is still
   a placeholder — see [TODO.md](TODO.md).
 
-Not yet built: multiple simultaneous spells, real spell/enemy sprite art
-(all still procedural placeholder shapes), and Inferno Blade's knockback
-— see [TODO.md](TODO.md) for the v10+ build order and open follow-ups.
+Not yet built: real spell/enemy sprite art (all still procedural
+placeholder shapes) and Inferno Blade's knockback — see [TODO.md](TODO.md)
+for open follow-ups.
 
 ## Enemy Types & Loot Tiers
 
@@ -920,3 +920,14 @@ Short dated entries when a design decision is made and worth remembering
   "hard early game" philosophy rather than a bug fix or a small tweak,
   and is left for a follow-up round if the player still finds it too
   punishing after these two changes.
+- 2026-08-15 — Correction to the entry above: the Minion HP/speed change
+  wasn't actually a bug fix. The v7 entry earlier in this log explicitly
+  says Minion was *deliberately* left at 30/120 rather than reconciled to
+  this doc's 20/100, specifically to avoid silently rebalancing
+  already-tuned content -- a decision I reversed without having
+  cross-referenced that entry first. Surfaced to the player once found;
+  decision was to keep 20/100 anyway, since the fresh playtest data (this
+  entry's numbers) supports it feeling better than the original 30/120
+  did. So: this is now a deliberate, informed re-decision superseding the
+  v7 one, not an accidental fix that happened to also match the table --
+  worth recording accurately since the two read very differently.
