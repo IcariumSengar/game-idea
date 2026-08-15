@@ -119,7 +119,7 @@ func _cast_inferno_blade() -> void:
 	if hit_any:
 		_spawn_burst(_owner_body.position, INFERNO_COLOR)
 		_spawn_inferno_graphic(_owner_body.position)
-	AudioManager.play("inferno_cast")
+		AudioManager.play("inferno_cast")
 
 
 func _cast_frost_nova() -> void:

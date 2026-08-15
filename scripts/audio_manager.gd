@@ -25,7 +25,7 @@ func _ready() -> void:
 	_streams["click"] = _make_tone(520.0, 0.03, 0.2, "sine")
 	_streams["enemy_cast"] = _make_sweep(300.0, 500.0, 0.08, 0.25)
 	_streams["arcane_cast"] = _make_tone(600.0, 0.05, 0.25, "sine")
-	_streams["inferno_cast"] = _make_tone(180.0, 0.09, 0.4, "square", true)
+	_streams["inferno_cast"] = _make_sweep(700.0, 140.0, 0.13, 0.38, "square")
 	_streams["frost_cast"] = _make_chime([500.0, 750.0], 0.06, 0.3)
 
 	for i in POOL_SIZE:
@@ -67,7 +67,7 @@ func _make_tone(
 
 
 func _make_sweep(
-	freq_start: float, freq_end: float, duration: float, volume: float
+	freq_start: float, freq_end: float, duration: float, volume: float, wave: String = "sine"
 ) -> AudioStreamWAV:
 	var sample_count := int(SAMPLE_RATE * duration)
 	var data := PackedByteArray()
@@ -78,7 +78,10 @@ func _make_sweep(
 		var env: float = 1.0 - progress
 		var f: float = lerp(freq_start, freq_end, progress)
 		phase += f / SAMPLE_RATE
-		var sample: float = sin(TAU * phase) * env * volume
+		var wave_value: float = sin(TAU * phase)
+		if wave == "square":
+			wave_value = 1.0 if wave_value >= 0.0 else -1.0
+		var sample: float = wave_value * env * volume
 		data.encode_s16(i * 2, clampi(int(sample * 32767.0), -32768, 32767))
 	return _to_wav(data)
 
