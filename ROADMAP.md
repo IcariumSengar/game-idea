@@ -7,7 +7,9 @@
 ## Current State
 
 - **v4 (released):** Core loop playable end-to-end
-- **v5 (in progress):** Polish & juice (UI/audio/animations)
+- **v5 (released):** Polish & juice (UI/audio/animations)
+- **v6 (released):** Balance rebalance + HUD/UI system (stats overlay,
+  death summary, skill tree tooltips)
 
 ---
 
@@ -15,8 +17,7 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v6** | Balance rebalance (hard early game) | Ready for implementation |
-| **v7** | Enemy types + Magic spells | Design locked, ready next |
+| **v7** | Enemy types + Magic spells | In progress |
 | **v8+** | Multi-spell expansion | Design noted for future |
 
 **For details on each version:** See [DESIGN.md](DESIGN.md)

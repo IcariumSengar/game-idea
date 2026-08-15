@@ -2,6 +2,35 @@
 
 All notable fixed versions of this project are documented here.
 
+## v6 - 2026-08-15
+
+Balance rebalance plus the HUD/UI system promised for v5's follow-up:
+harder early game, a live in-run stats readout, a real death summary,
+and richer skill tree tooltips.
+
+- Backpack economy slowed down per the "many runs, hard early game"
+  philosophy: Stardust income cut to 0.05/sec (was 0.33/sec), Bearing
+  (backpack slot) cost raised to 100 base ×1.25/lvl (was 20 ×1.20/lvl),
+  Compacting tier costs raised across the board. Player-power upgrades
+  stay cheap and early, so the ladder now reads: player stats (early
+  wins) → Compacting (mid wins) → Bearing (late-game prestige).
+- Fixed ambient magic particles clumping into a single fixed sparkle at
+  the arena's center instead of drifting across it (wrong
+  `emission_shape` enum value).
+- In-run HUD gains a live Time/Essence/Stardust readout above the HP
+  bar, updated every frame.
+- Death screen is now a full run summary: time survived, difficulty
+  phase reached, rewards earned this run, loot collected broken down
+  by rarity, run stats (max backpack fill, enemies killed), and a
+  previous-best comparison once one exists.
+- Skill tree tooltips get a currency-colored border (gold/cyan),
+  before/after stat values ("20 → 22"), and affordable/shortfall/
+  maxed/locked status text instead of a plain description box.
+- Adopted TEXT_FLAVOR.md's stat-naming pass: Damage → Spellpower, Move
+  Speed → Swiftness, Magnet Range → Gleam, Backpack Capacity →
+  Bearing, Purge → Discard, and the five Compacting tiers → Commons
+  Hoard / Uncommon Stash / Rare Vault / Epic Trove / Mythic Hoard.
+
 ## v5 - 2026-08-15
 
 The game has a name and a look: **Hoard Survivors**, restyled top to
