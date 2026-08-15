@@ -68,6 +68,10 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
 - [x] Compacting (per-tier) + Purge — full gameplay mechanics implemented
 - [x] Compacting gameplay: stack sizes increase per tier based on Compactor level
 - [x] Purge gameplay: auto-discard lowest-rarity items at threshold 90/85/80/70%
+- [x] HUD & UI Design (see DESIGN.md) — live stats overlay (Time/Essence/
+      Stardust), full death summary screen (rewards, loot breakdown, run
+      stats, previous best), and skill tree tooltips (colored border,
+      before/after values, affordability status)
 
 ## Done
 

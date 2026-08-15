@@ -25,16 +25,16 @@ const STATUS_RED: Color = Color(0.85, 0.3, 0.28, 1.0)
 const STATUS_MUTED: Color = Color(0.6, 0.6, 0.62, 1.0)
 
 const STAT_DESCRIPTIONS: Dictionary = {
-	&"damage": "Strengthens your spellblade, dealing more damage per strike.",
-	&"move_speed": "Quickens your step through the void.",
+	&"damage": "Your spells crackle with arcane power, striking harder.",
+	&"move_speed": "Swift feet carry you through the void.",
 	&"pickup_range": "Widens your arcane pull, drawing loot in from farther away.",
 	&"backpack_capacity": "Stitches an extra pocket into your satchel.",
-	&"compactor_common": "Binds Common loot more tightly, raising its max stack.",
-	&"compactor_uncommon": "Binds Uncommon loot more tightly, raising its max stack.",
-	&"compactor_rare": "Binds Rare loot more tightly, raising its max stack.",
-	&"compactor_epic": "Binds Epic loot more tightly, raising its max stack.",
-	&"compactor_mythic": "Binds Mythic loot more tightly, raising its max stack.",
-	&"purge": "Automatically banishes your lowest-rarity loot once your hoard nears its limit.",
+	&"compactor_common": "Grows your Commons Hoard, raising its max stack.",
+	&"compactor_uncommon": "Grows your Uncommon Stash, raising its max stack.",
+	&"compactor_rare": "Grows your Rare Vault, raising its max stack.",
+	&"compactor_epic": "Grows your Epic Trove, raising its max stack.",
+	&"compactor_mythic": "Grows your Mythic Hoard, raising its max stack.",
+	&"purge": "Automatically discards your lowest-rarity loot once your hoard nears its limit.",
 }
 
 var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)

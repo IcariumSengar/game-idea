@@ -33,7 +33,7 @@ func _ready() -> void:
 	_player.loot_changed.connect(_on_loot_changed)
 	_player.died.connect(_on_player_died)
 	_stats_label.text = (
-		"Speed: %d   Magnet Range: %d   Capacity: %d"
+		"Swiftness: %d   Gleam: %d   Bearing: %d"
 		% [_player.speed, _player.pickup_range, _player.backpack_capacity]
 	)
 	_on_loot_changed(_player.backpack)

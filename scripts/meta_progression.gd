@@ -23,7 +23,7 @@ const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
 const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
 const STAT_PURGE: StringName = &"purge"
 
-## v6 balance: deliberately slow -- Capacity is a late-game prestige
+## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
 
@@ -44,26 +44,16 @@ var _slot_metadata: Array = []  # Array of {date, playtime, stats}
 
 func _ready() -> void:
 	_register_stat(
-		STAT_BACKPACK_CAPACITY,
-		"Backpack Capacity",
-		1.0,
-		1.0,
-		100,
-		1.25,
-		10,
-		0,
-		StatDef.Currency.BACKPACK
+		STAT_BACKPACK_CAPACITY, "Bearing", 1.0, 1.0, 100, 1.25, 10, 0, StatDef.Currency.BACKPACK
 	)
+	_register_stat(STAT_PICKUP_RANGE, "Gleam", 60.0, 8.0, 12, 1.15, 15, 0, StatDef.Currency.PLAYER)
+	_register_stat(STAT_DAMAGE, "Spellpower", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)
 	_register_stat(
-		STAT_PICKUP_RANGE, "Magnet Range", 60.0, 8.0, 12, 1.15, 15, 0, StatDef.Currency.PLAYER
-	)
-	_register_stat(STAT_DAMAGE, "Damage", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)
-	_register_stat(
-		STAT_MOVE_SPEED, "Move Speed", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
+		STAT_MOVE_SPEED, "Swiftness", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
 	_register_stat(
 		STAT_COMPACTOR_COMMON,
-		"Common Binding",
+		"Commons Hoard",
 		10.0,
 		10.0,
 		12,
@@ -74,7 +64,7 @@ func _ready() -> void:
 	)
 	_register_stat(
 		STAT_COMPACTOR_UNCOMMON,
-		"Uncommon Binding",
+		"Uncommon Stash",
 		8.0,
 		5.0,
 		18,
@@ -84,15 +74,15 @@ func _ready() -> void:
 		StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_RARE, "Rare Binding", 5.0, 3.0, 28, 1.16, 5, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_RARE, "Rare Vault", 5.0, 3.0, 28, 1.16, 5, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_EPIC, "Epic Binding", 3.0, 2.0, 42, 1.18, 4, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_EPIC, "Epic Trove", 3.0, 2.0, 42, 1.18, 4, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_MYTHIC, "Mythic Binding", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_MYTHIC, "Mythic Hoard", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
 	)
-	_register_stat(STAT_PURGE, "Purge", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	_register_stat(STAT_PURGE, "Discard", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	_initialize_slots()
 	_load_slot_metadata()
 	_load()

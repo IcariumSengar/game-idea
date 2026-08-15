@@ -2,8 +2,8 @@ class_name StatDef
 extends Resource
 
 ## Cost curve: cost(level) = round(base_cost * cost_growth ^ level). A flat
-## cost_growth of 1.0 degenerates to a constant flat cost -- used for stats
-## that don't have a designed curve yet (e.g. Backpack Capacity).
+## cost_growth of 1.0 would degenerate to a constant flat cost, though every
+## registered stat currently has a designed (>1.0) growth curve.
 
 enum Currency { PLAYER, BACKPACK }
 

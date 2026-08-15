@@ -1,5 +1,18 @@
 # Game Text Flavor Spec (Hoard Survivors)
 
+## Status
+
+**Adopted 2026-08-15.** The stat and Compacting-tier renames from the
+Summary Recommendations table below are implemented in
+`scripts/meta_progression.gd` and `scripts/skill_tree_view.gd`: Damage →
+Spellpower, Move Speed → Swiftness, Magnet Range → Gleam, Backpack
+Capacity → Bearing, Purge → Discard, and the five Compacting tiers →
+Commons Hoard / Uncommon Stash / Rare Vault / Epic Trove / Mythic Hoard.
+One deviation from this doc: Backpack Currency shipped as **Stardust**
+(v5 naming pass, tied to the game's cosmic aesthetic) rather than the
+"Endurance" suggested here. See DESIGN.md's decisions log for both
+naming passes.
+
 ## Overview
 
 This spec defines the voice, tone, and naming conventions for all in-game text: menus, stats, skills, UI copy, etc. Goal: consistent personality that reinforces the core loop (hoarding loot, surviving, getting stronger).

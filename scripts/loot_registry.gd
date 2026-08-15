@@ -1,8 +1,8 @@
 extends Node
 
 ## Central registry of loot rarity tiers -- numbers match the rarity table
-## in DESIGN.md's "Post-MVP direction" section exactly. That table is the
-## source of truth; update there first, then mirror the change here.
+## in DESIGN.md's "Loot, backpack & shop economy" section exactly. That
+## table is the source of truth; update there first, then mirror here.
 ## Data-driven like MetaProgression's stats -- add a tier with one
 ## _register() call, everything else (drop rolls, backpack coloring,
 ## currency value, stack limits) reads the registry generically.
