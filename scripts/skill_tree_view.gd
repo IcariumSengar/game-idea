@@ -12,6 +12,10 @@ const NODE_RADIUS: float = 24.0
 const CAPSTONE_RADIUS: float = 30.0
 const NODE_SPACING: Vector2 = Vector2(66.0, 84.0)
 const ZIGZAG_AMOUNT: float = 15.0
+## Wide sibling groups (e.g. Spell Unlock's 6 gated upgrade nodes) wrap
+## after this many instead of spreading across a single row, which would
+## otherwise overflow past the tree column's width.
+const MAX_CHILDREN_PER_ROW: int = 4
 const PULSE_DECAY_PER_SEC: float = 2.5
 const PULSE_SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const LOCKED_BORDER: Color = Color(0.32, 0.32, 0.34, 1.0)
@@ -54,6 +58,7 @@ class TreeNode:
 	var children: Array[TreeNode] = []
 	var parent: TreeNode = null
 	var is_real_gate: bool = false
+	var gate_min_level: int = 1
 
 
 func _ready() -> void:
@@ -137,6 +142,20 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 		MetaProgression.STAT_COMPACTOR_EPIC: MetaProgression.STAT_COMPACTOR_RARE,
 		MetaProgression.STAT_COMPACTOR_MYTHIC: MetaProgression.STAT_COMPACTOR_EPIC,
 		MetaProgression.STAT_PURGE: MetaProgression.STAT_COMPACTOR_RARE,
+		MetaProgression.STAT_INFERNO_FURY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_INFERNO_ARC_WIDTH: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_INFERNO_BURN_DAMAGE: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_FROST_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_FROST_RADIUS: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_FROST_SLOW_STRENGTH: MetaProgression.STAT_SPELL_UNLOCK,
+	}
+	# Frost's nodes need Spell Unlock L2, not just L1 like everything else
+	# gated behind it -- shown in the LOCKED tooltip so it's not confused
+	# with Inferno's (also "Requires: Spell Unlock") gate.
+	var gate_min_level: Dictionary = {
+		MetaProgression.STAT_FROST_FREQUENCY: 2,
+		MetaProgression.STAT_FROST_RADIUS: 2,
+		MetaProgression.STAT_FROST_SLOW_STRENGTH: 2,
 	}
 
 	for child_id: StringName in parent_of:
@@ -146,6 +165,7 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 			var parent: TreeNode = nodes_by_id[parent_id]
 			child.parent = parent
 			child.is_real_gate = true
+			child.gate_min_level = gate_min_level.get(child_id, 1)
 			parent.children.append(child)
 
 
@@ -190,22 +210,32 @@ func _position_subtree(node: TreeNode, x: float, y: float, spacing: float, depth
 		_position_subtree(node.children[0], x + offset, y + NODE_SPACING.y, spacing, depth + 1)
 		return
 
-	var children_width: float = node.children.size() * spacing
-	var start_x: float = x - children_width / 2.0 + spacing / 2.0
+	var row_count: int = mini(node.children.size(), MAX_CHILDREN_PER_ROW)
 
 	for i in range(node.children.size()):
-		var child: TreeNode = node.children[i]
-		var child_x: float = start_x + i * spacing
-		_position_subtree(child, child_x, y + NODE_SPACING.y, spacing * 0.85, depth + 1)
+		var row: int = i / row_count
+		var col: int = i % row_count
+		var items_in_row: int = mini(row_count, node.children.size() - row * row_count)
+		var row_width: float = items_in_row * spacing
+		var row_start_x: float = x - row_width / 2.0 + spacing / 2.0
+		var child_x: float = row_start_x + col * spacing
+		var child_y: float = y + NODE_SPACING.y * (row + 1)
+		_position_subtree(node.children[i], child_x, child_y, spacing * 0.85, depth + 1)
 
 
 func _get_subtree_height(node: TreeNode) -> float:
 	if node.children.is_empty():
 		return NODE_RADIUS * 2.0
+	var row_count: int = (
+		1 if node.children.size() == 1 else mini(node.children.size(), MAX_CHILDREN_PER_ROW)
+	)
+	var num_rows: int = (
+		1 if node.children.size() == 1 else ceili(float(node.children.size()) / float(row_count))
+	)
 	var max_child_height: float = 0.0
 	for child in node.children:
 		max_child_height = max(max_child_height, _get_subtree_height(child))
-	return NODE_RADIUS * 2.0 + NODE_SPACING.y + max_child_height
+	return NODE_RADIUS * 2.0 + NODE_SPACING.y * num_rows + max_child_height
 
 
 func _get_node_radius(node: TreeNode) -> float:
@@ -242,11 +272,11 @@ func _build_tooltip_text(node: TreeNode) -> String:
 		lines.append("")
 		lines.append("[color=#%s]LOCKED[/color]" % STATUS_RED.to_html(false))
 		if node.parent != null:
+			var requirement: String = node.parent.def.display_name
+			if node.gate_min_level > 1:
+				requirement += " Lv%d" % node.gate_min_level
 			lines.append(
-				(
-					"[color=#%s]Requires: %s[/color]"
-					% [STATUS_MUTED.to_html(false), node.parent.def.display_name]
-				)
+				"[color=#%s]Requires: %s[/color]" % [STATUS_MUTED.to_html(false), requirement]
 			)
 		return "\n".join(lines)
 
@@ -453,6 +483,8 @@ func _draw_stat_icon(stat_id: StringName, center: Vector2, s: float, color: Colo
 			_draw_bag_icon(center, s, color)
 		MetaProgression.STAT_PURGE:
 			_draw_purge_icon(center, s, color)
+		MetaProgression.STAT_SPELL_UNLOCK:
+			_draw_sparkle_icon(center, s, color)
 		_:
 			_draw_gem_icon(stat_id, center, s, color)
 
@@ -516,6 +548,17 @@ func _draw_bag_icon(center: Vector2, s: float, color: Color) -> void:
 func _draw_purge_icon(center: Vector2, s: float, color: Color) -> void:
 	draw_line(center + Vector2(-s * 0.6, -s * 0.6), center + Vector2(s * 0.6, s * 0.6), color, 3.5)
 	draw_line(center + Vector2(-s * 0.6, s * 0.6), center + Vector2(s * 0.6, -s * 0.6), color, 3.5)
+
+
+func _draw_sparkle_icon(center: Vector2, s: float, color: Color) -> void:
+	draw_line(center + Vector2(0.0, -s), center + Vector2(0.0, s), color, 3.0)
+	draw_line(center + Vector2(-s, 0.0), center + Vector2(s, 0.0), color, 3.0)
+	draw_line(
+		center + Vector2(-s * 0.55, -s * 0.55), center + Vector2(s * 0.55, s * 0.55), color, 2.0
+	)
+	draw_line(
+		center + Vector2(-s * 0.55, s * 0.55), center + Vector2(s * 0.55, -s * 0.55), color, 2.0
+	)
 
 
 func _draw_gem_icon(stat_id: StringName, center: Vector2, s: float, color: Color) -> void:

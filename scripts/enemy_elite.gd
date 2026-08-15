@@ -33,9 +33,9 @@ func _update_behavior(delta: float) -> void:
 	var to_target: Vector2 = target.position - position
 	var distance: float = to_target.length()
 	if distance < preferred_range - range_tolerance:
-		velocity = -to_target.normalized() * speed
+		velocity = -to_target.normalized() * _slowed(speed)
 	elif distance > preferred_range + range_tolerance:
-		velocity = to_target.normalized() * speed
+		velocity = to_target.normalized() * _slowed(speed)
 	else:
 		velocity = Vector2.ZERO
 	move_and_slide()

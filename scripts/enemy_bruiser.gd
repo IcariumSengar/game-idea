@@ -40,9 +40,10 @@ func _update_behavior(delta: float) -> void:
 				_charge_distance_left = charge_distance
 				_state = State.CHARGE
 		State.CHARGE:
-			velocity = _charge_direction * charge_speed
+			var effective_speed: float = _slowed(charge_speed)
+			velocity = _charge_direction * effective_speed
 			move_and_slide()
-			_charge_distance_left -= charge_speed * delta
+			_charge_distance_left -= effective_speed * delta
 			_apply_contact_damage(delta)
 			if _charge_distance_left <= 0.0:
 				_state = State.PAUSE

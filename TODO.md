@@ -25,16 +25,17 @@ this file should stay short enough to skim.
 
 ## Future Content (Locked Design, Post-v8)
 
-### Magic Spells (v9)
+### Magic Spells (v9) follow-up
 
-- [ ] Single-spell system: player chooses 1 active spell (switch in shop)
-  - [ ] Arcane Bolt: ranged projectile spell, base game
-  - [ ] Inferno Blade: melee swing with burn DOT, unlock via Spell Unlock L1
-  - [ ] Frost Nova: crowd control freeze zones, unlock via Spell Unlock L2
-  - [ ] Spell Unlock node: gated progression (L1 → Inferno, L2 → Frost Nova, L3+ reserved)
-  - [ ] Spell upgrades: Haste/Arc/Radius per spell, Spellpower shared stat
-  - [ ] Spell visuals: magic-themed (blue, orange/red, cyan effects)
-  - [ ] Verify feel: each spell plays differently, swapping spells changes strategy
+- [ ] Inferno Blade's "Knockback: 200 pixels" not implemented -- Enemy has
+      no knockback-velocity system yet (only Player does). Damage, burn
+      DOT, and arc-hit detection all work without it.
+- [ ] Verify feel in a full playtest: each spell plays differently,
+      swapping spells changes strategy -- shop-side switching and the
+      Spell Unlock L1/L2 gating were verified live; in-arena combat feel
+      for Inferno/Frost specifically wasn't fully played through
+- [ ] Real spell visuals/SFX (currently procedural shapes + synthesized
+      tones, same placeholder approach as Bruiser/Elite)
 
 ### Multiple Active Spells (v10+, expansion)
 
@@ -94,6 +95,19 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
         instead of accumulating — now tracks real elapsed session time
       - Switching to an empty slot silently kept whatever was in memory
         from the previously loaded slot instead of resetting to defaults
+- [x] Backpack-fill speed penalty — a full bag now also slows movement
+      (floor 70% of base speed) alongside the existing max-HP shrink
+      (floor 20%), reusing the same fill-ratio lerp in `player.gd`
+- [x] Magic Spells (v9) — single-active-spell casting system replacing
+      the old flat weapon: Arcane Bolt (ranged projectile, always
+      available), Inferno Blade (melee arc + burn DOT, unlocks at Spell
+      Unlock L1), Frost Nova (AOE damage + slow, unlocks at L2). New
+      Spell Unlock skill-tree node plus 8 per-spell upgrade stats (cost
+      curves invented -- DESIGN.md only gave effect shape/caps, not
+      costs). Spell switching + tier unlocking done in the shop's new
+      "Active Spell" panel. Also fixed a skill-tree layout bug this
+      surfaced: nodes with more than 4 children (Spell Unlock has 6)
+      overflowed past the tree column instead of wrapping to a new row.
 
 ## Done
 

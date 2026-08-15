@@ -56,13 +56,19 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v7):
+What's actually built and playable today (see `scripts/`, as of v9):
 
 - Top-down movement + dash in a single arena; three enemy tiers (Minion
   melee chaser, Bruiser pause/charge, Elite kite + projectile), gated
   into the run by phase (see "Enemy Types & Loot Tiers" below) and
-  spawning faster/more over run duration.
-- One weapon, auto-firing at the nearest enemy; Spellpower is upgradeable.
+  spawning faster/more over run duration. A full bag also slows the
+  player's movement (floor 70% of base speed) on top of the max-HP
+  shrink, per the backpack-fill penalty below.
+- Casting-based combat (`spell_caster.gd`): one active spell at a time,
+  switched in the shop. Arcane Bolt (ranged projectile) is always
+  available; Inferno Blade (melee arc + burn) and Frost Nova (AOE +
+  slow) unlock via the Spell Unlock skill-tree node. Spellpower is
+  upgradeable and scales all three spells proportionally.
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
   drop weight, picked up via a proximity-based magnet radius (Gleam
@@ -86,9 +92,9 @@ What's actually built and playable today (see `scripts/`, as of v7):
   progress. Cloud-sync infrastructure exists but the server side is still
   a placeholder — see [TODO.md](TODO.md).
 
-Not yet built: magic spells (single weapon is still hardcoded, not
-spell-based), and multiple simultaneous spells — see [TODO.md](TODO.md)
-for the v9/v10+ build order.
+Not yet built: multiple simultaneous spells, real spell/enemy sprite art
+(all still procedural placeholder shapes), and Inferno Blade's knockback
+— see [TODO.md](TODO.md) for the v10+ build order and open follow-ups.
 
 ## Enemy Types & Loot Tiers
 
@@ -808,3 +814,28 @@ Short dated entries when a design decision is made and worth remembering
   "enemy tiers and their gems went missing." Fixed with the same clamp
   Player already uses, applied generically in `Enemy._physics_process()`
   so it covers Minion and any future tier too, not just these two.
+- 2026-08-15 — Backpack-fill speed penalty built: `player.gd` now
+  recomputes an `_effective_speed` alongside `max_hp` whenever the
+  backpack changes, using the same `lerp(1.0, floor, fill_ratio)` shape
+  with a 0.7 floor (vs HP's 0.2), matching the shape sketched earlier
+  today. Dash stays at its own fixed speed, unaffected — the penalty is
+  on sustained movement, not the escape tool.
+- 2026-08-15 — v9 Magic Spells implemented: single-active-spell casting
+  (`spell_caster.gd`) replaces the old flat auto-fire weapon. Arcane
+  Bolt fires a projectile at the nearest enemy; Inferno Blade hits
+  everything in a facing-direction arc and applies a burn DOT (ticked
+  over 3 intervals); Frost Nova hits everything in a radius around the
+  player and applies Enemy's new `apply_slow()` status. All three scale
+  with Spellpower proportionally to their own base Power value. Spell
+  Unlock is a new gated Player Tree node (base cost 25, ×1.20/lvl, cap
+  5) — L1 unlocks Inferno Blade, L2 unlocks Frost Nova, matching this
+  doc's Spell System Structure exactly. The 8 per-spell upgrade stats
+  (Haste/Velocity, Fury/Arc Width/Burn Damage, Frequency/Radius/Slow
+  Strength) got invented cost curves, since this doc only specified
+  their effect shape and caps, not costs — same treatment as v7's
+  enemy contact-damage constants. One documented gap: Inferno's 200px
+  knockback isn't implemented (Enemy has no knockback-velocity system
+  yet); damage, burn, and arc-hit detection all work without it. Also
+  fixed a skill-tree layout bug this surfaced: a node with more than 4
+  children (Spell Unlock has 6) overflowed past the tree column instead
+  of wrapping to a new row.

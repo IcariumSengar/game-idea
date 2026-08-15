@@ -126,13 +126,48 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = 350.0
-offset_top = -40.0
+offset_top = -180.0
 offset_right = 610.0
-offset_bottom = 40.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
+
+[node name="SpellSelectorLabel" type="Label" parent="ButtonContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
+text = "ACTIVE SPELL"
+horizontal_alignment = 1
+
+[node name="ArcaneBoltButton" type="Button" parent="ButtonContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 16
+text = "Arcane Bolt"
+script = ExtResource("7_link")
+
+[node name="InfernoBladeButton" type="Button" parent="ButtonContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 16
+text = "Inferno Blade"
+script = ExtResource("7_link")
+
+[node name="FrostNovaButton" type="Button" parent="ButtonContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 16
+text = "Frost Nova"
+script = ExtResource("7_link")
+
+[node name="Spacer2" type="Control" parent="ButtonContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="StartRunButton" type="Button" parent="ButtonContainer"]
 layout_mode = 2
@@ -148,5 +183,8 @@ theme_override_font_sizes/font_size = 16
 text = "← BACK"
 script = ExtResource("7_link")
 
+[connection signal="pressed" from="ButtonContainer/ArcaneBoltButton" to="." method="_on_spell_button_pressed" binds = [&"arcane_bolt"]]
+[connection signal="pressed" from="ButtonContainer/InfernoBladeButton" to="." method="_on_spell_button_pressed" binds = [&"inferno_blade"]]
+[connection signal="pressed" from="ButtonContainer/FrostNovaButton" to="." method="_on_spell_button_pressed" binds = [&"frost_nova"]]
 [connection signal="pressed" from="ButtonContainer/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="pressed" from="ButtonContainer/BackButton" to="." method="_on_back_pressed"]

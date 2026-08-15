@@ -20,6 +20,7 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tsc
 const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const ARENA_MARGIN: float = 16.0
+const FROST_TINT: Color = Color(0.6, 0.9, 1.3, 1.0)
 
 @export var speed: float = 120.0
 @export var max_hp: float = 30.0
@@ -36,6 +37,9 @@ var target: Player
 var _flash_amount: float = 0.0
 var _contact_cooldown: float = 0.0
 var _approach_offset: Vector2 = Vector2.ZERO
+var _base_modulate: Color = Color.WHITE
+var _slow_multiplier: float = 1.0
+var _slow_time_left: float = 0.0
 
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -48,6 +52,7 @@ func _ready() -> void:
 	var radius := randf_range(20.0, 60.0)
 	_approach_offset = Vector2(cos(angle), sin(angle)) * radius
 	_sprite.play("run")
+	_base_modulate = modulate
 
 
 func _physics_process(delta: float) -> void:
@@ -65,6 +70,24 @@ func _physics_process(delta: float) -> void:
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
+	if _slow_time_left > 0.0:
+		_slow_time_left -= delta
+		modulate = _base_modulate * FROST_TINT
+		if _slow_time_left <= 0.0:
+			_slow_multiplier = 1.0
+			modulate = _base_modulate
+
+
+## Frost Nova's slow -- a re-cast while already slowed takes whichever
+## effect is stronger/longer rather than just overwriting, so overlapping
+## casts don't accidentally weaken an existing slow.
+func apply_slow(multiplier: float, duration: float) -> void:
+	_slow_multiplier = min(_slow_multiplier, multiplier)
+	_slow_time_left = max(_slow_time_left, duration)
+
+
+func _slowed(value: float) -> float:
+	return value * _slow_multiplier
 
 
 ## Applies the run's difficulty ramp (see Arena.RAMP_DURATION). Subclasses
@@ -80,7 +103,7 @@ func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
 ## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
 ## this for their own movement/attack pattern.
 func _update_behavior(delta: float) -> void:
-	velocity = position.direction_to(target.position + _approach_offset) * speed
+	velocity = position.direction_to(target.position + _approach_offset) * _slowed(speed)
 	move_and_slide()
 	_apply_contact_damage(delta)
 

@@ -13,6 +13,10 @@ const HIT_FLASH_COLOR: Color = Color(1.0, 0.35, 0.35)
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 const MIN_HP_FRACTION: float = 0.2
+## Secondary backpack-fill penalty per DESIGN.md: shallower floor than HP's
+## (-30% vs -80% at a full bag) -- HP shrink stays the dominant risk signal,
+## this is a compounding pressure on top of it, not a replacement.
+const MIN_SPEED_FRACTION: float = 0.7
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")
@@ -31,6 +35,7 @@ var hp: float
 var max_hp: float
 var backpack: Dictionary = {}
 
+var _effective_speed: float = 0.0
 var _max_fill_ratio: float = 0.0
 var _flash_amount: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
@@ -50,6 +55,7 @@ func _ready() -> void:
 	backpack_capacity = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
 	pickup_range = MetaProgression.get_stat(MetaProgression.STAT_PICKUP_RANGE)
 	speed = MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED)
+	_effective_speed = speed
 	max_hp = base_max_hp
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
@@ -85,7 +91,7 @@ func _physics_process(delta: float) -> void:
 		_dash_time_left -= delta
 		velocity = _dash_direction * dash_speed
 	else:
-		velocity = input_direction * speed + _knockback
+		velocity = input_direction * _effective_speed + _knockback
 
 	move_and_slide()
 	position = position.clamp(Vector2(RADIUS, RADIUS), arena_size - Vector2(RADIUS, RADIUS))
@@ -167,11 +173,16 @@ func _update_hp_from_backpack() -> void:
 	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
 	_max_fill_ratio = max(_max_fill_ratio, fill_ratio)
 	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
+	_effective_speed = speed * lerp(1.0, MIN_SPEED_FRACTION, fill_ratio)
 	_set_hp(min(hp, max_hp))
 
 
 func get_max_fill_ratio() -> float:
 	return _max_fill_ratio
+
+
+func get_facing() -> Vector2:
+	return _facing
 
 
 func get_total_loot_value() -> int:

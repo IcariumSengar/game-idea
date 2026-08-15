@@ -13,6 +13,16 @@ var _last_backpack_currency: int = -1
 @onready var _player_tree: SkillTreeView = %PlayerTreeView
 @onready var _backpack_header: Label = %BackpackHeader
 @onready var _player_header: Label = %PlayerHeader
+@onready var _spell_buttons: Dictionary = {
+	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltButton,
+	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeButton,
+	MetaProgression.SPELL_FROST_NOVA: %FrostNovaButton,
+}
+@onready var _spell_labels: Dictionary = {
+	MetaProgression.SPELL_ARCANE_BOLT: "Arcane Bolt",
+	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
+	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
+}
 
 
 func _ready() -> void:
@@ -20,6 +30,7 @@ func _ready() -> void:
 	MetaProgression.stat_changed.connect(_on_stat_changed)
 	_update_trees()
 	_refresh_currency()
+	_update_spell_buttons()
 
 
 func _update_trees() -> void:
@@ -85,6 +96,27 @@ func _on_currency_changed() -> void:
 
 func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
 	_update_trees()
+	_update_spell_buttons()
+
+
+func _on_spell_button_pressed(spell_id: StringName) -> void:
+	if MetaProgression.set_active_spell(spell_id):
+		AudioManager.play("click")
+		_update_spell_buttons()
+
+
+func _update_spell_buttons() -> void:
+	for spell_id: StringName in _spell_buttons:
+		var button: Button = _spell_buttons[spell_id]
+		var label: String = _spell_labels[spell_id]
+		var unlocked: bool = MetaProgression.is_spell_unlocked(spell_id)
+		button.disabled = not unlocked
+		if not unlocked:
+			button.text = "%s (Locked)" % label
+		elif spell_id == MetaProgression.active_spell:
+			button.text = "> %s" % label
+		else:
+			button.text = label
 
 
 func _on_start_run_button_pressed() -> void:
@@ -120,19 +152,32 @@ func _bounce_label(label: Label) -> void:
 	)
 
 
+## stat_id -> [prerequisite stat_id, minimum level required in it]. Inferno
+## Blade's upgrades need Spell Unlock L1 (where Inferno itself unlocks),
+## Frost Nova's need L2 -- upgrading a spell you don't have yet doesn't
+## make sense.
+func _gate_requirements() -> Dictionary:
+	return {
+		MetaProgression.STAT_COMPACTOR_UNCOMMON: [MetaProgression.STAT_COMPACTOR_COMMON, 1],
+		MetaProgression.STAT_COMPACTOR_RARE: [MetaProgression.STAT_COMPACTOR_UNCOMMON, 1],
+		MetaProgression.STAT_COMPACTOR_EPIC: [MetaProgression.STAT_COMPACTOR_RARE, 1],
+		MetaProgression.STAT_COMPACTOR_MYTHIC: [MetaProgression.STAT_COMPACTOR_EPIC, 1],
+		MetaProgression.STAT_PURGE: [MetaProgression.STAT_COMPACTOR_RARE, 1],
+		MetaProgression.STAT_INFERNO_FURY: [MetaProgression.STAT_SPELL_UNLOCK, 1],
+		MetaProgression.STAT_INFERNO_ARC_WIDTH: [MetaProgression.STAT_SPELL_UNLOCK, 1],
+		MetaProgression.STAT_INFERNO_BURN_DAMAGE: [MetaProgression.STAT_SPELL_UNLOCK, 1],
+		MetaProgression.STAT_FROST_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 2],
+		MetaProgression.STAT_FROST_RADIUS: [MetaProgression.STAT_SPELL_UNLOCK, 2],
+		MetaProgression.STAT_FROST_SLOW_STRENGTH: [MetaProgression.STAT_SPELL_UNLOCK, 2],
+	}
+
+
 func _is_stat_gated(stat_id: StringName) -> bool:
-	match stat_id:
-		MetaProgression.STAT_COMPACTOR_UNCOMMON:
-			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_COMMON) < 1
-		MetaProgression.STAT_COMPACTOR_RARE:
-			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_UNCOMMON) < 1
-		MetaProgression.STAT_COMPACTOR_EPIC:
-			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_RARE) < 1
-		MetaProgression.STAT_COMPACTOR_MYTHIC:
-			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_EPIC) < 1
-		MetaProgression.STAT_PURGE:
-			return MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_RARE) < 1
-	return false
+	var requirements: Dictionary = _gate_requirements()
+	if not requirements.has(stat_id):
+		return false
+	var requirement: Array = requirements[stat_id]
+	return MetaProgression.get_level(requirement[0]) < int(requirement[1])
 
 
 func _is_locked_by_currency(stat_id: StringName) -> bool:

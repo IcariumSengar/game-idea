@@ -11,6 +11,7 @@ extends Node
 
 signal currency_changed
 signal stat_changed(stat_id: StringName, level: int)
+signal active_spell_changed(spell_id: StringName)
 
 const STAT_BACKPACK_CAPACITY: StringName = &"backpack_capacity"
 const STAT_PICKUP_RANGE: StringName = &"pickup_range"
@@ -22,6 +23,19 @@ const STAT_COMPACTOR_RARE: StringName = &"compactor_rare"
 const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
 const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
 const STAT_PURGE: StringName = &"purge"
+const STAT_SPELL_UNLOCK: StringName = &"spell_unlock"
+const STAT_ARCANE_HASTE: StringName = &"arcane_haste"
+const STAT_ARCANE_PROJECTILE_SPEED: StringName = &"arcane_projectile_speed"
+const STAT_INFERNO_FURY: StringName = &"inferno_fury"
+const STAT_INFERNO_ARC_WIDTH: StringName = &"inferno_arc_width"
+const STAT_INFERNO_BURN_DAMAGE: StringName = &"inferno_burn_damage"
+const STAT_FROST_FREQUENCY: StringName = &"frost_frequency"
+const STAT_FROST_RADIUS: StringName = &"frost_radius"
+const STAT_FROST_SLOW_STRENGTH: StringName = &"frost_slow_strength"
+
+const SPELL_ARCANE_BOLT: StringName = &"arcane_bolt"
+const SPELL_INFERNO_BLADE: StringName = &"inferno_blade"
+const SPELL_FROST_NOVA: StringName = &"frost_nova"
 
 ## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
@@ -36,6 +50,7 @@ var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
 var current_slot: int = 0
+var active_spell: StringName = SPELL_ARCANE_BOLT
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -84,6 +99,45 @@ func _ready() -> void:
 		STAT_COMPACTOR_MYTHIC, "Mythic Hoard", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Discard", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	_register_stat(
+		STAT_SPELL_UNLOCK, "Spell Unlock", 0.0, 0.0, 25, 1.20, 5, 0, StatDef.Currency.PLAYER
+	)
+	_register_stat(STAT_ARCANE_HASTE, "Haste", 0.5, -0.05, 15, 1.15, 7, 2, StatDef.Currency.PLAYER)
+	_register_stat(
+		STAT_ARCANE_PROJECTILE_SPEED,
+		"Velocity",
+		400.0,
+		50.0,
+		12,
+		1.15,
+		4,
+		0,
+		StatDef.Currency.PLAYER
+	)
+	_register_stat(STAT_INFERNO_FURY, "Fury", 1.0, -0.15, 18, 1.16, 4, 2, StatDef.Currency.PLAYER)
+	_register_stat(
+		STAT_INFERNO_ARC_WIDTH, "Arc Width", 90.0, 15.0, 15, 1.14, 6, 0, StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_INFERNO_BURN_DAMAGE, "Burn Damage", 0.0, 5.0, 14, 1.13, 12, 0, StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_FROST_FREQUENCY, "Frequency", 2.0, -0.3, 20, 1.18, 4, 1, StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_FROST_RADIUS, "Radius", 150.0, 20.0, 16, 1.15, 7, 0, StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_FROST_SLOW_STRENGTH,
+		"Slow Strength",
+		50.0,
+		5.0,
+		18,
+		1.16,
+		10,
+		0,
+		StatDef.Currency.PLAYER
+	)
 	_initialize_slots()
 	_load_slot_metadata()
 	_load()
@@ -133,6 +187,25 @@ func update_best_run(seconds_survived: float) -> float:
 	if seconds_survived > best_run_time:
 		best_run_time = seconds_survived
 	return previous_best
+
+
+func is_spell_unlocked(spell_id: StringName) -> bool:
+	match spell_id:
+		SPELL_ARCANE_BOLT:
+			return true
+		SPELL_INFERNO_BLADE:
+			return get_level(STAT_SPELL_UNLOCK) >= 1
+		SPELL_FROST_NOVA:
+			return get_level(STAT_SPELL_UNLOCK) >= 2
+	return false
+
+
+func set_active_spell(spell_id: StringName) -> bool:
+	if not is_spell_unlocked(spell_id):
+		return false
+	active_spell = spell_id
+	active_spell_changed.emit(spell_id)
+	return true
 
 
 func buy_upgrade(id: StringName) -> bool:
@@ -219,6 +292,7 @@ func _load() -> void:
 	player_currency = data.get("player_currency", 0)
 	backpack_currency = data.get("backpack_currency", 0)
 	best_run_time = data.get("best_run_time", 0.0)
+	active_spell = StringName(data.get("active_spell", SPELL_ARCANE_BOLT))
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
@@ -234,6 +308,7 @@ func _reset_to_defaults() -> void:
 	player_currency = 0
 	backpack_currency = 0
 	best_run_time = 0.0
+	active_spell = SPELL_ARCANE_BOLT
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 
@@ -244,6 +319,7 @@ func save() -> void:
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
+		"active_spell": String(active_spell),
 		"stat_levels": _stat_levels
 	}
 	var slot_file := _get_slot_save_path(current_slot)
