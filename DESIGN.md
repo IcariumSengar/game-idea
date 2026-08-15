@@ -85,6 +85,161 @@ Not yet built: save/load system (4 slots + cloud-sync, design above),
 Compacting (per-tier), Purge, and the skill-tree shop layout — see
 [TODO.md](TODO.md) for the remaining build order.
 
+## Enemy Types & Loot Tiers
+
+Three enemy tiers, each with distinct attack pattern and loot weighting. Higher-tier enemies drop better loot, creating progression incentive: survive longer → face harder enemies → earn better loot → upgrade → tackle longer runs.
+
+### Tier 1: Minion (baseline, current)
+
+**Attack:** Simple melee chaser. Moves toward player continuously.
+
+**Stats:**
+- Base HP: 20
+- Base speed: 100
+- Attack: On-contact damage
+- Scaling: HP and speed scale with run duration (45-sec ramp, ×1.5–3.0 by end)
+
+**Loot:** 60% Common, 30% Uncommon, 10% Rare
+
+**Role:** Bulk enemy; teaches fundamentals
+
+### Tier 2: Bruiser (mid-game)
+
+**Attack:** Charge. Pauses 2–3 sec, then charges in straight line. Resets after hit/miss.
+
+**Stats:**
+- Base HP: 35 (+75% vs Minion)
+- Base speed: 70 (slower, but charges at 250)
+- Charge distance: ~400 pixels
+- Scaling: HP and charge speed scale with run duration
+
+**Loot:** 20% Common, 50% Uncommon, 25% Rare, 5% Epic
+
+**Role:** Introduces evasion timing; requires dodge-ability
+
+### Tier 3: Elite (late-game)
+
+**Attack:** Projectile ranged attacker. Fires every 1.5–2 sec from ~300 pixels away.
+
+**Stats:**
+- Base HP: 40 (+100% vs Minion)
+- Base speed: 120 (faster, maintains distance)
+- Projectile speed: 150
+- Scaling: HP and projectile speed scale with run duration
+
+**Loot:** 5% Common, 20% Uncommon, 40% Rare, 30% Epic, 5% Mythic
+
+**Role:** Requires positioning and kiting; tactical combat
+
+### Spawn Rules
+
+Timing gates harder enemies so early runs stay accessible:
+
+- **0–20 sec (Phase 1):** Minions only
+- **20–40 sec (Phase 2):** Minions 70%, Bruisers 30%
+- **40+ sec (Phase 3):** Minions 40%, Bruisers 35%, Elites 25%
+
+Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
+
+### Design Notes
+
+- All enemy types use existing difficulty ramp (no new scaling curves)
+- Difficulty is *tactical variety*, not stat bloat
+- Loot weighting creates clear progression: reach Phase 3 (40+ sec) → Elites appear → better loot → upgrades → can reach 40+ sec more reliably
+- Each tier has distinct visual/audio (not yet designed)
+
+### Future Expansions (Enemy Types)
+
+- Tier 4: Boss (unique, 55+ sec, guaranteed Mythic+ drop)
+- Enemy variants within tiers (fast Minion, tanky Minion)
+- Projectile types (different speeds/colors per enemy)
+- Loot affixes (higher tiers drop items with +modifiers)
+
+## Magic Spells & Attack Skills
+
+Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v7 launches with single active spell; v8+ unlocks multiple simultaneous spells for stronger progression feedback.
+
+### Spell System Structure
+
+**Spell Unlock node** (gated root in Player Tree):
+- Base cost: 25, ×1.20/lvl, cap 5
+- L1: Unlock Inferno Blade
+- L2: Unlock Frost Nova
+- L3+: Reserved for future spells
+
+Only **1 active spell at a time** (v7). Switched in shop screen, persists across runs per save slot.
+
+### Spell 1: Arcane Bolt (always available)
+
+**Feel:** Ranged magic projectiles; steady, reliable DPS.
+
+**Base stats:**
+- Power: 20 (scales with Spellpower)
+- Cast rate: 0.5 sec/shot
+- Projectile speed: 400 pixels/sec
+
+**Upgrades:**
+- Spellpower: (shared with Player Tree root stat)
+- Haste (cast speed): -0.05 sec/lvl, cap 0.15 sec
+- Projectile Speed: +50/lvl, cap 600
+
+### Spell 2: Inferno Blade (unlock at Spell Unlock L1)
+
+**Feel:** Melee flame magic; high risk/reward with burn damage over time.
+
+**Base stats:**
+- Power: 25 (scales with Spellpower)
+- Swing rate: 1.0 sec/swing
+- Arc range: 90°
+- Knockback: 200 pixels
+- Burn duration: 1.5 sec
+
+**Upgrades:**
+- Fury (swing speed): -0.15 sec/lvl, cap 0.3 sec
+- Arc Width: +15°/lvl, cap 180°
+- Burn Damage: +5/lvl, cap 60
+
+### Spell 3: Frost Nova (unlock at Spell Unlock L2)
+
+**Feel:** Crowd control; freeze zones that slow/stun enemies.
+
+**Base stats:**
+- Power: 15 (utility-focused, lower raw damage)
+- Cast rate: 2.0 sec/nova
+- Freeze radius: 150 pixels
+- Freeze duration: 0.8 sec
+- Slowdown: 50% move speed
+
+**Upgrades:**
+- Frequency (cast speed): -0.3 sec/lvl, cap 0.8 sec
+- Radius: +20/lvl, cap 300 pixels
+- Slow Strength: +5%/lvl, cap 100% (full stun at max)
+
+### Spell Design Notes
+
+- Spellpower stat applies to all spells uniformly (shared scaling)
+- Each spell's individual upgrades are independent (Arcane Haste doesn't affect Inferno Fury)
+- Visuals: Arcane (blue/purple), Inferno (orange/red), Frost (cyan/white)
+- Loot remains generic currency (magic flavor is aesthetic + mechanical, not tied to loot types)
+
+### Future: Multiple Active Spells (v8+)
+
+**Goal:** Each new spell doubles the feeling of getting stronger; player can equip 2–3 spells simultaneously, rotating between them or auto-casting all.
+
+**Implementation notes:**
+- Requires MetaProgression redesign to track multiple active_spells (currently single)
+- Player cycles/alternates between spells, or all cast on shared cooldown
+- Unlocking a new spell becomes a real power milestone ("I just got Frost Nova, I can freeze enemies now")
+- Keeps progression ladder fresh through many runs (early: Arcane only → mid: Arcane + Inferno → late: all three)
+
+### Future: Additional Spells (v8+)
+
+- **Meteor Strike:** High-damage AOE impact, long cooldown (boss-killer)
+- **Teleport Pulse:** Dash + damage on arrival, mobility spell
+- **Time Warp:** Slow time in area, massive crowd control
+- **Lightning Chain:** Arc between enemies, spreads on contact
+- **Summon Familiar:** Passive pet that auto-attacks, mana-limited
+
 ## Loot, backpack & shop economy
 
 Numbers throughout are illustrative placeholders for tuning later, not
@@ -104,10 +259,12 @@ at different cadences instead of competing for the same pool:
   independent of what got picked up. Funds backpack-only upgrades: slot
   capacity, per-tier Compacting, and Purge.
 
-Placeholder rate: `backpack_currency = round(1 × seconds_survived)` — 1
-currency per second alive, banked at run end. Picked only so there's
-something to build against; needs playtesting to find a pace that
-actually feels rewarding.
+Rate (v6 balance): `backpack_currency = round(0.05 × seconds_survived)` — 0.05
+currency per second alive. Very gradual accumulation; a 60-second run
+earns ~3 currency. Designed so player upgrades (from loot) drive early
+progression, while backpack upgrades (from survival time) come later as
+a long-term goal. A player can afford early Compacting after ~5 good
+runs, but Capacity remains a prestige milestone for 20+ runs in.
 
 The two tracks aren't directly linked, but both still answer to the same
 core risk mechanic: a greedy loot run fills the bag (shrinking max HP)
@@ -199,19 +356,15 @@ sections below.
 
 | Stat | Base | Per-level gain | Base cost | Cost growth | Level cap | Value at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Backpack Capacity | 8 slots | +1 slot | 20 | ×1.20/lvl | 12 | 20 slots (2.5×) |
+| Backpack Capacity | 1 slot | +1 slot | 100 | ×1.25/lvl | 10 | 11 slots (11×) |
 
-Capacity gets the steepest cost growth of any single stat in the game —
-it's the most directly impactful number for survival (more slots means
-more headroom before the fullness/HP-shrink curve bites), so it's
-deliberately the slowest one to fully grind out.
-
-The slot-grid backpack itself is built (`backpack_grid.gd`), but the
-Capacity stat's numbers in `scripts/meta_progression.gd` haven't caught
-up to this table yet — it currently registers as `base_value: 1.0`,
-`per_level_gain: 1.0`, flat cost (`cost_growth: 1.0`), and an effectively
-uncapped `level_cap: 999`. Bringing it in line with the 8/+1/×1.20/cap-12
-numbers above is outstanding work, not a design question.
+Capacity is deliberately the prestige upgrade — expensive (base cost 100)
+and steep cost growth (×1.25/lvl). Starting at 1 slot creates an immediate
+constraint that forces the use of Compacting early on. Each new slot
+(especially the 2nd and 3rd) feels like a major milestone/level-up moment,
+keeping engagement high through a long progression series. By design,
+players should have access to Compacting upgrades in their first 5 runs,
+but won't afford a 2nd Capacity slot until run 15–20+.
 
 **Fill %** = slots used ÷ total slots — a slot counts as "used" the
 moment it holds one or more of an item, regardless of how full its stack
@@ -231,11 +384,11 @@ real space gamble, all at once.
 
 | Tier      | Drop weight | Base stack size | Base value/item | Full-slot value | Color  |
 |-----------|------------:|-----------------:|-----------------:|------------------:|--------|
-| Common    | 50%         | 64                | 1                 | 64                 | White  |
-| Uncommon  | 27%         | 32                | 3                 | 96                 | Green  |
-| Rare      | 14%         | 16                | 10                | 160                | Blue   |
-| Epic      | 6%          | 8                 | 40                | 320                | Purple |
-| Mythic    | 2.5%        | 4                 | 150               | 600                | Orange |
+| Common    | 50%         | 10                | 1                 | 10                 | White  |
+| Uncommon  | 27%         | 8                | 3                 | 24                 | Green  |
+| Rare      | 14%         | 5                | 10                | 50                | Blue   |
+| Epic      | 6%          | 3                 | 40                | 120                | Purple |
+| Mythic    | 2.5%        | 2                 | 150               | 300                | Orange |
 | Legendary | 0.5%        | 1                 | 800               | 800                | Red    |
 
 Every enemy kill drops exactly one loot item; its tier is rolled
@@ -309,11 +462,11 @@ Per-tier cost curve (illustrative):
 
 | Compactor | Base stack | Per-level gain | Base cost | Cost growth | Level cap | Stack at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Common | 64 | +16 | 8 | ×1.10/lvl | 8 | 192 (3×) |
-| Uncommon | 32 | +8 | 15 | ×1.12/lvl | 6 | 80 (2.5×) |
-| Rare | 16 | +4 | 25 | ×1.14/lvl | 5 | 36 (2.25×) |
-| Epic | 8 | +2 | 40 | ×1.16/lvl | 4 | 16 (2×) |
-| Mythic | 4 | +1 | 70 | ×1.18/lvl | 3 | 7 (1.75×) |
+| Common | 10 | +10 | 12 | ×1.12/lvl | 8 | 90 (9×) |
+| Uncommon | 8 | +5 | 18 | ×1.14/lvl | 6 | 38 (4.75×) |
+| Rare | 5 | +3 | 28 | ×1.16/lvl | 5 | 20 (4×) |
+| Epic | 3 | +2 | 42 | ×1.18/lvl | 4 | 11 (3.67×) |
+| Mythic | 2 | +1 | 75 | ×1.20/lvl | 3 | 5 (2.5×) |
 | Legendary | 1 | — | — | — | — | 1 (never stacks) |
 
 Base cost and growth rate also climb with rarity on top of the gate
@@ -452,3 +605,33 @@ Short dated entries when a design decision is made and worth remembering
   yet. Optional email-based device linking for cloud features; unlinked
   saves stay local. Enables meaningful progression testing and supports
   multiple parallel playstyles in same session.
+- 2026-08-15 — v6 balance locked: progression philosophy is "many runs
+  with hard early game, incremental growth." Starting backpack capacity
+  reduced to 1 slot (bare minimum), forcing Compacting as first priority.
+  Backpack currency rate slowed to 0.05/sec (very gradual, ~3 currency per
+  60-second run). Capacity cost increased to base 100, ×1.25/lvl, cap 10
+  — prestige upgrade that feels earned after 20+ runs. Compacting made
+  mid-tier (base cost 12–15, affordable after ~5 good runs). Player
+  upgrades (Damage/Speed/Magnet) remain accessible early, rewarding loot
+  collection. This creates a progression ladder: player upgrades (early
+  wins) → Compacting (mid wins) → Capacity (prestige milestone), keeping
+  engagement high through a long series of runs.
+- 2026-08-15 — Enemy types locked in: three tiers with distinct attack
+  patterns and loot weights. Minion (melee chaser, 60% Common) appears from
+  start. Bruiser (charge attack, 50% Uncommon) appears at 20 sec, Phase 2.
+  Elite (projectile ranged, 70% Rare+) appears at 40 sec, Phase 3. Loot
+  weighting creates direct incentive to survive longer: reach Phase 3 →
+  fight Elites → earn Rare+ loot → buy upgrades → survive better. All tiers
+  use existing difficulty ramp (no new scaling). Difficulty is tactical
+  variety (evasion, positioning) not stat bloat. Future: add Tier 4 Boss at
+  55+ sec, enemy variants within tiers, loot affixes.
+- 2026-08-15 — Magic spells locked in: player is a magic user, weapons are
+  spells. Three core spells (Arcane Bolt ranged, Inferno Blade melee with
+  burn, Frost Nova crowd control) unlock via Spell Unlock node in Player Tree.
+  v7 supports single active spell (switch in shop). v8+ planned to support
+  multiple simultaneous spells to reinforce "getting stronger" feeling
+  (unlock Inferno → equip both Arcane + Inferno → later add Frost Nova).
+  Spell upgrades follow existing cost curves. Spellpower stat applies to all
+  spells uniformly; each spell has independent upgrade paths (Haste, Arc,
+  Radius, etc.). Visuals are magic-themed (blue/purple, orange/red, cyan
+  effects) but loot stays generic currency.

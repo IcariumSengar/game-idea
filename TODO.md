@@ -16,13 +16,54 @@ this file should stay short enough to skim.
   - [x] Skill tree shop (two-tree layout with gating)
   - [x] 4-slot save system with metadata tracking and persistence
   - [x] Startup menu system (Main Menu → New Game / Load Game)
-  - [x] Backpack currency rate aligned with DESIGN.md (1.0/sec)
+  - [x] Backpack currency rate aligned with DESIGN.md (0.05/sec, v6 balance)
 
 ## In Progress / Lower Priority
 
 - [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server integration not implemented (placeholder only)
 - [ ] Settings menu: UI skeleton exists, no settings stored yet
-- [ ] Balance tuning: game balance based on placeholder numbers, needs playtesting
+
+## Future Content (Locked Design, Post-v6)
+
+### Enemy Types (v7 or v8)
+
+- [ ] Enemy types: Bruiser (charge) and Elite (projectile ranged)
+  - [ ] Bruiser spawns Phase 2 (20+ sec), 30% spawn mix, 50% Uncommon drops
+  - [ ] Elite spawns Phase 3 (40+ sec), 25% spawn mix, 70% Rare+ drops
+  - [ ] Loot weighting: implement dynamic drop rates based on enemy tier
+  - [ ] Attack behaviors: charge attack (Bruiser), projectile system (Elite)
+  - [ ] Visuals/audio: distinct sprites and effects per tier (placeholder OK initially)
+  - [ ] Verify progression: early runs (Phase 1 only) feel accessible, reaching Phase 3 feels like milestone
+
+### Magic Spells (v7)
+
+- [ ] Single-spell system: player chooses 1 active spell (switch in shop)
+  - [ ] Arcane Bolt: ranged projectile spell, base game
+  - [ ] Inferno Blade: melee swing with burn DOT, unlock via Spell Unlock L1
+  - [ ] Frost Nova: crowd control freeze zones, unlock via Spell Unlock L2
+  - [ ] Spell Unlock node: gated progression (L1 → Inferno, L2 → Frost Nova, L3+ reserved)
+  - [ ] Spell upgrades: Haste/Arc/Radius per spell, Spellpower shared stat
+  - [ ] Spell visuals: magic-themed (blue, orange/red, cyan effects)
+  - [ ] Verify feel: each spell plays differently, swapping spells changes strategy
+
+### Multiple Active Spells (v8+, expansion)
+
+- [ ] Multi-spell system: player equips 2–3 spells simultaneously
+  - [ ] Spell slots: "Spell Slot 1", "Spell Slot 2", "Spell Slot 3" (unlock via progression)
+  - [ ] Casting behavior: rotate between slots or all cast on shared cooldown (TBD)
+  - [ ] MetaProgression redesign: track multiple active spells per save
+  - [ ] Goal: unlock new spell → major power spike, keeps "getting stronger" feeling fresh
+
+## v6 Balance (Locked, Ready for Implementation)
+
+**Philosophy:** Many runs with hard early game and incremental growth. Starting bag is 1 slot, forces Compacting early, Capacity is late-game prestige.
+
+- [ ] Update starting capacity to 1 slot (currently 8)
+- [ ] Update loot stack sizes: Common 10, Uncommon 8, Rare 5, Epic 3, Mythic 2 (currently higher)
+- [ ] Update Capacity: base cost 100, ×1.25/lvl, cap 10 (currently base 20, ×1.20, cap 12)
+- [ ] Update Compacting costs: Common base 12 ×1.12, Uncommon 18 ×1.14, etc. (all tiers scaled down)
+- [ ] Backpack currency rate: 0.05/sec (currently 0.33/sec; ~3 currency per 60-sec run)
+- [ ] Verify progression feel: player upgrades early, Compacting accessible run 5–10, Capacity reachable run 20+
 
 ## Later (Completed this session)
 

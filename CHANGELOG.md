@@ -2,6 +2,40 @@
 
 All notable fixed versions of this project are documented here.
 
+## v5 - 2026-08-15
+
+The game has a name and a look: **Hoard Survivors**, restyled top to
+bottom with a cosmic/magic aesthetic in place of the placeholder
+dungeon look and generic UI text.
+
+- Full menu system redesign: procedural night-sky backdrop (gradient,
+  twinkling stars, mountain silhouette) and a rotating magic-circle
+  motif replace the flat dark panels on the main menu, Run Prep, Load
+  Game, and Shop screens. Buttons switched from box-styled to
+  text-link style (gold on hover, with flourish lines), matching a
+  reference screenshot.
+- Skill tree redesigned from square medieval-framed nodes to circular
+  chained nodes with per-tree accent colors, glow states for
+  purchased/maxed tiers, vector icons per stat, and a hover tooltip
+  showing each upgrade's name, description, level, and cost.
+- Scene changes fade through black instead of hard-cutting; combat
+  got floating damage numbers, hit-stop + weightier screen shake on
+  player hit/death, an animated HP/loot bar, and a purchase-pulse
+  effect on skill tree nodes.
+- Procedural SFX for hits, deaths, pickups, dashes, purchases, and UI
+  clicks — the project had no audio at all before this.
+- Arena reskinned: the dungeon floor tileset is replaced by a
+  procedural space backdrop (nebula washes, stars, no grid), with
+  drifting ambient magic particles and a radial vignette. Player
+  sprite swapped from a knight to a wizard; loot swapped from a
+  spinning coin to a procedurally-drawn faceted gem tinted by rarity.
+- Renamed the placeholder currency/stat text DESIGN.md flagged: Player
+  Currency → Essence, Backpack Currency → Stardust, Compactor tiers →
+  "<Tier> Binding", Shop → Sanctum, and the death screen restyled to
+  match (border/text color, magic-circle decor, "Lost to the Void").
+- Added a back button to the skill tree/shop screen and fixed a
+  scene-change crash in the auto-load path on the main menu.
+
 ## v4 - 2026-08-14
 
 Second round of parallel mechanics + visuals workstreams merged into
