@@ -181,10 +181,6 @@ func get_max_fill_ratio() -> float:
 	return _max_fill_ratio
 
 
-func get_facing() -> Vector2:
-	return _facing
-
-
 func get_total_loot_value() -> int:
 	var total := 0
 	for type_id: StringName in backpack:

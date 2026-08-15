@@ -63,10 +63,7 @@ func sync_now() -> void:
 
 func _save_config() -> void:
 	var data := {
-		"enabled": _enabled,
-		"device_id": _device_id,
-		"email": _email,
-		"last_sync": _last_sync_time
+		"enabled": _enabled, "device_id": _device_id, "email": _email, "last_sync": _last_sync_time
 	}
 	var file := FileAccess.open(CLOUD_CONFIG_FILE, FileAccess.WRITE)
 	if file != null:
