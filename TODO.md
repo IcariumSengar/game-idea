@@ -54,16 +54,16 @@ this file should stay short enough to skim.
   - [ ] MetaProgression redesign: track multiple active spells per save
   - [ ] Goal: unlock new spell → major power spike, keeps "getting stronger" feeling fresh
 
-## v6 Balance (Locked, Ready for Implementation)
+## v6 Balance (Implemented, Pending Playtest)
 
 **Philosophy:** Many runs with hard early game and incremental growth. Starting bag is 1 slot, forces Compacting early, Capacity is late-game prestige.
 
-- [ ] Update starting capacity to 1 slot (currently 8)
-- [ ] Update loot stack sizes: Common 10, Uncommon 8, Rare 5, Epic 3, Mythic 2 (currently higher)
-- [ ] Update Capacity: base cost 100, ×1.25/lvl, cap 10 (currently base 20, ×1.20, cap 12)
-- [ ] Update Compacting costs: Common base 12 ×1.12, Uncommon 18 ×1.14, etc. (all tiers scaled down)
-- [ ] Backpack currency rate: 0.05/sec (currently 0.33/sec; ~3 currency per 60-sec run)
-- [ ] Verify progression feel: player upgrades early, Compacting accessible run 5–10, Capacity reachable run 20+
+- [x] Starting capacity is 1 slot (unchanged from v4 code, already matched)
+- [x] Loot stack sizes: Common 10, Uncommon 8, Rare 5, Epic 3, Mythic 2
+- [x] Capacity: base cost 100, ×1.25/lvl, cap 10
+- [x] Compacting costs: Common base 12 ×1.12, Uncommon 18 ×1.14, Rare 28 ×1.16, Epic 42 ×1.18, Mythic 75 ×1.20
+- [x] Backpack currency rate: 0.05/sec
+- [ ] Verify progression feel: player upgrades early, Compacting accessible run 5–10, Capacity reachable run 20+ (needs playtesting)
 
 ## Later (Completed this session)
 

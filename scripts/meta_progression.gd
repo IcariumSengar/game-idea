@@ -23,8 +23,9 @@ const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
 const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
 const STAT_PURGE: StringName = &"purge"
 
-## Placeholder rate per DESIGN.md pending playtesting.
-const BACKPACK_CURRENCY_PER_SECOND: float = 1.0
+## v6 balance: deliberately slow -- Capacity is a late-game prestige
+## upgrade, not something funded within the first few runs.
+const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
 
 const SAVE_SLOTS: int = 4
 const SAVE_DIR: String = "user://saves"
@@ -46,9 +47,9 @@ func _ready() -> void:
 		"Backpack Capacity",
 		1.0,
 		1.0,
-		20,
-		1.20,
-		12,
+		100,
+		1.25,
+		10,
 		0,
 		StatDef.Currency.BACKPACK
 	)
@@ -62,10 +63,10 @@ func _ready() -> void:
 	_register_stat(
 		STAT_COMPACTOR_COMMON,
 		"Common Binding",
-		64.0,
-		16.0,
-		8,
-		1.10,
+		10.0,
+		10.0,
+		12,
+		1.12,
 		8,
 		0,
 		StatDef.Currency.BACKPACK
@@ -73,22 +74,22 @@ func _ready() -> void:
 	_register_stat(
 		STAT_COMPACTOR_UNCOMMON,
 		"Uncommon Binding",
-		32.0,
 		8.0,
-		15,
-		1.12,
+		5.0,
+		18,
+		1.14,
 		6,
 		0,
 		StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_RARE, "Rare Binding", 16.0, 4.0, 25, 1.14, 5, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_RARE, "Rare Binding", 5.0, 3.0, 28, 1.16, 5, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_EPIC, "Epic Binding", 8.0, 2.0, 40, 1.16, 4, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_EPIC, "Epic Binding", 3.0, 2.0, 42, 1.18, 4, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_MYTHIC, "Mythic Binding", 4.0, 1.0, 70, 1.18, 3, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_MYTHIC, "Mythic Binding", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Purge", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	_initialize_slots()

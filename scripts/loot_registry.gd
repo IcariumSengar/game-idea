@@ -12,11 +12,11 @@ var _total_weight: float = 0.0
 
 
 func _ready() -> void:
-	_register(&"common", "Common", Color.WHITE, 1, 64, 50.0)
-	_register(&"uncommon", "Uncommon", Color(0.3, 0.8, 0.35), 3, 32, 27.0)
-	_register(&"rare", "Rare", Color(0.25, 0.55, 0.95), 10, 16, 14.0)
-	_register(&"epic", "Epic", Color(0.65, 0.3, 0.9), 40, 8, 6.0)
-	_register(&"mythic", "Mythic", Color(0.95, 0.55, 0.15), 150, 4, 2.5)
+	_register(&"common", "Common", Color.WHITE, 1, 10, 50.0)
+	_register(&"uncommon", "Uncommon", Color(0.3, 0.8, 0.35), 3, 8, 27.0)
+	_register(&"rare", "Rare", Color(0.25, 0.55, 0.95), 10, 5, 14.0)
+	_register(&"epic", "Epic", Color(0.65, 0.3, 0.9), 40, 3, 6.0)
+	_register(&"mythic", "Mythic", Color(0.95, 0.55, 0.15), 150, 2, 2.5)
 	_register(&"legendary", "Legendary", Color(0.9, 0.2, 0.2), 800, 1, 0.5)
 
 
