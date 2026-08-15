@@ -24,6 +24,11 @@ func _ready() -> void:
 	_attack_timer = randf_range(attack_cooldown_min, attack_cooldown_max)
 
 
+func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
+	super.apply_difficulty_scale(hp_scale, speed_scale)
+	projectile_speed *= speed_scale
+
+
 func _update_behavior(delta: float) -> void:
 	var to_target: Vector2 = target.position - position
 	var distance: float = to_target.length()

@@ -351,7 +351,7 @@ func _make_custom_tooltip(for_text: String) -> Object:
 	label.scroll_active = false
 	label.custom_minimum_size = Vector2(220, 0)
 	label.add_theme_font_size_override("normal_font_size", 13)
-	label.add_theme_font_size_override("bold_font_size", 13)
+	label.add_theme_font_size_override("bold_font_size", 18)
 	panel.add_child(label)
 
 	return panel

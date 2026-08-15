@@ -56,11 +56,12 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v6):
+What's actually built and playable today (see `scripts/`, as of v7):
 
-- Top-down movement + dash in a single arena; one enemy type that chases
-  and damages the player on contact, spawning faster/more over run
-  duration.
+- Top-down movement + dash in a single arena; three enemy tiers (Minion
+  melee chaser, Bruiser pause/charge, Elite kite + projectile), gated
+  into the run by phase (see "Enemy Types & Loot Tiers" below) and
+  spawning faster/more over run duration.
 - One weapon, auto-firing at the nearest enemy; Spellpower is upgradeable.
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
@@ -85,9 +86,9 @@ What's actually built and playable today (see `scripts/`, as of v6):
   progress. Cloud-sync infrastructure exists but the server side is still
   a placeholder — see [TODO.md](TODO.md).
 
-Not yet built: enemy tiers beyond the current single Minion type, magic
-spells (single weapon is still hardcoded, not spell-based), and multiple
-simultaneous spells — see [TODO.md](TODO.md) for the v7/v8+ build order.
+Not yet built: magic spells (single weapon is still hardcoded, not
+spell-based), and multiple simultaneous spells — see [TODO.md](TODO.md)
+for the v8/v9+ build order.
 
 ## Enemy Types & Loot Tiers
 
@@ -767,3 +768,18 @@ Short dated entries when a design decision is made and worth remembering
   Bruiser/Elite use this doc's absolute numbers directly rather than
   recomputing off Minion's real baseline. Distinct sprite art and full
   balance playtesting are still open — see TODO.md.
+- 2026-08-15 — Post-v7 stock-take: audited every number and behavior in
+  this doc against the actual code (loot table, stat curves, enemy
+  stats/loot weights, spawn-phase mix, skill-tree gating, HUD/tooltip
+  content) and fixed what didn't match. Two real gaps found and fixed:
+  the difficulty ramp wasn't scaling Bruiser's charge speed or Elite's
+  projectile speed (only the base `speed`/`max_hp` fields), contradicting
+  the explicit "Scaling" notes on both tiers above; and the save/load
+  system didn't actually support the 4-slot design — "New Game" always
+  hardcoded slot 0 (and wiped all 4 slots' metadata doing it), there was
+  no way to start fresh in slots 2-4, no "Overwrite" action existed,
+  "last played" used engine uptime instead of a real timestamp (so it
+  went nonsensical after any restart), and playtime never accumulated.
+  All fixed — see TODO.md for the itemized list. Also updated this doc's
+  own "Current implementation" summary, which had drifted (still said
+  "as of v6" and "one enemy type" after v7 shipped).

@@ -53,11 +53,19 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 
 	var is_empty: bool = metadata.get("last_played", 0) == 0
 
-	# Load button
-	var load_btn := _make_styled_button("Load", Vector2(80, 40))
+	# Load/Start button -- always enabled. Empty slots start fresh there
+	# (MetaProgression.set_slot resets to defaults when a slot has no save
+	# file); occupied slots load existing progress.
+	var load_btn := _make_styled_button("Start" if is_empty else "Load", Vector2(80, 40))
 	load_btn.pressed.connect(_on_load_pressed.bind(slot))
-	load_btn.disabled = is_empty
 	button_container.add_child(load_btn)
+
+	# Overwrite button -- only meaningful (and shown) for occupied slots;
+	# wipes that slot back to a fresh save.
+	if not is_empty:
+		var overwrite_btn := _make_styled_button("Overwrite", Vector2(90, 40))
+		overwrite_btn.pressed.connect(_on_overwrite_pressed.bind(slot))
+		button_container.add_child(overwrite_btn)
 
 	# Delete button
 	var delete_btn := _make_styled_button("Delete", Vector2(80, 40))
@@ -84,6 +92,11 @@ func _on_load_pressed(slot: int) -> void:
 	SceneTransition.goto_scene("res://scenes/run_prep.tscn")
 
 
+func _on_overwrite_pressed(slot: int) -> void:
+	MetaProgression.overwrite_slot(slot)
+	SceneTransition.goto_scene("res://scenes/run_prep.tscn")
+
+
 func _on_delete_pressed(slot: int) -> void:
 	var file_path := "user://saves/slot_%d.json" % slot
 	if ResourceLoader.exists(file_path):
@@ -96,12 +109,14 @@ func _on_back_pressed() -> void:
 	SceneTransition.goto_scene("res://scenes/main_menu.tscn")
 
 
-func _format_timestamp(timestamp_ms: int) -> String:
-	if timestamp_ms == 0:
+## `timestamp_sec` is a real Unix-epoch second count (from
+## Time.get_unix_time_from_system()), not engine uptime -- it has to
+## survive across process restarts to mean anything as "last played".
+func _format_timestamp(timestamp_sec: int) -> String:
+	if timestamp_sec == 0:
 		return "Never"
-	var now_ms := Time.get_ticks_msec()
-	var diff_ms := now_ms - timestamp_ms
-	var diff_sec := diff_ms / 1000
+	var now_sec := int(Time.get_unix_time_from_system())
+	var diff_sec := now_sec - timestamp_sec
 	var diff_min := diff_sec / 60
 	var diff_hours := diff_min / 60
 	var diff_days := diff_hours / 24

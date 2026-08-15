@@ -108,8 +108,10 @@ func _on_enemy_spawn_timer_timeout() -> void:
 	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
 	var enemy: Enemy = _pick_enemy_scene().instantiate()
 	enemy.position = _random_edge_position()
-	enemy.max_hp *= lerp(ENEMY_HP_SCALE_MIN, ENEMY_HP_SCALE_MAX, ramp)
-	enemy.speed *= lerp(ENEMY_SPEED_SCALE_MIN, ENEMY_SPEED_SCALE_MAX, ramp)
+	enemy.apply_difficulty_scale(
+		lerp(ENEMY_HP_SCALE_MIN, ENEMY_HP_SCALE_MAX, ramp),
+		lerp(ENEMY_SPEED_SCALE_MIN, ENEMY_SPEED_SCALE_MAX, ramp)
+	)
 	enemy.died.connect(_on_enemy_died)
 	add_child(enemy)
 	_spawn_timer.wait_time = lerp(SPAWN_INTERVAL_START, SPAWN_INTERVAL_MIN, ramp)

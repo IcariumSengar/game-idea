@@ -59,6 +59,16 @@ func _physics_process(delta: float) -> void:
 	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
 
 
+## Applies the run's difficulty ramp (see Arena.RAMP_DURATION). Subclasses
+## with an extra speed-like stat -- Bruiser's charge_speed, Elite's
+## projectile_speed -- override this to also scale that, per DESIGN.md's
+## per-tier "Scaling" notes ("HP and charge/projectile speed scale with
+## run duration").
+func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
+	max_hp *= hp_scale
+	speed *= speed_scale
+
+
 ## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
 ## this for their own movement/attack pattern.
 func _update_behavior(delta: float) -> void:

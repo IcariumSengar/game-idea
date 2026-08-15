@@ -74,6 +74,26 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
       projectile) added alongside Minion, phase-gated spawn mix, and
       per-tier loot weighting (`Enemy.loot_weights` +
       `LootTypes.pick_random_weighted`)
+- [x] Post-v7 audit — verified every DESIGN.md number (loot table, stat
+      curves, enemy stats/loot weights, spawn-phase mix, skill-tree
+      gating) against the actual code line by line; fixed everything
+      found broken:
+      - Difficulty ramp only scaled `speed`/`max_hp`, silently missing
+        Bruiser's `charge_speed` and Elite's `projectile_speed` even
+        though DESIGN.md calls both out explicitly — added an
+        overridable `Enemy.apply_difficulty_scale()` hook
+      - Save/load: "New Game" hardcoded slot 0 and wiped all 4 slots'
+        metadata via a stray `_initialize_slots()` call; there was no
+        way to start a fresh game in slots 2-4 (Load was disabled on
+        empty slots) and no "Overwrite" action existed despite
+        DESIGN.md requiring both
+      - `last_played` was stored via engine uptime (`Time.get_ticks_msec`),
+        so it read as garbage ("20680 days ago") after any restart;
+        switched to a real Unix timestamp
+      - `playtime_hours` was hardcoded to reset to 0.0 on every save
+        instead of accumulating — now tracks real elapsed session time
+      - Switching to an empty slot silently kept whatever was in memory
+        from the previously loaded slot instead of resetting to defaults
 
 ## Done
 

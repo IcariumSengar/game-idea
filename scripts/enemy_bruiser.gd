@@ -25,6 +25,11 @@ func _ready() -> void:
 	_state_timer = randf_range(pause_duration_min, pause_duration_max)
 
 
+func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
+	super.apply_difficulty_scale(hp_scale, speed_scale)
+	charge_speed *= speed_scale
+
+
 func _update_behavior(delta: float) -> void:
 	match _state:
 		State.PAUSE:

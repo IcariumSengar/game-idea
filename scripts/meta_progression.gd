@@ -40,6 +40,7 @@ var current_slot: int = 0
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
 var _slot_metadata: Array = []  # Array of {date, playtime, stats}
+var _session_start_msec: int = 0
 
 
 func _ready() -> void:
@@ -86,6 +87,7 @@ func _ready() -> void:
 	_initialize_slots()
 	_load_slot_metadata()
 	_load()
+	_session_start_msec = Time.get_ticks_msec()
 
 
 func get_stat_defs() -> Array[StatDef]:
@@ -205,6 +207,8 @@ func _load_slot_metadata() -> void:
 func _load() -> void:
 	var slot_file := _get_slot_save_path(current_slot)
 	if not ResourceLoader.exists(slot_file):
+		_reset_to_defaults()
+		currency_changed.emit()
 		return
 	var file := FileAccess.open(slot_file, FileAccess.READ)
 	if file == null:
@@ -219,6 +223,19 @@ func _load() -> void:
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
 	currency_changed.emit()
+
+
+## Resets in-memory progress to a fresh save's defaults -- used both when
+## switching to an empty slot (nothing to load) and when explicitly
+## overwriting an occupied one. Without this, switching to an empty slot
+## would silently keep whatever was in memory from the previously loaded
+## slot instead of starting clean.
+func _reset_to_defaults() -> void:
+	player_currency = 0
+	backpack_currency = 0
+	best_run_time = 0.0
+	for stat_id: StringName in _stat_levels:
+		_stat_levels[stat_id] = 0
 
 
 func save() -> void:
@@ -248,6 +265,19 @@ func set_slot(slot: int) -> void:
 	current_slot = slot
 	_save_last_slot(slot)
 	_load()
+	_session_start_msec = Time.get_ticks_msec()
+
+
+## Wipes the target slot's save file and starts it fresh -- used by the
+## save-slot screen's "Overwrite" action on an already-occupied slot.
+func overwrite_slot(slot: int) -> void:
+	if slot < 0 or slot >= SAVE_SLOTS:
+		return
+	current_slot = slot
+	_save_last_slot(slot)
+	_reset_to_defaults()
+	_session_start_msec = Time.get_ticks_msec()
+	currency_changed.emit()
 
 
 func _save_last_slot(slot: int) -> void:
@@ -276,10 +306,12 @@ func _update_slot_metadata(slot: int) -> void:
 	if slot < 0 or slot >= _slot_metadata.size():
 		return
 	var metadata: Dictionary = _slot_metadata[slot]
-	metadata["last_played"] = Time.get_ticks_msec()
-	metadata["playtime_hours"] = 0.0
+	var elapsed_hours: float = float(Time.get_ticks_msec() - _session_start_msec) / 3_600_000.0
+	metadata["last_played"] = int(Time.get_unix_time_from_system())
+	metadata["playtime_hours"] = float(metadata.get("playtime_hours", 0.0)) + elapsed_hours
 	metadata["preview"] = _get_slot_preview()
 	_save_slot_metadata()
+	_session_start_msec = Time.get_ticks_msec()
 
 
 func _get_slot_preview() -> String:
