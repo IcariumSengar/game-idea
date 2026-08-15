@@ -11,9 +11,9 @@ func _ready() -> void:
 
 func _update_progress_display() -> void:
 	var progress_text: String = ""
-	progress_text += "Current Progress\n\n"
-	progress_text += "Player Currency: %d\n" % MetaProgression.player_currency
-	progress_text += "Backpack Currency: %d\n\n" % MetaProgression.backpack_currency
+	progress_text += "Your Hoard\n\n"
+	progress_text += "Essence: %d\n" % MetaProgression.player_currency
+	progress_text += "Stardust: %d\n\n" % MetaProgression.backpack_currency
 
 	progress_text += "Upgrades:\n"
 	for def in MetaProgression.get_stat_defs():

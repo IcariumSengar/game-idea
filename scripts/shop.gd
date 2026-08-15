@@ -46,8 +46,8 @@ func _update_trees() -> void:
 		_is_locked_by_currency,
 		PLAYER_ACCENT
 	)
-	_backpack_header.text = "BACKPACK TREE\n%d levels bought" % _total_levels(backpack_stats)
-	_player_header.text = "PLAYER TREE\n%d levels bought" % _total_levels(player_stats)
+	_backpack_header.text = "STARDUST TREE\n%d levels bought" % _total_levels(backpack_stats)
+	_player_header.text = "ESSENCE TREE\n%d levels bought" % _total_levels(player_stats)
 
 	# Disconnect old signals to avoid duplicates
 	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
@@ -92,8 +92,8 @@ func _on_start_run_button_pressed() -> void:
 
 
 func _refresh_currency() -> void:
-	_player_currency_label.text = "Player Currency: %d" % MetaProgression.player_currency
-	_backpack_currency_label.text = "Backpack Currency: %d" % MetaProgression.backpack_currency
+	_player_currency_label.text = "Essence: %d" % MetaProgression.player_currency
+	_backpack_currency_label.text = "Stardust: %d" % MetaProgression.backpack_currency
 
 	if _last_player_currency != -1 and MetaProgression.player_currency != _last_player_currency:
 		_bounce_label(_player_currency_label)

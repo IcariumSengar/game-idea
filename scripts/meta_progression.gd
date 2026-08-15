@@ -60,11 +60,19 @@ func _ready() -> void:
 		STAT_MOVE_SPEED, "Move Speed", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
 	_register_stat(
-		STAT_COMPACTOR_COMMON, "Compactor: Common", 64.0, 16.0, 8, 1.10, 8, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_COMMON,
+		"Common Binding",
+		64.0,
+		16.0,
+		8,
+		1.10,
+		8,
+		0,
+		StatDef.Currency.BACKPACK
 	)
 	_register_stat(
 		STAT_COMPACTOR_UNCOMMON,
-		"Compactor: Uncommon",
+		"Uncommon Binding",
 		32.0,
 		8.0,
 		15,
@@ -74,21 +82,13 @@ func _ready() -> void:
 		StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_RARE, "Compactor: Rare", 16.0, 4.0, 25, 1.14, 5, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_RARE, "Rare Binding", 16.0, 4.0, 25, 1.14, 5, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_EPIC, "Compactor: Epic", 8.0, 2.0, 40, 1.16, 4, 0, StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_EPIC, "Epic Binding", 8.0, 2.0, 40, 1.16, 4, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(
-		STAT_COMPACTOR_MYTHIC,
-		"Compactor: Mythic",
-		4.0,
-		1.0,
-		70,
-		1.18,
-		3,
-		0,
-		StatDef.Currency.BACKPACK
+		STAT_COMPACTOR_MYTHIC, "Mythic Binding", 4.0, 1.0, 70, 1.18, 3, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Purge", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	_initialize_slots()
@@ -284,7 +284,7 @@ func _get_slot_preview() -> String:
 	for def in _stat_defs:
 		var level := get_level(def.id)
 		if level > 0:
-			preview.append("%s Lv%d" % [def.display_name.trim_prefix("Compactor: "), level])
+			preview.append("%s Lv%d" % [def.display_name, level])
 	return " | ".join(preview) if preview.size() > 0 else "No upgrades"
 
 

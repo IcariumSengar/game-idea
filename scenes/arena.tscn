@@ -183,14 +183,14 @@ theme_override_font_sizes/font_size = 32
 theme_override_colors/font_color = Color(0.88, 0.4, 0.6, 1)
 theme_override_constants/outline_size = 4
 theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
-text = "YOU DIED"
+text = "LOST TO THE VOID"
 horizontal_alignment = 1
 
 [node name="ContinueButton" type="Button" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
 process_mode = 3
 custom_minimum_size = Vector2(0, 40)
 theme_override_font_sizes/font_size = 20
-text = "Continue to Shop"
+text = "Return to Sanctum"
 script = ExtResource("15_link")
 
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]

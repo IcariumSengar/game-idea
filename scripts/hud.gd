@@ -24,7 +24,7 @@ func _ready() -> void:
 	_player.loot_changed.connect(_on_loot_changed)
 	_player.died.connect(_on_player_died)
 	_stats_label.text = (
-		"Speed: %d   Pickup Range: %d   Capacity: %d"
+		"Speed: %d   Magnet Range: %d   Capacity: %d"
 		% [_player.speed, _player.pickup_range, _player.backpack_capacity]
 	)
 	_on_loot_changed(_player.backpack)
@@ -49,7 +49,7 @@ func _on_player_died() -> void:
 	MetaProgression.save()
 	CloudSync.sync_now()
 	_game_over_label.text = (
-		"YOU DIED\n\nLoot value collected: %d\nTime survived: %ds"
+		"LOST TO THE VOID\n\nEssence collected: %d\nTime survived: %ds"
 		% [total_value, roundi(seconds_survived)]
 	)
 	AudioManager.play("player_death")

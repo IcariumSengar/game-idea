@@ -21,16 +21,16 @@ const ICON_DIM: Color = Color(0.5, 0.5, 0.52, 1.0)
 const TOOLTIP_PANEL_STYLE: StyleBoxFlat = preload("res://resources/panel_dark.tres")
 
 const STAT_DESCRIPTIONS: Dictionary = {
-	&"damage": "Increases weapon damage per hit.",
-	&"move_speed": "Increases movement speed.",
-	&"pickup_range": "Increases the magnet radius that pulls loot in.",
-	&"backpack_capacity": "Adds more backpack slots.",
-	&"compactor_common": "Increases the max stack size for Common loot.",
-	&"compactor_uncommon": "Increases the max stack size for Uncommon loot.",
-	&"compactor_rare": "Increases the max stack size for Rare loot.",
-	&"compactor_epic": "Increases the max stack size for Epic loot.",
-	&"compactor_mythic": "Increases the max stack size for Mythic loot.",
-	&"purge": "Auto-discards your lowest-rarity item once the backpack nears full.",
+	&"damage": "Strengthens your spellblade, dealing more damage per strike.",
+	&"move_speed": "Quickens your step through the void.",
+	&"pickup_range": "Widens your arcane pull, drawing loot in from farther away.",
+	&"backpack_capacity": "Stitches an extra pocket into your satchel.",
+	&"compactor_common": "Binds Common loot more tightly, raising its max stack.",
+	&"compactor_uncommon": "Binds Uncommon loot more tightly, raising its max stack.",
+	&"compactor_rare": "Binds Rare loot more tightly, raising its max stack.",
+	&"compactor_epic": "Binds Epic loot more tightly, raising its max stack.",
+	&"compactor_mythic": "Binds Mythic loot more tightly, raising its max stack.",
+	&"purge": "Automatically banishes your lowest-rarity loot once your hoard nears its limit.",
 }
 
 var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)
@@ -251,11 +251,11 @@ func _build_tooltip_text(node: TreeNode) -> String:
 	else:
 		var cost: int = MetaProgression.get_cost(node.stat_id)
 		var currency_name: String = (
-			"Player" if def.currency == StatDef.Currency.PLAYER else "Backpack"
+			"Essence" if def.currency == StatDef.Currency.PLAYER else "Stardust"
 		)
-		lines.append("Cost: %d %s Currency" % [cost, currency_name])
+		lines.append("Cost: %d %s" % [cost, currency_name])
 		if node.is_locked_by_currency:
-			lines.append("Not enough currency yet.")
+			lines.append("Not enough %s yet." % currency_name)
 
 	return "\n".join(lines)
 
