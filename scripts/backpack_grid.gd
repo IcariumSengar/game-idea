@@ -19,10 +19,18 @@ const DANGER_COLOR_LOW: Color = Color(0.3, 0.65, 0.9, 0.0)
 const DANGER_COLOR_HIGH: Color = Color(0.9, 0.25, 0.2, 0.35)
 const COUNT_FONT_SIZE: int = 11
 const COUNT_SHADOW_OFFSET: Vector2 = Vector2(1.0, 1.0)
+## Ghost slot: previews the next Bearing purchase right in the HUD, per
+## DESIGN.md's Backpack UI "longer-term idea" note. Fainter than a real
+## empty (purchased-but-unfilled) slot and dashed rather than solid, so it
+## reads as "not real yet" at a glance.
+const GHOST_COLOR: Color = Color(1.0, 1.0, 1.0, 0.04)
+const GHOST_BORDER_COLOR: Color = Color(1.0, 1.0, 1.0, 0.16)
+const GHOST_DASH_LENGTH: float = 3.0
 
 var _capacity: int = 0
 var _slot_ids: Array[StringName] = []
 var _slot_counts: Array[int] = []
+var _show_ghost_slot: bool = false
 
 
 func update(backpack: Dictionary, capacity: int) -> void:
@@ -32,6 +40,7 @@ func update(backpack: Dictionary, capacity: int) -> void:
 	for type_id: StringName in backpack:
 		_slot_ids.append(type_id)
 		_slot_counts.append(int(backpack[type_id]))
+	_show_ghost_slot = not MetaProgression.is_maxed(MetaProgression.STAT_BACKPACK_CAPACITY)
 	_update_min_size()
 	queue_redraw()
 
@@ -40,7 +49,7 @@ func _update_min_size() -> void:
 	if _capacity <= 0:
 		custom_minimum_size = Vector2.ZERO
 		return
-	custom_minimum_size = _grid_size(_capacity)
+	custom_minimum_size = _grid_size(_capacity + (1 if _show_ghost_slot else 0))
 
 
 func _grid_size(slot_count: int) -> Vector2:
@@ -76,6 +85,33 @@ func _draw() -> void:
 		else:
 			draw_rect(rect, EMPTY_COLOR)
 			draw_rect(rect, EMPTY_BORDER_COLOR, false, 1.0)
+
+	if _show_ghost_slot:
+		_draw_ghost_slot(_capacity)
+
+
+func _draw_ghost_slot(index: int) -> void:
+	var col := index % SLOTS_PER_ROW
+	var row := index / SLOTS_PER_ROW
+	var rect := Rect2(
+		Vector2(col * (SLOT_SIZE + SLOT_GAP), row * (SLOT_SIZE + SLOT_GAP)),
+		Vector2(SLOT_SIZE, SLOT_SIZE)
+	)
+	draw_rect(rect, GHOST_COLOR)
+	_draw_dashed_border(rect, GHOST_BORDER_COLOR)
+
+
+func _draw_dashed_border(rect: Rect2, color: Color) -> void:
+	var corners := [
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y),
+	]
+	for i in corners.size():
+		draw_dashed_line(
+			corners[i], corners[(i + 1) % corners.size()], color, 1.0, GHOST_DASH_LENGTH
+		)
 
 
 func _draw_filled_slot(rect: Rect2, font: Font, type_id: StringName, count: int) -> void:

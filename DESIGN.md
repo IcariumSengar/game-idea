@@ -667,9 +667,10 @@ higher in the same slot, Bearing is *seen* as the grid growing, and
 rarity is *seen* via the color-coded item border from the table above.
 Fill% and HP shrink should feel visually linked (e.g. slots trending red
 as the bag nears full, in sync with the HP bar draining) so the core risk
-mechanic reads at a glance without any tutorial text. Longer-term idea:
-show locked/ghost slots for not-yet-purchased capacity, so the next shop
-upgrade is previewable right in the HUD.
+mechanic reads at a glance without any tutorial text. Built: a ghost slot
+(`backpack_grid.gd`) previews the next Bearing purchase right in the
+HUD -- fainter and dashed rather than solid, appearing one slot past the
+real grid whenever Bearing isn't maxed, gone once it is.
 
 ## Decisions log
 
