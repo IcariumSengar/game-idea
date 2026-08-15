@@ -1,0 +1,7 @@
+# Screenshots folder
+# Used for UI reference during implementation, not committed to git
+*
+!.gitignore
+!README.md
+!cleanup.sh
+!cleanup.bat

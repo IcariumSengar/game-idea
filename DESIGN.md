@@ -155,6 +155,90 @@ Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
 - Projectile types (different speeds/colors per enemy)
 - Loot affixes (higher tiers drop items with +modifiers)
 
+## HUD & UI Design
+
+All UI elements follow a consistent visual system to maintain cohesion across the game.
+
+### In-Run Stats Overlay
+
+**Location:** Top-left corner (16px from edges), semi-transparent dark panel
+
+**Three stats displayed:**
+- ⏱️ **TIME** — Run duration (MM:SS format), white text
+- 💰 **PLAYER CURRENCY** — Loot value collected (gold color)
+- 🎒 **BACKPACK CURRENCY** — Time survived earning (~0.05/sec, cyan color)
+
+**Purpose:** Make the time → backpack currency connection visible. Shows rate (+0.05/sec) so players understand slow progression is intentional.
+
+**Styling:** Dark background (#1a1a1a, 80% opacity), small border, 12px padding, 8px spacing between rows.
+
+### Death Summary Screen
+
+**Trigger:** Player dies, full-screen centered panel appears before shop
+
+**Content sections:**
+1. **Run Duration:** Time survived + Phase reached (Phase 1/2/3)
+2. **Rewards (highlighted):** Player currency earned (gold) + Backpack currency earned (cyan)
+3. **Loot Breakdown:** Items collected, color-coded by rarity
+4. **Run Stats:** Max backpack fill %, enemies killed
+5. **Previous Best:** Best time from prior runs (if exists)
+6. **Button:** "CONTINUE TO SHOP" (single action, no confusion)
+
+**Purpose:** Celebrate the run, make currency earning explicit, encourage replaying to beat personal best.
+
+**Styling:** Dark panel (#2a2a2a), gold header underline, section dividers (1px gray), white text with colored accents (gold/cyan for currency).
+
+### Skill Tree Tooltips
+
+**Trigger:** Hover over any skill node
+
+**Content:**
+- Upgrade name (header, 18px bold)
+- Current level / max level
+- Cost (next level) with currency icon and affordability status
+- Effect description (what does this do?)
+- Before/after notation (current power → new power)
+- Flavor text (why this upgrade matters)
+
+**Variants:**
+- **Locked:** Red "LOCKED" indicator + requirement text
+- **Maxed:** Green "MAX" indicator, no cost shown
+- **Affordable:** Gold/cyan cost text (matches currency)
+- **Can't afford:** Grayed cost, "Need X more [currency]"
+
+**Styling:** Dark panel (#2a2a2a), 2px color-coded border (gold for player tree, cyan for backpack tree), white text, 12px padding, 280–320px width.
+
+### Visual System (Shared)
+
+**Colors:**
+- Player Currency: Gold (#FFD700)
+- Backpack Currency: Cyan (#00D9FF)
+- Time: White (#FFFFFF)
+- Rarity: Common white, Uncommon green, Rare blue, Epic purple, Mythic orange, Legendary red
+- Text primary: White, Text secondary: Gray (#999999), Text muted: Gray (#666666)
+- Affordable: Green (#4CAF50), Locked/Unaffordable: Red (#F44336)
+
+**Typography:**
+- Header: 28–32px, bold, white
+- Primary stat: 24–28px, semi-bold, colored
+- Secondary: 16–20px, regular, white
+- Tertiary: 12–14px, regular, gray
+
+**Spacing Standards:**
+- Padding inside panels: 12–16px
+- Gap between rows: 8px
+- Gap between sections: 12px
+- Icon-to-text gap: 4px
+
+**Formatting:**
+- Numbers: Use commas (1,234 not 1234)
+- Time: Always MM:SS (01:23, not 1:23)
+- Decimals: 1 place for slow rates (0.05/sec, 4.1)
+- Before/after: Use arrow (30 → 32) or + notation (+2)
+- Currency: Always show icon (💰, 🎒)
+
+**Implementation Reference:** Full details in [UI_DESIGN.md](UI_DESIGN.md)
+
 ## Magic Spells & Attack Skills
 
 Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v7 launches with single active spell; v8+ unlocks multiple simultaneous spells for stronger progression feedback.

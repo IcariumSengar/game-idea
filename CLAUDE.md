@@ -81,6 +81,21 @@ Once there are enough scenes to warrant it, introduce subfolders
 (`scenes/ui/`, `scripts/player/`, etc.) rather than flattening everything
 into the two top-level folders indefinitely.
 
+## UI Screenshots & References
+
+Implementation chats often save UI reference screenshots during work (to coordinate
+changes, gather feedback). Keep these organized and temporary:
+
+- **Location:** `screenshots/` folder (not committed to git)
+- **Naming:** `YYYYMMDD_description.png` (e.g., `20260815_stats_overlay_v1.png`)
+- **Cleanup:** Screenshots older than 7 days are auto-deleted via cleanup scripts
+  - Windows: `screenshots/cleanup.bat`
+  - macOS/Linux: `./screenshots/cleanup.sh`
+- **Before shipping a version:** Run cleanup to clear old UI work
+
+See `screenshots/README.md` for usage details. Screenshots stay out of git history
+and don't clutter the repo.
+
 ## Dev environment
 
 - VS Code extension: **Godot Tools** (`geequlim.godot-tools`) — GDScript

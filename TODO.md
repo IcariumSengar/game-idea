@@ -56,14 +56,10 @@ this file should stay short enough to skim.
 
 ## v6 Balance (Implemented, Pending Playtest)
 
-**Philosophy:** Many runs with hard early game and incremental growth. Starting bag is 1 slot, forces Compacting early, Capacity is late-game prestige.
+See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementation) for all numbers and rationale.
 
-- [x] Starting capacity is 1 slot (unchanged from v4 code, already matched)
-- [x] Loot stack sizes: Common 10, Uncommon 8, Rare 5, Epic 3, Mythic 2
-- [x] Capacity: base cost 100, ×1.25/lvl, cap 10
-- [x] Compacting costs: Common base 12 ×1.12, Uncommon 18 ×1.14, Rare 28 ×1.16, Epic 42 ×1.18, Mythic 75 ×1.20
-- [x] Backpack currency rate: 0.05/sec
-- [ ] Verify progression feel: player upgrades early, Compacting accessible run 5–10, Capacity reachable run 20+ (needs playtesting)
+- [x] Implement all v6 balance values (1 slot start, 0.05/sec, Capacity cost 100, etc.)
+- [ ] Playtest & verify: player upgrades feel rewarding early, Compacting accessible run 5–10, Capacity feels like prestige late-game
 
 ## Later (Completed this session)
 
