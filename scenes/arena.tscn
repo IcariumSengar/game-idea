@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://scripts/stat_bar.gd" id="5_statbar"]
 [ext_resource type="Script" path="res://scripts/backpack_grid.gd" id="10_backpackgrid"]
 [ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="6_panel_dark"]
-[ext_resource type="TileSet" path="res://resources/dungeon_floor_tileset.tres" id="11_floor_tileset"]
+[ext_resource type="Script" path="res://scripts/arena_space_backdrop.gd" id="11_space"]
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/ui_heart_full.png" id="12_heart_icon"]
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f0.png" id="13_coin_icon"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="14_player_scene"]
@@ -32,10 +32,8 @@ colors = PackedColorArray(0.8, 0.65, 1, 0, 0.85, 0.7, 1, 0.7, 0.95, 0.8, 0.6, 0.
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
 
-[node name="Floor" type="TileMapLayer" parent="."]
-modulate = Color(0.78, 0.7, 0.92, 1)
-scale = Vector2(2.5, 2.5)
-tile_set = ExtResource("11_floor_tileset")
+[node name="SpaceBackdrop" type="Node2D" parent="."]
+script = ExtResource("11_space")
 
 [node name="AmbientMotes" type="CPUParticles2D" parent="."]
 position = Vector2(640, 360)
