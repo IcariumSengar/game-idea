@@ -1,37 +1,58 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/stat_bar.gd" id="5_statbar"]
 [ext_resource type="Script" path="res://scripts/backpack_grid.gd" id="10_backpackgrid"]
 [ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="6_panel_dark"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="7_btn_normal"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="8_btn_hover"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="9_btn_pressed"]
 [ext_resource type="TileSet" path="res://resources/dungeon_floor_tileset.tres" id="11_floor_tileset"]
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/ui_heart_full.png" id="12_heart_icon"]
 [ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/coin_anim_f0.png" id="13_coin_icon"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="14_player_scene"]
-[ext_resource type="Script" path="res://scripts/juicy_button.gd" id="15_juicy"]
+[ext_resource type="Script" path="res://scripts/menu_link_button.gd" id="15_link"]
+[ext_resource type="Script" path="res://scripts/vignette.gd" id="16_vignette"]
+[ext_resource type="Script" path="res://scripts/magic_circle_decor.gd" id="17_circle"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gameover"]
-bg_color = Color(0.03, 0.03, 0.03, 0.88)
+bg_color = Color(0.04, 0.03, 0.07, 0.88)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.8, 0.2, 0.2, 0.6)
+border_color = Color(0.7, 0.35, 0.55, 0.7)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
+[sub_resource type="Gradient" id="Gradient_motes"]
+offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
+colors = PackedColorArray(0.8, 0.65, 1, 0, 0.85, 0.7, 1, 0.7, 0.95, 0.8, 0.6, 0.5, 0.95, 0.8, 0.6, 0)
+
 [node name="Arena" type="Node2D"]
 script = ExtResource("1_arena")
 
 [node name="Floor" type="TileMapLayer" parent="."]
+modulate = Color(0.78, 0.7, 0.92, 1)
 scale = Vector2(2.5, 2.5)
 tile_set = ExtResource("11_floor_tileset")
+
+[node name="AmbientMotes" type="CPUParticles2D" parent="."]
+position = Vector2(640, 360)
+z_index = 5
+amount = 40
+lifetime = 6.0
+preprocess = 3.0
+emission_shape = 1
+emission_rect_extents = Vector2(640, 360)
+direction = Vector2(0, -1)
+spread = 25.0
+gravity = Vector2(0, -6)
+initial_velocity_min = 5.0
+initial_velocity_max = 16.0
+scale_amount_min = 0.6
+scale_amount_max = 1.8
+color_ramp = SubResource("Gradient_motes")
 
 [node name="Player" parent="." instance=ExtResource("14_player_scene")]
 position = Vector2(640, 360)
@@ -42,6 +63,16 @@ autostart = true
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("4_hud")
+
+[node name="Vignette" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("16_vignette")
 
 [node name="StatsPanel" type="PanelContainer" parent="HUD"]
 offset_left = 16.0
@@ -105,6 +136,24 @@ theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
 text = "Speed: 250   Pickup Range: 60   Capacity: 20"
 
+[node name="GameOverCircle" type="Control" parent="HUD"]
+process_mode = 3
+visible = false
+custom_minimum_size = Vector2(420, 420)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -210.0
+offset_right = 210.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("17_circle")
+
 [node name="GameOverPanel" type="PanelContainer" parent="HUD"]
 process_mode = 3
 visible = false
@@ -133,19 +182,18 @@ alignment = 1
 
 [node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
 theme_override_font_sizes/font_size = 32
-theme_override_colors/font_color = Color(0.95, 0.3, 0.3, 1)
+theme_override_colors/font_color = Color(0.88, 0.4, 0.6, 1)
+theme_override_constants/outline_size = 4
+theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
 text = "YOU DIED"
 horizontal_alignment = 1
 
 [node name="ContinueButton" type="Button" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
 process_mode = 3
-custom_minimum_size = Vector2(0, 44)
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = ExtResource("7_btn_normal")
-theme_override_styles/hover = ExtResource("8_btn_hover")
-theme_override_styles/pressed = ExtResource("9_btn_pressed")
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 20
 text = "Continue to Shop"
-script = ExtResource("15_juicy")
+script = ExtResource("15_link")
 
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]

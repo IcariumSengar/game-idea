@@ -13,6 +13,7 @@ var _player: Player
 @onready var _loot_value: Label = $StatsPanel/Margin/VBox/LootRow/LootValue
 @onready var _stats_label: Label = $StatsPanel/Margin/VBox/MetaStatsLabel
 @onready var _game_over_panel: PanelContainer = $GameOverPanel
+@onready var _game_over_circle: Control = $GameOverCircle
 @onready var _game_over_label: Label = $GameOverPanel/GameOverMargin/GameOverVBox/GameOverLabel
 
 
@@ -58,6 +59,7 @@ func _on_player_died() -> void:
 
 
 func _show_game_over_panel() -> void:
+	_game_over_circle.show()
 	_game_over_panel.show()
 	_game_over_panel.pivot_offset = _game_over_panel.size / 2.0
 	_game_over_panel.scale = Vector2.ONE * 0.7
