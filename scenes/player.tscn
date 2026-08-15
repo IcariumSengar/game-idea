@@ -33,9 +33,3 @@ shape = SubResource("CircleShape2D_pickup")
 
 [node name="SpellCaster" type="Node" parent="."]
 script = ExtResource("2_spell_caster")
-
-[node name="AttackTimer" type="Timer" parent="SpellCaster"]
-wait_time = 0.5
-autostart = true
-
-[connection signal="timeout" from="SpellCaster/AttackTimer" to="SpellCaster" method="_on_attack_timer_timeout"]

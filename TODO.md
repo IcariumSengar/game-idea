@@ -25,27 +25,20 @@ this file should stay short enough to skim.
 
 ## Future Content (Locked Design, Post-v8)
 
-### Magic Spells (v9) follow-up
+### Magic Spells (v9/v10) follow-up
 
 - [ ] Inferno Blade's "Knockback: 200 pixels" not implemented -- Enemy has
       no knockback-velocity system yet (only Player does). Damage, burn
       DOT, and arc-hit detection all work without it.
-- [ ] Verify feel in a full playtest: each spell plays differently,
-      swapping spells changes strategy -- shop-side switching and the
-      Spell Unlock L1/L2 gating were verified live; in-arena combat feel
-      for Inferno/Frost specifically wasn't fully played through
+- [ ] Verify feel in a full playtest: with all unlocked spells now firing
+      together, check they don't step on each other visually/audibly once
+      the player has two or three going at once -- individual spells were
+      verified live, full multi-spell combat wasn't
 - [ ] Real spell visuals/SFX (Inferno Blade got a small procedural
       flame-burst per player feedback; Frost Nova still only has the
       generic spark-particle burst, same placeholder approach as
       Bruiser/Elite)
 
-### Multiple Active Spells (v10+, expansion)
-
-- [ ] Multi-spell system: player equips 2–3 spells simultaneously
-  - [ ] Spell slots: "Spell Slot 1", "Spell Slot 2", "Spell Slot 3" (unlock via progression)
-  - [ ] Casting behavior: rotate between slots or all cast on shared cooldown (TBD)
-  - [ ] MetaProgression redesign: track multiple active spells per save
-  - [ ] Goal: unlock new spell → major power spike, keeps "getting stronger" feeling fresh
 
 ### Enemy Types follow-up (not blocking v7)
 
@@ -110,6 +103,10 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
       "Active Spell" panel. Also fixed a skill-tree layout bug this
       surfaced: nodes with more than 4 children (Spell Unlock has 6)
       overflowed past the tree column instead of wrapping to a new row.
+- [x] Multi-Spell Casting (v10) — replaced v9's single-active-spell
+      switching: every unlocked spell now fires simultaneously and
+      independently (own cooldown per spell), no slots or manual
+      switching. Shop's spell panel is now a read-only unlock-status list.
 
 ## Done
 

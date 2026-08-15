@@ -56,7 +56,7 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v9):
+What's actually built and playable today (see `scripts/`, as of v10):
 
 - Top-down movement + dash in a single arena; three enemy tiers (Minion
   melee chaser, Bruiser pause/charge, Elite kite + projectile), gated
@@ -64,11 +64,12 @@ What's actually built and playable today (see `scripts/`, as of v9):
   spawning faster/more over run duration. A full bag also slows the
   player's movement (floor 80% of base speed) on top of the max-HP
   shrink, per the backpack-fill penalty below.
-- Casting-based combat (`spell_caster.gd`): one active spell at a time,
-  switched in the shop. Arcane Bolt (ranged projectile) is always
-  available; Inferno Blade (melee arc + burn) and Frost Nova (AOE +
-  slow) unlock via the Spell Unlock skill-tree node. Spellpower is
-  upgradeable and scales all three spells proportionally.
+- Casting-based combat (`spell_caster.gd`): every unlocked spell casts
+  simultaneously and independently, no switching. Arcane Bolt (ranged
+  projectile) is always available; Inferno Blade (melee arc + burn) and
+  Frost Nova (AOE + slow) join in permanently once unlocked via the Spell
+  Unlock skill-tree node. Spellpower is upgradeable and scales all three
+  spells proportionally.
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
   drop weight, picked up via a proximity-based magnet radius (Gleam
@@ -254,7 +255,7 @@ death summary (`scripts/hud.gd`, `scenes/arena.tscn`), and skill tree tooltips
 
 ## Magic Spells & Attack Skills
 
-Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v9 launches with single active spell; v10+ unlocks multiple simultaneous spells for stronger progression feedback.
+Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v9 launched with a single active spell; v10 replaced that with every unlocked spell casting simultaneously for stronger progression feedback.
 
 ### Spell System Structure
 
@@ -264,7 +265,11 @@ Player is a **magic user**. Weapons are **spells**, casting-based combat with di
 - L2: Unlock Frost Nova
 - L3+: Reserved for future spells
 
-Only **1 active spell at a time** (v7). Switched in shop screen, persists across runs per save slot.
+As of **v10**, every unlocked spell casts automatically and simultaneously
+-- no switching, no slots. Arcane Bolt is always active; Inferno Blade and
+Frost Nova join in permanently, on their own independent cast-rate
+cooldowns, the moment their Spell Unlock tier is bought. Unlocks persist
+across runs per save slot, same as any other stat.
 
 ### Spell 1: Arcane Bolt (always available)
 
@@ -326,17 +331,17 @@ has had.
 - Visuals: Arcane (blue/purple), Inferno (orange/red), Frost (cyan/white)
 - Loot remains generic currency (magic flavor is aesthetic + mechanical, not tied to loot types)
 
-### Future: Multiple Active Spells (v10+)
+### Multi-Spell Casting (v10, implemented)
 
-**Goal:** Each new spell doubles the feeling of getting stronger; player can equip 2–3 spells simultaneously, rotating between them or auto-casting all.
+Every unlocked spell casts automatically and simultaneously, each on its
+own independent cooldown -- no slots, no rotation, no manual switching.
+Resolves the "rotating vs. auto-casting all" question this section
+originally left open, in favor of the simpler option. Unlocking a new
+spell is a real power milestone: early runs are Arcane-only, mid-game
+(Spell Unlock L1) adds Inferno Blade, late-game (L2) runs all three at
+once.
 
-**Implementation notes:**
-- Requires MetaProgression redesign to track multiple active_spells (currently single)
-- Player cycles/alternates between spells, or all cast on shared cooldown
-- Unlocking a new spell becomes a real power milestone ("I just got Frost Nova, I can freeze enemies now")
-- Keeps progression ladder fresh through many runs (early: Arcane only → mid: Arcane + Inferno → late: all three)
-
-### Future: Additional Spells (v10+)
+### Future: Additional Spells (v11+)
 
 - **Meteor Strike:** High-damage AOE impact, long cooldown (boss-killer)
 - **Teleport Pulse:** Dash + damage on arrival, mobility spell
@@ -879,3 +884,16 @@ Short dated entries when a design decision is made and worth remembering
   slow. Scaled its cast-rate curve (base and per-level Haste gain both)
   by 1/1.5 -- 0.5→0.33 sec/shot at level 0, 0.15→0.1 sec/shot at Haste's
   cap -- so it's 50% faster at every level, not just the starting point.
+- 2026-08-15 — v10 Multi-Spell Casting: moved to the next roadmap item
+  early, on direct player feedback that spells should stay on once
+  unlocked rather than being switched one at a time. `spell_caster.gd`
+  dropped its single shared `AttackTimer`/`active_spell` dispatch for
+  three independent per-spell cooldowns ticked in `_process()`; Arcane
+  Bolt's always counts down, Inferno Blade's and Frost Nova's only count
+  down once `MetaProgression.is_spell_unlocked()` says so, so all
+  unlocked spells fire concurrently and Arcane never pauses for them.
+  Removed `MetaProgression.active_spell`/`set_active_spell()`/
+  `active_spell_changed` entirely (including from save data) now that
+  there's nothing to switch. The shop's spell panel changed from three
+  switch buttons to a read-only status list (locked/unlocked, no click
+  behavior) since picking one is no longer a choice the player makes.

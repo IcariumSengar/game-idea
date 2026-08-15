@@ -11,7 +11,6 @@ extends Node
 
 signal currency_changed
 signal stat_changed(stat_id: StringName, level: int)
-signal active_spell_changed(spell_id: StringName)
 
 const STAT_BACKPACK_CAPACITY: StringName = &"backpack_capacity"
 const STAT_PICKUP_RANGE: StringName = &"pickup_range"
@@ -50,7 +49,6 @@ var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
 var current_slot: int = 0
-var active_spell: StringName = SPELL_ARCANE_BOLT
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -205,14 +203,6 @@ func is_spell_unlocked(spell_id: StringName) -> bool:
 	return false
 
 
-func set_active_spell(spell_id: StringName) -> bool:
-	if not is_spell_unlocked(spell_id):
-		return false
-	active_spell = spell_id
-	active_spell_changed.emit(spell_id)
-	return true
-
-
 func buy_upgrade(id: StringName) -> bool:
 	var def := _find_def(id)
 	if def == null or is_maxed(id):
@@ -297,7 +287,6 @@ func _load() -> void:
 	player_currency = data.get("player_currency", 0)
 	backpack_currency = data.get("backpack_currency", 0)
 	best_run_time = data.get("best_run_time", 0.0)
-	active_spell = StringName(data.get("active_spell", SPELL_ARCANE_BOLT))
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
@@ -313,7 +302,6 @@ func _reset_to_defaults() -> void:
 	player_currency = 0
 	backpack_currency = 0
 	best_run_time = 0.0
-	active_spell = SPELL_ARCANE_BOLT
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 
@@ -324,7 +312,6 @@ func save() -> void:
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
-		"active_spell": String(active_spell),
 		"stat_levels": _stat_levels
 	}
 	var slot_file := _get_slot_save_path(current_slot)

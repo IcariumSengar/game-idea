@@ -1,9 +1,11 @@
 extends Node
 
-## Casts whichever spell is currently equipped (MetaProgression.active_spell).
-## Replaces the old flat weapon.gd -- v9 supports one active spell at a
-## time, switched between runs in the shop; v10+ adds casting multiple
-## simultaneously.
+## Casts every spell the player has unlocked, simultaneously and
+## independently -- v10 replaces v9's single-active-spell switching.
+## Arcane Bolt is always available; Inferno Blade and Frost Nova join in
+## permanently once unlocked via the Spell Unlock skill-tree node. Each
+## spell tracks its own cast-rate cooldown so they don't interfere with
+## each other.
 ##
 ## Each spell's "Power" scales with Spellpower proportionally to its base
 ## value (20 for Arcane, 25 for Inferno, 15 for Frost) relative to
@@ -31,15 +33,37 @@ var _owner_body: Player
 ## Enemy -> {ticks_left: int, tick_damage: float, timer: float}
 var _burning: Dictionary = {}
 
-@onready var _cast_timer: Timer = $AttackTimer
+var _arcane_cooldown: float = 0.0
+var _inferno_cooldown: float = 0.0
+var _frost_cooldown: float = 0.0
 
 
 func _ready() -> void:
 	_owner_body = get_parent()
-	_cast_timer.wait_time = _current_cast_rate()
+	_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
+	_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
+	_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
 
 
 func _process(delta: float) -> void:
+	_process_burns(delta)
+	_arcane_cooldown -= delta
+	if _arcane_cooldown <= 0.0:
+		_cast_arcane_bolt()
+		_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_INFERNO_BLADE):
+		_inferno_cooldown -= delta
+		if _inferno_cooldown <= 0.0:
+			_cast_inferno_blade()
+			_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_FROST_NOVA):
+		_frost_cooldown -= delta
+		if _frost_cooldown <= 0.0:
+			_cast_frost_nova()
+			_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+
+
+func _process_burns(delta: float) -> void:
 	var finished: Array = []
 	for enemy: Enemy in _burning:
 		if not is_instance_valid(enemy):
@@ -55,26 +79,6 @@ func _process(delta: float) -> void:
 				finished.append(enemy)
 	for enemy in finished:
 		_burning.erase(enemy)
-
-
-func _on_attack_timer_timeout() -> void:
-	match MetaProgression.active_spell:
-		MetaProgression.SPELL_ARCANE_BOLT:
-			_cast_arcane_bolt()
-		MetaProgression.SPELL_INFERNO_BLADE:
-			_cast_inferno_blade()
-		MetaProgression.SPELL_FROST_NOVA:
-			_cast_frost_nova()
-	_cast_timer.wait_time = _current_cast_rate()
-
-
-func _current_cast_rate() -> float:
-	match MetaProgression.active_spell:
-		MetaProgression.SPELL_INFERNO_BLADE:
-			return MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
-		MetaProgression.SPELL_FROST_NOVA:
-			return MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
-	return MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
 
 
 func _scaled_power(spell_base_power: float) -> float:

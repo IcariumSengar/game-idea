@@ -138,32 +138,29 @@ alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
-text = "ACTIVE SPELL"
+text = "SPELLS"
 horizontal_alignment = 1
 
-[node name="ArcaneBoltButton" type="Button" parent="ButtonContainer"]
+[node name="ArcaneBoltStatusLabel" type="Label" parent="ButtonContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(0, 30)
 theme_override_font_sizes/font_size = 16
 text = "Arcane Bolt"
-script = ExtResource("7_link")
+horizontal_alignment = 1
 
-[node name="InfernoBladeButton" type="Button" parent="ButtonContainer"]
+[node name="InfernoBladeStatusLabel" type="Label" parent="ButtonContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(0, 30)
 theme_override_font_sizes/font_size = 16
 text = "Inferno Blade"
-script = ExtResource("7_link")
+horizontal_alignment = 1
 
-[node name="FrostNovaButton" type="Button" parent="ButtonContainer"]
+[node name="FrostNovaStatusLabel" type="Label" parent="ButtonContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(0, 30)
 theme_override_font_sizes/font_size = 16
 text = "Frost Nova"
-script = ExtResource("7_link")
+horizontal_alignment = 1
 
 [node name="Spacer2" type="Control" parent="ButtonContainer"]
 custom_minimum_size = Vector2(0, 10)
@@ -183,8 +180,5 @@ theme_override_font_sizes/font_size = 16
 text = "← BACK"
 script = ExtResource("7_link")
 
-[connection signal="pressed" from="ButtonContainer/ArcaneBoltButton" to="." method="_on_spell_button_pressed" binds = [&"arcane_bolt"]]
-[connection signal="pressed" from="ButtonContainer/InfernoBladeButton" to="." method="_on_spell_button_pressed" binds = [&"inferno_blade"]]
-[connection signal="pressed" from="ButtonContainer/FrostNovaButton" to="." method="_on_spell_button_pressed" binds = [&"frost_nova"]]
 [connection signal="pressed" from="ButtonContainer/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="pressed" from="ButtonContainer/BackButton" to="." method="_on_back_pressed"]

@@ -13,12 +13,12 @@ var _last_backpack_currency: int = -1
 @onready var _player_tree: SkillTreeView = %PlayerTreeView
 @onready var _backpack_header: Label = %BackpackHeader
 @onready var _player_header: Label = %PlayerHeader
-@onready var _spell_buttons: Dictionary = {
-	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltButton,
-	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeButton,
-	MetaProgression.SPELL_FROST_NOVA: %FrostNovaButton,
+@onready var _spell_status_labels: Dictionary = {
+	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltStatusLabel,
+	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeStatusLabel,
+	MetaProgression.SPELL_FROST_NOVA: %FrostNovaStatusLabel,
 }
-@onready var _spell_labels: Dictionary = {
+@onready var _spell_display_names: Dictionary = {
 	MetaProgression.SPELL_ARCANE_BOLT: "Arcane Bolt",
 	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
 	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
@@ -30,7 +30,7 @@ func _ready() -> void:
 	MetaProgression.stat_changed.connect(_on_stat_changed)
 	_update_trees()
 	_refresh_currency()
-	_update_spell_buttons()
+	_update_spell_status()
 
 
 func _update_trees() -> void:
@@ -96,27 +96,18 @@ func _on_currency_changed() -> void:
 
 func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
 	_update_trees()
-	_update_spell_buttons()
+	_update_spell_status()
 
 
-func _on_spell_button_pressed(spell_id: StringName) -> void:
-	if MetaProgression.set_active_spell(spell_id):
-		AudioManager.play("click")
-		_update_spell_buttons()
-
-
-func _update_spell_buttons() -> void:
-	for spell_id: StringName in _spell_buttons:
-		var button: Button = _spell_buttons[spell_id]
-		var label: String = _spell_labels[spell_id]
+## v10: every unlocked spell casts simultaneously, so this panel is just a
+## status readout (what's currently firing) rather than a switcher.
+func _update_spell_status() -> void:
+	for spell_id: StringName in _spell_status_labels:
+		var label: Label = _spell_status_labels[spell_id]
+		var display_name: String = _spell_display_names[spell_id]
 		var unlocked: bool = MetaProgression.is_spell_unlocked(spell_id)
-		button.disabled = not unlocked
-		if not unlocked:
-			button.text = "%s (Locked)" % label
-		elif spell_id == MetaProgression.active_spell:
-			button.text = "> %s" % label
-		else:
-			button.text = label
+		label.text = display_name if unlocked else "%s (Locked)" % display_name
+		label.modulate = Color.WHITE if unlocked else Color(0.5, 0.5, 0.5)
 
 
 func _on_start_run_button_pressed() -> void:

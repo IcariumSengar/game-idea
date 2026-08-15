@@ -21,8 +21,9 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v9** | Magic spells (single active spell) | Design locked, ready next |
-| **v10+** | Multi-spell expansion | Design noted for future |
+| **v9** | Magic spells | Built, pending release tag |
+| **v10** | Multi-spell casting (all unlocked spells fire at once) | Built, pending release tag |
+| **v11+** | Additional spells (Meteor Strike, Teleport Pulse, ...) | Design noted for future |
 
 **For details on each version:** See [DESIGN.md](DESIGN.md)
 
