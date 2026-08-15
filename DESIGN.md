@@ -56,34 +56,38 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v4):
+What's actually built and playable today (see `scripts/`, as of v6):
 
 - Top-down movement + dash in a single arena; one enemy type that chases
   and damages the player on contact, spawning faster/more over run
   duration.
-- One weapon, auto-firing at the nearest enemy; Damage is upgradeable.
+- One weapon, auto-firing at the nearest enemy; Spellpower is upgradeable.
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
-  drop weight, picked up via a proximity-based magnet radius (Magnet
-  Range upgradeable).
+  drop weight, picked up via a proximity-based magnet radius (Gleam
+  upgradeable).
 - A real slot-grid backpack (`backpack_grid.gd`) — one slot per loot
-  type held, colored by rarity, growing with Capacity; fill % shrinks
+  type held, colored by rarity, growing with Bearing; fill % shrinks
   max HP.
 - Two currencies (`meta_progression.gd`): player currency (loot value)
-  funds Damage/Move Speed/Magnet Range; backpack currency (survival
-  time) funds Capacity. Upgrades are leveled with a geometric cost curve
-  and a hard level cap — matches this doc's numbers for Damage, Move
-  Speed, and Magnet Range. **Capacity is the one exception**: it's still
-  flat-cost and effectively uncapped (level cap 999) in code, not yet
-  updated to the ×1.20/lvl-growth, 12-level-cap curve this doc specifies.
-- Death → run summary → shop (flat list of upgrade buttons, not yet the
-  skill-tree layout below) → restart with upgrades carried over.
-- Persistence: 4 save slots available; player selects a slot at game start to
-  load/overwrite progress. Save data cloud-syncs for cross-device access.
+  funds Spellpower/Swiftness/Gleam; backpack currency (survival
+  time) funds Bearing. Upgrades are leveled with a geometric cost curve
+  and a hard level cap, including Bearing (base cost 100, ×1.25/lvl,
+  cap 10 as of the v6 balance pass).
+- Per-tier Compacting (Commons Hoard through Mythic Hoard) and Discard
+  (formerly Purge) both built and gated as described below.
+- Shop is the two-tree skill-tree layout (Player Tree / Backpack Tree)
+  with gating and hover tooltips, not a flat button list.
+- Death → full run summary screen (time/phase, rewards, loot breakdown,
+  run stats, previous best) → shop → restart with upgrades carried over.
+- Persistence: 4 save slots with metadata (last played, playtime,
+  upgrade preview); player selects a slot at game start to load/overwrite
+  progress. Cloud-sync infrastructure exists but the server side is still
+  a placeholder — see [TODO.md](TODO.md).
 
-Not yet built: save/load system (4 slots + cloud-sync, design above),
-Compacting (per-tier), Purge, and the skill-tree shop layout — see
-[TODO.md](TODO.md) for the remaining build order.
+Not yet built: enemy tiers beyond the current single Minion type, magic
+spells (single weapon is still hardcoded, not spell-based), and multiple
+simultaneous spells — see [TODO.md](TODO.md) for the v7/v8+ build order.
 
 ## Enemy Types & Loot Tiers
 
@@ -237,7 +241,9 @@ All UI elements follow a consistent visual system to maintain cohesion across th
 - Before/after: Use arrow (30 → 32) or + notation (+2)
 - Currency: Always show icon (💰, 🎒)
 
-**Implementation Reference:** Full details in [UI_DESIGN.md](UI_DESIGN.md)
+**Status:** Implemented — in-run overlay (`scripts/hud.gd`, `scripts/hud_stat_icon.gd`),
+death summary (`scripts/hud.gd`, `scenes/arena.tscn`), and skill tree tooltips
+(`scripts/skill_tree_view.gd`) all match the sections above.
 
 ## Magic Spells & Attack Skills
 
@@ -365,16 +371,17 @@ currency") — real names TBD once the theme is more settled.
 The shop is two skill trees, one per currency, shown side by side —
 reinforcing the two-currency split visually as well as economically.
 
-- **Backpack Tree** is a real chain: Capacity sits at the root (always
-  purchasable). Compactor nodes unlock in rarity order — Common →
-  Uncommon → Rare → Epic → Mythic — each locked until the previous tier's
-  compactor has at least one level bought. Purge unlocks the same way, as
-  a capstone gated behind the Rare Compactor's first level — reusing the
-  same "previous node bought once" gate as everything else rather than a
-  separate threshold rule. This resolves the earlier open question about
-  Compacting's purchase order: it's a hard gate now, enforced by the
-  tree, not just a cost-driven nudge.
-- **Player Tree** is flatter: Damage, Move Speed, and Magnet Range branch
+- **Backpack Tree** is a real chain: Bearing sits at the root (always
+  purchasable). Compactor nodes unlock in rarity order — Commons Hoard →
+  Uncommon Stash → Rare Vault → Epic Trove → Mythic Hoard — each locked
+  until the previous tier's compactor has at least one level bought.
+  Discard unlocks the same way, as a capstone gated behind the Rare
+  Vault's first level — reusing the same "previous node bought once"
+  gate as everything else rather than a separate threshold rule. This
+  resolves the earlier open question about Compacting's purchase order:
+  it's a hard gate now, enforced by the tree, not just a cost-driven
+  nudge.
+- **Player Tree** is flatter: Spellpower, Swiftness, and Gleam branch
   independently off a shared root with no cross-gating between them,
   since nothing in the design requires one before another.
 - Each node keeps its existing leveled/capped cost curve (see tables
@@ -413,42 +420,42 @@ final balance):
 
 | Stat | Base | Per-level gain | Base cost | Cost growth | Level cap | Value at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Damage | 20 | +2 (10% of base) | 15 | ×1.15/lvl | 20 | 60 (3×) |
-| Move Speed | 250 | +10 (4% of base) | 15 | ×1.18/lvl | 10 | 350 (1.4×) |
-| Magnet Range | 60 | +8 (13% of base) | 12 | ×1.15/lvl | 15 | 180 (3×) |
+| Spellpower | 20 | +2 (10% of base) | 15 | ×1.15/lvl | 20 | 60 (3×) |
+| Swiftness | 250 | +10 (4% of base) | 15 | ×1.18/lvl | 10 | 350 (1.4×) |
+| Gleam | 60 | +8 (13% of base) | 12 | ×1.15/lvl | 15 | 180 (3×) |
 
-Move Speed gets the smallest relative gain and the steepest cost growth on
+Swiftness gets the smallest relative gain and the steepest cost growth on
 purpose — it's the stat most likely to trivialize difficulty or feel bad
 if overtuned, and it also feeds the knockback-decay math in
 `scripts/player.gd`, so pumping it has knock-on effects beyond raw
-mobility. Damage and Magnet Range get more room to grow since
+mobility. Spellpower and Gleam get more room to grow since
 overinvesting in them is safer. As a rough pacing check: fully maxing
-Damage alone (20 levels, geometric sum) comes out to roughly 1,500
+Spellpower alone (20 levels, geometric sum) comes out to roughly 1,500
 currency total — meant to take many runs, not a handful.
 
-Built: `StatDef`/`MetaProgression` now support geometric cost curves and a
-hard level cap, and Damage/Move Speed/Magnet Range are wired up with the
+Built: `StatDef`/`MetaProgression` support geometric cost curves and a
+hard level cap, and Spellpower/Swiftness/Gleam are wired up with the
 exact numbers above.
 
 ### Backpack-track upgrade curve
 
 Same framework as the player track — geometric cost growth, flat/additive
 effect per level, capped levels — applied to backpack currency instead.
-Backpack Capacity gets its own table here; Compacting and Purge (already
+Bearing gets its own table here; Compacting and Discard (already
 tier/threshold-shaped) get their leveled cost curves in their own
 sections below.
 
 | Stat | Base | Per-level gain | Base cost | Cost growth | Level cap | Value at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Backpack Capacity | 1 slot | +1 slot | 100 | ×1.25/lvl | 10 | 11 slots (11×) |
+| Bearing | 1 slot | +1 slot | 100 | ×1.25/lvl | 10 | 11 slots (11×) |
 
-Capacity is deliberately the prestige upgrade — expensive (base cost 100)
+Bearing is deliberately the prestige upgrade — expensive (base cost 100)
 and steep cost growth (×1.25/lvl). Starting at 1 slot creates an immediate
 constraint that forces the use of Compacting early on. Each new slot
 (especially the 2nd and 3rd) feels like a major milestone/level-up moment,
 keeping engagement high through a long progression series. By design,
 players should have access to Compacting upgrades in their first 5 runs,
-but won't afford a 2nd Capacity slot until run 15–20+.
+but won't afford a 2nd Bearing slot until run 15–20+.
 
 **Fill %** = slots used ÷ total slots — a slot counts as "used" the
 moment it holds one or more of an item, regardless of how full its stack
@@ -505,8 +512,8 @@ rarity table is only a balancing sanity-check (what one maxed-out slot is
 worth), not the conversion formula itself.
 
 Only loot still in the backpack at the moment of death counts. Anything
-discarded mid-run by the Purge upgrade is gone — its value is never
-banked. That makes Purge a genuine trade, not a free safety net: it buys
+discarded mid-run by the Discard upgrade is gone — its value is never
+banked. That makes Discard a genuine trade, not a free safety net: it buys
 more survival time (and so more backpack currency) at the cost of the
 player currency those discarded items would have been worth. Backpack
 currency itself (from survival time) is entirely separate and unaffected
@@ -514,61 +521,63 @@ by any of this — see Two Currencies above.
 
 Worked example (illustrative): a run ends with 40 Commons, 10 Uncommons,
 3 Rares, and 1 Epic still in the bag →
-`40×1 + 10×3 + 3×10 + 1×40 = 140` player currency. Against the Damage
+`40×1 + 10×3 + 3×10 + 1×40 = 140` player currency. Against the Spellpower
 curve (base cost 15, ×1.15/lvl), that covers the first several levels of
 one stat — a reasonable early pace, a few runs to a first couple of
 upgrades.
 
 ### Compacting upgrades
 
-A **separate upgrade per rarity tier, Common through Mythic**, each
-raising that tier's max stack size (e.g. Common Compactor lvl 1: 64 → 96,
+A **separate upgrade per rarity tier, Common through Mythic** — Commons
+Hoard, Uncommon Stash, Rare Vault, Epic Trove, Mythic Hoard — each
+raising that tier's max stack size (e.g. Commons Hoard lvl 1: 64 → 96,
 lvl 2: 96 → 128 — several levels per tier for a granular shop ladder).
 Compacting never touches item value, only how many of that tier fit in
 one slot.
 
-**Legendary is permanently uncompactable** — no compactor exists for it,
-stack size stays 1 forever. It's the one item that always eats a whole
-slot on its own, by design: that's the top-tier risk/reward tension the
-whole rarity system is built around, and it shouldn't be tunable away.
+**Legendary is permanently uncompactable** — no Compacting node exists
+for it, stack size stays 1 forever. It's the one item that always eats a
+whole slot on its own, by design: that's the top-tier risk/reward
+tension the whole rarity system is built around, and it shouldn't be
+tunable away.
 
-Purchase order follows the rarity ladder — common compactor first,
-mythic compactor last — because relevance follows the drop curve:
-commons flood the bag from the first run, so a common compactor pays off
-immediately and keeps paying off for a long stretch, while a mythic
-compactor is nearly irrelevant until mythics are dropping often enough
-for stack depth to matter at all. In the skill-tree shop (see above)
-this is a **hard gate**: each Compactor node is locked until the
-previous tier's node has at least one level bought, not just nudged by
-price.
+Purchase order follows the rarity ladder — Commons Hoard first, Mythic
+Hoard last — because relevance follows the drop curve: commons flood the
+bag from the first run, so Commons Hoard pays off immediately and keeps
+paying off for a long stretch, while Mythic Hoard is nearly irrelevant
+until mythics are dropping often enough for stack depth to matter at
+all. In the skill-tree shop (see above) this is a **hard gate**: each
+Compacting node is locked until the previous tier's node has at least
+one level bought, not just nudged by price.
 
 Per-tier cost curve (illustrative):
 
-| Compactor | Base stack | Per-level gain | Base cost | Cost growth | Level cap | Stack at cap |
+| Compacting node | Base stack | Per-level gain | Base cost | Cost growth | Level cap | Stack at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Common | 10 | +10 | 12 | ×1.12/lvl | 8 | 90 (9×) |
-| Uncommon | 8 | +5 | 18 | ×1.14/lvl | 6 | 38 (4.75×) |
-| Rare | 5 | +3 | 28 | ×1.16/lvl | 5 | 20 (4×) |
-| Epic | 3 | +2 | 42 | ×1.18/lvl | 4 | 11 (3.67×) |
-| Mythic | 2 | +1 | 75 | ×1.20/lvl | 3 | 5 (2.5×) |
+| Commons Hoard | 10 | +10 | 12 | ×1.12/lvl | 8 | 90 (9×) |
+| Uncommon Stash | 8 | +5 | 18 | ×1.14/lvl | 6 | 38 (4.75×) |
+| Rare Vault | 5 | +3 | 28 | ×1.16/lvl | 5 | 20 (4×) |
+| Epic Trove | 3 | +2 | 42 | ×1.18/lvl | 4 | 11 (3.67×) |
+| Mythic Hoard | 2 | +1 | 75 | ×1.20/lvl | 3 | 5 (2.5×) |
 | Legendary | 1 | — | — | — | — | 1 (never stacks) |
 
 Base cost and growth rate also climb with rarity on top of the gate
 itself, so even a player who's unlocked a later node still feels the
 common-first pull through price.
 
-### Purge upgrade
+### Discard upgrade
 
-A single, late-game upgrade: once bag fill crosses a threshold (e.g.
-90%), automatically discards the lowest-rarity item(s) to free space
-instead of blocking further pickups. Only becomes relevant once slot
-count and stack depth (via Compacting) are both near their ceiling and
-fullness is still the thing killing runs — a last safety valve after the
-other two upgrade paths are mostly exhausted, not a substitute for them.
+A single, late-game upgrade (formerly "Purge"): once bag fill crosses a
+threshold (e.g. 90%), automatically discards the lowest-rarity item(s)
+to free space instead of blocking further pickups. Only becomes
+relevant once slot count and stack depth (via Compacting) are both near
+their ceiling and fullness is still the thing killing runs — a last
+safety valve after the other two upgrade paths are mostly exhausted,
+not a substitute for them.
 
 Leveled via its trigger threshold rather than a flat on/off:
 
-| Purge level | Trigger threshold | Cost |
+| Discard level | Trigger threshold | Cost |
 |---|---:|---:|
 | 1 | 90% fill | 100 |
 | 2 | 85% fill | 130 |
@@ -586,7 +595,7 @@ the threshold.
 The backpack should be visible on-screen as a real slot grid
 (Minecraft-style), not an abstract fill bar. This makes upgrades
 self-explanatory in play: Compacting is *seen* as a stack climbing
-higher in the same slot, Capacity is *seen* as the grid growing, and
+higher in the same slot, Bearing is *seen* as the grid growing, and
 rarity is *seen* via the color-coded item border from the table above.
 Fill% and HP shrink should feel visually linked (e.g. slots trending red
 as the bag nears full, in sync with the HP bar draining) so the core risk
@@ -719,3 +728,27 @@ Short dated entries when a design decision is made and worth remembering
   spells uniformly; each spell has independent upgrade paths (Haste, Arc,
   Radius, etc.). Visuals are magic-themed (blue/purple, orange/red, cyan
   effects) but loot stays generic currency.
+- 2026-08-15 — v5 naming pass shipped: Player Currency → Essence, Backpack
+  Currency → Stardust, Compactor tiers → "<Tier> Binding" (e.g. "Common
+  Binding"), Shop → Sanctum, death screen → "Lost to the Void" / "RUN
+  SUMMARY". Core stat names (Damage, Move Speed, Magnet Range, Backpack
+  Capacity) were deliberately left as-is in this pass — see
+  [TEXT_FLAVOR.md](TEXT_FLAVOR.md) for the still-open Spellpower/
+  Swiftness/Gleam/Bearing rename proposal, not yet decided.
+- 2026-08-15 — HUD & UI Design section (stats overlay, death summary,
+  skill tree tooltips) implemented as specified above and verified live
+  in-game: run overlay updates Time/Essence/Stardust each frame; death
+  summary shows time/phase, rewards, rarity-colored loot breakdown, run
+  stats, and previous-best once one exists; skill tree tooltips get a
+  currency-colored border, before/after values, and affordable/shortfall/
+  maxed/locked status text.
+- 2026-08-15 — Adopted TEXT_FLAVOR.md's core stat rename proposal: Damage
+  → Spellpower, Move Speed → Swiftness, Magnet Range → Gleam, Backpack
+  Capacity → Bearing, Purge → Discard, and the five Compacting tiers →
+  Commons Hoard / Uncommon Stash / Rare Vault / Epic Trove / Mythic
+  Hoard. Applied throughout this doc's active sections (decisions log
+  entries above this one are left as historical record using the old
+  names, since they describe decisions made at the time under those
+  names). Underlying stat IDs (`damage`, `move_speed`, etc.) are
+  unchanged — this is a display-name-only rename, no save compatibility
+  impact.

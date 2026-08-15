@@ -32,7 +32,6 @@
 - **[CLAUDE.md](CLAUDE.md)** — Engineering practices
 - **[VERSIONING.md](VERSIONING.md)** — Git workflow
 - **[CHANGELOG.md](CHANGELOG.md)** — Release notes
-- **[UI_DESIGN.md](UI_DESIGN.md)** — Detailed UI reference (stats overlay, death summary, tooltips)
 - **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)** — Shipping guide (CI/CD)
 
 ---
