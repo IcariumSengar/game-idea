@@ -31,29 +31,34 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+[node name="OuterVBox" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer/OuterVBox"]
 layout_mode = 2
 theme_override_styles/panel = ExtResource("3_panel_dark")
 
-[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+[node name="Margin" type="MarginContainer" parent="CenterContainer/OuterVBox/Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 32
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox/Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 theme_override_colors/font_color = Color(0.92, 0.82, 0.55, 1)
 text = "READY?"
 horizontal_alignment = 1
 
-[node name="ProgressLabel" type="Label" parent="CenterContainer/Panel/Margin/VBoxContainer"]
+[node name="ProgressLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
@@ -62,31 +67,31 @@ text = "Current Progress"
 horizontal_alignment = 0
 vertical_alignment = 1
 
-[node name="ButtonContainer" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBoxContainer"]
+[node name="ButtonContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="StartRunButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
+[node name="StartRunButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "START RUN"
 script = ExtResource("4_link")
 
-[node name="ViewTreeButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
+[node name="ViewTreeButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "VIEW SKILL TREE"
 script = ExtResource("4_link")
 
-[node name="BackButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
+[node name="BackButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "← BACK"
 script = ExtResource("4_link")
 
-[connection signal="pressed" from="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer/StartRunButton" to="." method="_on_start_run_pressed"]
-[connection signal="pressed" from="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer/ViewTreeButton" to="." method="_on_view_tree_pressed"]
-[connection signal="pressed" from="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/StartRunButton" to="." method="_on_start_run_pressed"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/ViewTreeButton" to="." method="_on_view_tree_pressed"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/BackButton" to="." method="_on_back_pressed"]

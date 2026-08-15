@@ -120,13 +120,13 @@ script = ExtResource("1_skill_tree")
 size_flags_vertical = 3
 
 [node name="Spacer2" type="Control" parent="ShopPanel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="ButtonContainer" type="HBoxContainer" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 
 [node name="StartRunButton" type="Button" parent="ShopPanel/Margin/VBox/ButtonContainer"]
 layout_mode = 2

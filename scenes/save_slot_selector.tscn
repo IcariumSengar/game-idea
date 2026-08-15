@@ -31,58 +31,58 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+[node name="OuterVBox" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer/OuterVBox"]
 layout_mode = 2
 theme_override_styles/panel = ExtResource("3_panel_dark")
 
-[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+[node name="Margin" type="MarginContainer" parent="CenterContainer/OuterVBox/Panel"]
 layout_mode = 2
 theme_override_constants/margin_left = 36
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 36
 theme_override_constants/margin_bottom = 28
 
-[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/OuterVBox/Panel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+[node name="TitleLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 theme_override_colors/font_color = Color(0.92, 0.82, 0.55, 1)
 text = "LOAD GAME"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.75, 0.75, 0.72, 1)
 text = "Select a save slot"
 horizontal_alignment = 1
 
-[node name="Spacer1" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+[node name="Spacer1" type="Control" parent="CenterContainer/OuterVBox/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox"]
+[node name="ScrollContainer" type="ScrollContainer" parent="CenterContainer/OuterVBox/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(680, 380)
 layout_mode = 2
 
-[node name="SlotsContainer" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/ScrollContainer"]
+[node name="SlotsContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox/Panel/Margin/VBox/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="Spacer2" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 12)
-layout_mode = 2
-
-[node name="BackButton" type="Button" parent="CenterContainer/Panel/Margin/VBox"]
+[node name="BackButton" type="Button" parent="CenterContainer/OuterVBox"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "← BACK TO MENU"
 script = ExtResource("4_link")
 
-[connection signal="pressed" from="CenterContainer/Panel/Margin/VBox/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/BackButton" to="." method="_on_back_pressed"]

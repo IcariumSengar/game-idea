@@ -2,7 +2,7 @@ extends Control
 
 ## Pre-run menu - view progress and decide to start run or view skill tree.
 
-@onready var _progress_label: Label = $CenterContainer/Panel/Margin/VBoxContainer/ProgressLabel
+@onready var _progress_label: Label = %ProgressLabel
 
 
 func _ready() -> void:
