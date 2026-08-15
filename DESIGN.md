@@ -196,7 +196,6 @@ Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
 ### Future Expansions (Enemy Types)
 
 - Projectile types (different speeds/colors per enemy)
-- Loot affixes (higher tiers drop items with +modifiers)
 
 ## HUD & UI Design
 
@@ -547,6 +546,25 @@ Drop weight, stack size, and value are three independent tuning knobs and
 don't have to move in lockstep — this table is a first-pass shape, not a
 locked formula.
 
+### Loot affixes
+
+Epic+ drops have a chance to roll "Blessed" -- 15% for Epic, 25% for
+Mythic, 40% for Legendary; Common/Uncommon/Rare never roll one. A
+Blessed item is worth +50% more and reads distinctly in the moment
+(brighter gold-shifted color, a bigger pulse, a "+X Blessed!" floating
+text) but the bonus is banked immediately as extra currency rather than
+living on the item itself.
+
+That's a deliberate scope cut, not the full vision: the backpack tracks
+a *count per tier*, not individual item instances (that's what makes
+Compacting/stacking work at all), so there's no slot to durably attach a
+modifier to. Reworking to per-instance tracking just to support affixes
+would be a real architecture change with knock-on effects on Compacting,
+Discard, and the loot grid UI -- out of scope for what this doc actually
+asked for. A true persistent-modifier version (visible in the backpack
+grid, tradeable value vs. slot space like everything else in the rarity
+system) is a real future direction if this scope cut doesn't hold up.
+
 ### Loot → currency conversion
 
 At run end, player currency earned is the sum of each collected item's
@@ -554,7 +572,8 @@ At run end, player currency earned is the sum of each collected item's
 backpack when the run ends:
 
 `player_currency = Σ (count_in_backpack[tier] × base_value/item[tier])`
-across all six tiers.
+across all six tiers, plus any banked Blessed-affix bonus (see Loot
+affixes above) on top.
 
 This uses base value/item, not "full-slot value" — full-slot value in the
 rarity table is only a balancing sanity-check (what one maxed-out slot is

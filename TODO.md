@@ -45,6 +45,14 @@ this file should stay short enough to skim.
       `_knockback` velocity (mirrors Player's own)
 
 
+- [x] Loot affixes (`loot.gd`): Epic+ drops can roll "Blessed" (+50%
+      value, distinct gold color/pulse/floating text). Scoped as a
+      one-time bonus banked to `Player.bonus_loot_value` rather than a
+      persistent per-item modifier, since the backpack only tracks a
+      count per tier, not item instances -- see DESIGN.md's Loot
+      Affixes section for why a true instance-level version is a
+      bigger architecture change, left as a future direction.
+
 ### Enemy Types follow-up (not blocking v7)
 
 - [x] Visuals: Bruiser/Elite/Boss now use their own distinct sprite sheets

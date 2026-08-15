@@ -34,6 +34,10 @@ const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 var hp: float
 var max_hp: float
 var backpack: Dictionary = {}
+## Extra currency from affixed loot (see loot.gd) -- tracked separately
+## from the backpack since affixes are a one-time value bonus on pickup,
+## not a persistent property of a stack slot the way Compacting/rarity are.
+var bonus_loot_value: int = 0
 
 var _effective_speed: float = 0.0
 var _max_fill_ratio: float = 0.0
@@ -200,12 +204,16 @@ func get_max_fill_ratio() -> float:
 
 
 func get_total_loot_value() -> int:
-	var total := 0
+	var total := bonus_loot_value
 	for type_id: StringName in backpack:
 		var def := LootTypes.get_type(type_id)
 		var value: int = def.value if def != null else 1
 		total += value * int(backpack[type_id])
 	return total
+
+
+func add_bonus_loot_value(amount: int) -> void:
+	bonus_loot_value += amount
 
 
 func take_damage(amount: float, from_position: Vector2) -> void:
