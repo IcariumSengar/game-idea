@@ -12,7 +12,7 @@ func _ready() -> void:
 		return
 
 	var version := _read_version()
-	$CenterContainer/Panel/Margin/VBox/VersionLabel.text = "v%s" % version
+	$CenterContainer/ContentVBox/VersionLabel.text = "v%s" % version
 
 
 func _on_new_game_pressed() -> void:
