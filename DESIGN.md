@@ -783,3 +783,28 @@ Short dated entries when a design decision is made and worth remembering
   All fixed — see TODO.md for the itemized list. Also updated this doc's
   own "Current implementation" summary, which had drifted (still said
   "as of v6" and "one enemy type" after v7 shipped).
+- 2026-08-15 — Sketched a secondary backpack-fill penalty: move speed
+  loss alongside the existing max-HP shrink, so a full bag also erodes
+  mobility, not just survivability. Proposed shape reuses the same
+  `lerp(1.0, min_fraction, fill_ratio)` curve `_update_hp_from_backpack()`
+  already applies to `max_hp` (`scripts/player.gd`), with speed's
+  own floor kept shallower (~0.7, i.e. −30% at a full bag) than HP's
+  (0.2, i.e. −80%) — HP shrink stays the dominant, legible risk signal;
+  speed loss is a secondary compounding pressure, not a replacement.
+  Interesting side effect: since the fraction would apply after Swiftness
+  upgrades, a maxed Swiftness investment (250→350 base) nets 245 at 100%
+  fill — just under an un-slowed baseline — so Swiftness becomes a real
+  counter-pick against greedy looting without fully negating the risk.
+  Not built — needs `speed` to be recomputed on backpack change (it's
+  currently set once in `_ready()`) before this can be wired in.
+- 2026-08-15 — Fixed a real bug reported from live play: Bruiser/Elite
+  could go permanently missing mid-run. Only Player was ever clamped to
+  the 1280x720 arena (`scripts/player.gd`); `Enemy` had no equivalent,
+  so a Bruiser's charge (or an Elite kiting away from the player) could
+  carry it past the edge with nothing to bring it back — especially
+  likely since real spawns start at arena edges. Once off-arena it's
+  unreachable by the player's weapon and never dies, so it silently
+  stops threatening the player and never drops its loot, reading as
+  "enemy tiers and their gems went missing." Fixed with the same clamp
+  Player already uses, applied generically in `Enemy._physics_process()`
+  so it covers Minion and any future tier too, not just these two.

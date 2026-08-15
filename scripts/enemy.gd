@@ -18,6 +18,8 @@ const DEATH_SPARK_AMOUNT: int = 18
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")
 const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
+const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
+const ARENA_MARGIN: float = 16.0
 
 @export var speed: float = 120.0
 @export var max_hp: float = 30.0
@@ -52,6 +54,12 @@ func _physics_process(delta: float) -> void:
 	if target == null:
 		return
 	_update_behavior(delta)
+	# Only the player was ever clamped to the arena; a Bruiser's charge (or
+	# an Elite kiting away) could otherwise carry it past the edge with
+	# nothing to bring it back, stranding it off-screen for good.
+	position = position.clamp(
+		Vector2(ARENA_MARGIN, ARENA_MARGIN), ARENA_SIZE - Vector2(ARENA_MARGIN, ARENA_MARGIN)
+	)
 	if velocity.x != 0.0:
 		_sprite.flip_h = velocity.x < 0.0
 	if _flash_amount > 0.0:
