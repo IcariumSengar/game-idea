@@ -20,8 +20,14 @@ this file should stay short enough to skim.
 
 ## In Progress / Lower Priority
 
-- [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server integration not implemented (placeholder only)
-- [ ] Settings menu: UI skeleton exists, no settings stored yet
+- [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server
+      integration not implemented (placeholder only) -- **blocked**: needs
+      an actual backend/hosting decision (Firebase, Supabase, custom
+      server, ...), not something to pick unilaterally
+- [x] Settings menu: real screen now (`settings_menu.tscn`/`.gd`) with a
+      master volume slider and fullscreen toggle, persisted to
+      `user://settings.json` via a new `Settings` autoload (device-level
+      prefs, separate from per-save-slot MetaProgression data)
 
 ## Future Content (Locked Design, Post-v8)
 

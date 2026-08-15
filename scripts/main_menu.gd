@@ -29,7 +29,7 @@ func _on_load_game_pressed() -> void:
 
 
 func _on_settings_pressed() -> void:
-	pass  # TODO: Implement settings menu
+	SceneTransition.goto_scene("res://scenes/settings_menu.tscn")
 
 
 func _on_quit_pressed() -> void:

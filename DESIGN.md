@@ -980,4 +980,17 @@ Short dated entries when a design decision is made and worth remembering
   harness with no runtime errors (Boss specifically verified by
   temporarily lowering its spawn time to 5s -- getting a bot to
   naturally survive to 55s took heavy stat seeding and wasn't reliable
-  enough on its own to confirm the code path).
+  enough on its own to confirm the code path). Also gave Bruiser/Elite/
+  Boss their own sprite sheets (orc_warrior/orc_shaman/big_demon --
+  already sitting in the DungeonTilesetII pack, imported but unused)
+  instead of tinted reuse of the Minion's goblin frames, and built a
+  real Settings screen (master volume, fullscreen, persisted to
+  `user://settings.json` via a new `Settings` autoload, separate from
+  MetaProgression since these are device prefs, not save-slot data).
+  Two items from the same backlog pass are deliberately *not* done,
+  flagged rather than guessed at: the cloud-sync backend needs an
+  actual hosting/service decision no amount of code can substitute for,
+  and mutually-exclusive skill-tree branches was already an open
+  question this doc left unresolved on purpose (tension with "everything
+  is eventually maxable") -- building either unilaterally would be
+  guessing at a decision that isn't mine to make.

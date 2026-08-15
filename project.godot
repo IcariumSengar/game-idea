@@ -27,6 +27,7 @@ LootTypes="*res://scripts/loot_registry.gd"
 CloudSync="*res://scripts/cloud_sync.gd"
 SceneTransition="*res://scripts/scene_transition.gd"
 AudioManager="*res://scripts/audio_manager.gd"
+Settings="*res://scripts/settings.gd"
 PlaytestHarness="*res://scripts/playtest_harness.gd"
 
 [display]
