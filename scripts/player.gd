@@ -14,9 +14,9 @@ const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 const MIN_HP_FRACTION: float = 0.2
 ## Secondary backpack-fill penalty per DESIGN.md: shallower floor than HP's
-## (-30% vs -80% at a full bag) -- HP shrink stays the dominant risk signal,
+## (-20% vs -80% at a full bag) -- HP shrink stays the dominant risk signal,
 ## this is a compounding pressure on top of it, not a replacement.
-const MIN_SPEED_FRACTION: float = 0.7
+const MIN_SPEED_FRACTION: float = 0.8
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/floating_text.tscn")

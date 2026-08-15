@@ -62,7 +62,7 @@ What's actually built and playable today (see `scripts/`, as of v9):
   melee chaser, Bruiser pause/charge, Elite kite + projectile), gated
   into the run by phase (see "Enemy Types & Loot Tiers" below) and
   spawning faster/more over run duration. A full bag also slows the
-  player's movement (floor 70% of base speed) on top of the max-HP
+  player's movement (floor 80% of base speed) on top of the max-HP
   shrink, per the backpack-fill penalty below.
 - Casting-based combat (`spell_caster.gd`): one active spell at a time,
   switched in the shop. Arcane Bolt (ranged projectile) is always
@@ -865,3 +865,13 @@ Short dated entries when a design decision is made and worth remembering
   gained a "Restart Run" button alongside "Return to Sanctum", going
   straight back into `arena.tscn` for players who want to jump into
   another run without a shop stop in between.
+- 2026-08-15 — Balance feedback: the backpack-fill speed penalty's −30%
+  floor at a full bag felt too punishing stacked on top of the HP
+  shrink. Shallowed the floor from 0.7 to 0.8 (`player.gd`'s
+  `MIN_SPEED_FRACTION`), i.e. −20% at 100% fill instead of −30% — same
+  lerp curve and HP-stays-dominant intent as the original sketch, just
+  a gentler number. Also fixed an unrelated live-play bug found in the
+  same session: Inferno Blade's cast sound played on every cast tick
+  (~1/sec) regardless of whether it hit anything, reading as constant
+  background noise — gated it to actual hits only and swapped the tone
+  for a sharper whoosh/crackle sweep more fitting for a fire spell.
