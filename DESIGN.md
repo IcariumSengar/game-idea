@@ -88,7 +88,7 @@ What's actually built and playable today (see `scripts/`, as of v7):
 
 Not yet built: magic spells (single weapon is still hardcoded, not
 spell-based), and multiple simultaneous spells — see [TODO.md](TODO.md)
-for the v8/v9+ build order.
+for the v9/v10+ build order.
 
 ## Enemy Types & Loot Tiers
 
@@ -248,7 +248,7 @@ death summary (`scripts/hud.gd`, `scenes/arena.tscn`), and skill tree tooltips
 
 ## Magic Spells & Attack Skills
 
-Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v7 launches with single active spell; v8+ unlocks multiple simultaneous spells for stronger progression feedback.
+Player is a **magic user**. Weapons are **spells**, casting-based combat with distinct playstyles. v9 launches with single active spell; v10+ unlocks multiple simultaneous spells for stronger progression feedback.
 
 ### Spell System Structure
 
@@ -313,7 +313,7 @@ Only **1 active spell at a time** (v7). Switched in shop screen, persists across
 - Visuals: Arcane (blue/purple), Inferno (orange/red), Frost (cyan/white)
 - Loot remains generic currency (magic flavor is aesthetic + mechanical, not tied to loot types)
 
-### Future: Multiple Active Spells (v8+)
+### Future: Multiple Active Spells (v10+)
 
 **Goal:** Each new spell doubles the feeling of getting stronger; player can equip 2–3 spells simultaneously, rotating between them or auto-casting all.
 
@@ -323,7 +323,7 @@ Only **1 active spell at a time** (v7). Switched in shop screen, persists across
 - Unlocking a new spell becomes a real power milestone ("I just got Frost Nova, I can freeze enemies now")
 - Keeps progression ladder fresh through many runs (early: Arcane only → mid: Arcane + Inferno → late: all three)
 
-### Future: Additional Spells (v8+)
+### Future: Additional Spells (v10+)
 
 - **Meteor Strike:** High-damage AOE impact, long cooldown (boss-killer)
 - **Teleport Pulse:** Dash + damage on arrival, mobility spell

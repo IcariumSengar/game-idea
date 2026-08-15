@@ -2,6 +2,28 @@
 
 All notable fixed versions of this project are documented here.
 
+## v8 - 2026-08-15
+
+Correctness pass: a full audit of every DESIGN.md number and behavior
+against the actual code, fixing what didn't match rather than adding
+new content.
+
+- Difficulty ramp now scales Bruiser's charge speed and Elite's
+  projectile speed over the course of a run, not just base
+  `speed`/`max_hp` — Bruiser in particular didn't use `speed` at all,
+  so its charge previously never got harder no matter how long you
+  survived.
+- Save/load now actually supports the documented 4-slot design: "New
+  Game" no longer hardcodes slot 0 (and no longer wipes every other
+  slot's metadata as a side effect); slots 2-4 can start a fresh game;
+  an "Overwrite" action exists for occupied slots; "last played" uses a
+  real timestamp instead of engine uptime (previously showed nonsense
+  like "20680 days ago" after any restart); playtime now accumulates
+  instead of resetting to 0 on every save; switching to an empty slot
+  no longer leaves the previous slot's currency/levels in memory.
+- Skill tree tooltip header bumped to its own spec'd 18px instead of
+  matching the body text size.
+
 ## v7 - 2026-08-15
 
 Two new enemy tiers join the Minion, with tactical roles instead of

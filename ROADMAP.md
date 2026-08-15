@@ -12,6 +12,8 @@
   death summary, skill tree tooltips)
 - **v7 (released):** Enemy types — Bruiser (charge) and Elite
   (projectile), phase-gated spawn mix, per-tier loot weighting
+- **v8 (released):** Post-v7 audit — difficulty-scale fix, save/load
+  slot system fixes (see CHANGELOG.md)
 
 ---
 
@@ -19,8 +21,8 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v8** | Magic spells (single active spell) | Design locked, ready next |
-| **v9+** | Multi-spell expansion | Design noted for future |
+| **v9** | Magic spells (single active spell) | Design locked, ready next |
+| **v10+** | Multi-spell expansion | Design noted for future |
 
 **For details on each version:** See [DESIGN.md](DESIGN.md)
 

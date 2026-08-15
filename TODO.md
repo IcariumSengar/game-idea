@@ -23,9 +23,9 @@ this file should stay short enough to skim.
 - [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server integration not implemented (placeholder only)
 - [ ] Settings menu: UI skeleton exists, no settings stored yet
 
-## Future Content (Locked Design, Post-v7)
+## Future Content (Locked Design, Post-v8)
 
-### Magic Spells (v8)
+### Magic Spells (v9)
 
 - [ ] Single-spell system: player chooses 1 active spell (switch in shop)
   - [ ] Arcane Bolt: ranged projectile spell, base game
@@ -36,7 +36,7 @@ this file should stay short enough to skim.
   - [ ] Spell visuals: magic-themed (blue, orange/red, cyan effects)
   - [ ] Verify feel: each spell plays differently, swapping spells changes strategy
 
-### Multiple Active Spells (v9+, expansion)
+### Multiple Active Spells (v10+, expansion)
 
 - [ ] Multi-spell system: player equips 2–3 spells simultaneously
   - [ ] Spell slots: "Spell Slot 1", "Spell Slot 2", "Spell Slot 3" (unlock via progression)
