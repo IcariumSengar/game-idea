@@ -116,7 +116,7 @@ func _ready() -> void:
 	)
 	_register_stat(STAT_INFERNO_FURY, "Fury", 1.0, -0.15, 18, 1.16, 4, 2, StatDef.Currency.PLAYER)
 	_register_stat(
-		STAT_INFERNO_ARC_WIDTH, "Arc Width", 90.0, 15.0, 15, 1.14, 6, 0, StatDef.Currency.PLAYER
+		STAT_INFERNO_ARC_WIDTH, "Reach", 90.0, 15.0, 15, 1.14, 6, 0, StatDef.Currency.PLAYER
 	)
 	_register_stat(
 		STAT_INFERNO_BURN_DAMAGE, "Burn Damage", 0.0, 5.0, 14, 1.13, 12, 0, StatDef.Currency.PLAYER

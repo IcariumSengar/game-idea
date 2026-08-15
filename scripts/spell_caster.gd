@@ -95,9 +95,13 @@ func _cast_arcane_bolt() -> void:
 
 
 func _cast_inferno_blade() -> void:
-	var arc_width_deg: float = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_ARC_WIDTH)
-	var half_arc_rad: float = deg_to_rad(arc_width_deg) / 2.0
-	var facing: Vector2 = _owner_body.get_facing()
+	# Omnidirectional per playtesting feedback: the player shouldn't need
+	# to be facing an enemy for Inferno Blade to hit it. "Reach" (still a
+	# 90-180 stat curve under the hood) now widens the hit radius instead
+	# of a cone angle -- range grows past the base 120px by however far
+	# its value sits above the 90 baseline.
+	var reach_stat: float = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_ARC_WIDTH)
+	var effective_range: float = INFERNO_RANGE + (reach_stat - 90.0)
 	var damage: float = _scaled_power(INFERNO_BASE_POWER)
 	var burn_total: float = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_BURN_DAMAGE)
 	var hit_any := false
@@ -105,17 +109,14 @@ func _cast_inferno_blade() -> void:
 		var enemy := node as Enemy
 		if enemy == null:
 			continue
-		var to_enemy: Vector2 = enemy.position - _owner_body.position
-		if to_enemy.length() > INFERNO_RANGE:
-			continue
-		if absf(facing.angle_to(to_enemy)) > half_arc_rad:
+		if _owner_body.position.distance_to(enemy.position) > effective_range:
 			continue
 		hit_any = true
 		enemy.take_damage(damage)
 		if burn_total > 0.0:
 			_apply_burn(enemy, burn_total)
 	if hit_any:
-		_spawn_burst(_owner_body.position + facing * INFERNO_RANGE * 0.5, INFERNO_COLOR)
+		_spawn_burst(_owner_body.position, INFERNO_COLOR)
 	AudioManager.play("inferno_cast")
 
 

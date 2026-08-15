@@ -283,17 +283,24 @@ Only **1 active spell at a time** (v7). Switched in shop screen, persists across
 ### Spell 2: Inferno Blade (unlock at Spell Unlock L1)
 
 **Feel:** Melee flame magic; high risk/reward with burn damage over time.
+Omnidirectional (hits everything in range regardless of facing) rather
+than a facing-cone -- playtesting found requiring the player to aim a
+cone broke the auto-attack feel every other spell/weapon in this game
+has had.
 
 **Base stats:**
 - Power: 25 (scales with Spellpower)
 - Swing rate: 1.0 sec/swing
-- Arc range: 90°
-- Knockback: 200 pixels
+- Range: 120px, omnidirectional
+- Knockback: 200 pixels (not yet implemented -- Enemy has no
+  knockback-velocity system yet)
 - Burn duration: 1.5 sec
 
 **Upgrades:**
 - Fury (swing speed): -0.15 sec/lvl, cap 0.3 sec
-- Arc Width: +15°/lvl, cap 180°
+- Reach (range): base value 90-180 (inherited from the original cone-angle
+  curve), value above the 90 baseline adds directly to the 120px base
+  range, +15/lvl, cap 180 (so +90px range at max)
 - Burn Damage: +5/lvl, cap 60
 
 ### Spell 3: Frost Nova (unlock at Spell Unlock L2)
@@ -839,3 +846,14 @@ Short dated entries when a design decision is made and worth remembering
   fixed a skill-tree layout bug this surfaced: a node with more than 4
   children (Spell Unlock has 6) overflowed past the tree column instead
   of wrapping to a new row.
+- 2026-08-15 — Live playtesting feedback: Inferno Blade's facing-cone
+  requirement felt bad -- an enemy standing right next to the player
+  wouldn't get hit if the player happened to be facing the wrong way,
+  which breaks the auto-attack feel every other spell/weapon in this
+  game has had ("the player's only input is movement/positioning,
+  weapons fire automatically"). Changed to omnidirectional: hits
+  everything within range regardless of facing. The "Arc Width"
+  upgrade (90-180, was a cone angle) no longer has an angle to widen,
+  so it's repurposed as "Reach" -- its value above the 90 baseline
+  now adds directly to the hit radius instead. Stat ID and cost curve
+  are unchanged, just what the number does and its display name.
