@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy_bruiser.gd" id="1_bruiser"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/enemy_sprite_frames.tres" id="2_enemy_frames"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bruiser"]
+radius = 18.0
+
+[node name="EnemyBruiser" type="CharacterBody2D"]
+script = ExtResource("1_bruiser")
+modulate = Color(2.2, 0.35, 0.3, 1)
+speed = 70.0
+max_hp = 35.0
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.0, 0.0, 0.0, 0.35)
+polygon = PackedVector2Array(18, 18, 15.59, 20.57, 9, 22.63, 0, 23.14, -9, 22.63, -15.59, 20.57, -18, 18, -15.59, 15.43, -9, 13.37, 0, 12.86, 9, 13.37, 15.59, 15.43)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(3.2, 3.2)
+sprite_frames = ExtResource("2_enemy_frames")
+animation = &"run"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bruiser")

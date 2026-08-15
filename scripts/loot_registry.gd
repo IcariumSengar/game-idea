@@ -41,6 +41,26 @@ func pick_random_type() -> LootTypeDef:
 	return _types[-1]
 
 
+## Rolls among only the tiers listed in `weights` (tier id -> weight),
+## e.g. an enemy's per-tier loot table from DESIGN.md's "Enemy Types &
+## Loot Tiers" section. Falls back to the flat table if weights is empty.
+func pick_random_weighted(weights: Dictionary) -> LootTypeDef:
+	if weights.is_empty():
+		return pick_random_type()
+	var total: float = 0.0
+	for tier_id: StringName in weights:
+		total += float(weights[tier_id])
+	var roll := randf() * total
+	var accum := 0.0
+	var last_def: LootTypeDef = null
+	for tier_id: StringName in weights:
+		accum += float(weights[tier_id])
+		last_def = get_type(tier_id)
+		if roll <= accum:
+			return last_def
+	return last_def
+
+
 func get_effective_stack_size(type_id: StringName) -> int:
 	var def := get_type(type_id)
 	if def == null:

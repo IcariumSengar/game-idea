@@ -23,6 +23,7 @@ func _ready() -> void:
 	_streams["purchase"] = _make_chime([660.0, 990.0], 0.08, 0.3)
 	_streams["dash"] = _make_sweep(320.0, 720.0, 0.1, 0.28)
 	_streams["click"] = _make_tone(520.0, 0.03, 0.2, "sine")
+	_streams["enemy_cast"] = _make_sweep(300.0, 500.0, 0.08, 0.25)
 
 	for i in POOL_SIZE:
 		var player := AudioStreamPlayer.new()

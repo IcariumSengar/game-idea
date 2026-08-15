@@ -1,8 +1,20 @@
 class_name Arena
 extends Node2D
 
-const ENEMY_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const MINION_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy_bruiser.tscn")
+const ELITE_SCENE: PackedScene = preload("res://scenes/enemy_elite.tscn")
 const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
+
+## Phase -> {enemy scene: spawn weight}, per DESIGN.md's "Spawn Rules":
+## spawn mix stays fixed within a phase while frequency (RAMP_DURATION
+## below) keeps accelerating independently.
+const PHASE_SPAWN_WEIGHTS: Array[Dictionary] = [
+	{},
+	{MINION_SCENE: 1.0},
+	{MINION_SCENE: 0.7, BRUISER_SCENE: 0.3},
+	{MINION_SCENE: 0.4, BRUISER_SCENE: 0.35, ELITE_SCENE: 0.25},
+]
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
 const SHAKE_MAGNITUDE: float = 8.0
@@ -82,9 +94,8 @@ func get_enemies_killed() -> int:
 	return _enemies_killed
 
 
-## Difficulty phase (1/2/3) purely as a time-elapsed indicator, matching
-## the phase timing already locked in for v7's enemy-tier spawn mix --
-## usable now even though the enemy tiers themselves aren't built yet.
+## Difficulty phase (1/2/3), per DESIGN.md's "Spawn Rules" timing --
+## drives both PHASE_SPAWN_WEIGHTS below and the death-summary readout.
 func get_phase() -> int:
 	if _run_time < 20.0:
 		return 1
@@ -95,7 +106,7 @@ func get_phase() -> int:
 
 func _on_enemy_spawn_timer_timeout() -> void:
 	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
-	var enemy: Enemy = ENEMY_SCENE.instantiate()
+	var enemy: Enemy = _pick_enemy_scene().instantiate()
 	enemy.position = _random_edge_position()
 	enemy.max_hp *= lerp(ENEMY_HP_SCALE_MIN, ENEMY_HP_SCALE_MAX, ramp)
 	enemy.speed *= lerp(ENEMY_SPEED_SCALE_MIN, ENEMY_SPEED_SCALE_MAX, ramp)
@@ -104,11 +115,25 @@ func _on_enemy_spawn_timer_timeout() -> void:
 	_spawn_timer.wait_time = lerp(SPAWN_INTERVAL_START, SPAWN_INTERVAL_MIN, ramp)
 
 
+func _pick_enemy_scene() -> PackedScene:
+	var weights: Dictionary = PHASE_SPAWN_WEIGHTS[get_phase()]
+	var total: float = 0.0
+	for scene: PackedScene in weights:
+		total += float(weights[scene])
+	var roll := randf() * total
+	var accum := 0.0
+	for scene: PackedScene in weights:
+		accum += float(weights[scene])
+		if roll <= accum:
+			return scene
+	return MINION_SCENE
+
+
 func _on_enemy_died(enemy: Enemy) -> void:
 	_enemies_killed += 1
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position
-	loot.type_id = LootTypes.pick_random_type().id
+	loot.type_id = LootTypes.pick_random_weighted(enemy.loot_weights).id
 	add_child(loot)
 
 

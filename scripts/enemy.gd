@@ -1,6 +1,11 @@
 class_name Enemy
 extends CharacterBody2D
 
+## Base enemy: shared HP/hit-flash/death-spark/damage-text plumbing plus
+## the default Tier 1 "Minion" behavior (melee chaser, contact damage).
+## Bruiser/Elite subclass this and override _update_behavior() for their
+## own movement/attack pattern while reusing everything else.
+
 signal died(enemy: Enemy)
 
 const CONTACT_DAMAGE: float = 10.0
@@ -16,6 +21,12 @@ const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
 
 @export var speed: float = 120.0
 @export var max_hp: float = 30.0
+
+## Loot tier -> drop weight for kills of this enemy, per DESIGN.md's
+## "Enemy Types & Loot Tiers" table. Only tiers listed here can drop.
+## Not @export'd -- each tier's table is a locked design value, not
+## something to hand-tune per scene instance in the inspector.
+var loot_weights: Dictionary = {&"common": 60.0, &"uncommon": 30.0, &"rare": 10.0}
 
 var hp: float
 var target: Player
@@ -40,20 +51,33 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
-	velocity = position.direction_to(target.position + _approach_offset) * speed
-	move_and_slide()
+	_update_behavior(delta)
 	if velocity.x != 0.0:
 		_sprite.flip_h = velocity.x < 0.0
-	_contact_cooldown = max(_contact_cooldown - delta, 0.0)
-	if _contact_cooldown <= 0.0:
-		for i in get_slide_collision_count():
-			if get_slide_collision(i).get_collider() == target:
-				target.take_damage(CONTACT_DAMAGE, position)
-				_contact_cooldown = CONTACT_COOLDOWN
-				break
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
+
+
+## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
+## this for their own movement/attack pattern.
+func _update_behavior(delta: float) -> void:
+	velocity = position.direction_to(target.position + _approach_offset) * speed
+	move_and_slide()
+	_apply_contact_damage(delta)
+
+
+## Shared "deal damage on physical collision with the player" used by
+## Minion (always) and Bruiser (only while charging).
+func _apply_contact_damage(delta: float) -> void:
+	_contact_cooldown = max(_contact_cooldown - delta, 0.0)
+	if _contact_cooldown > 0.0:
+		return
+	for i in get_slide_collision_count():
+		if get_slide_collision(i).get_collider() == target:
+			target.take_damage(CONTACT_DAMAGE, position)
+			_contact_cooldown = CONTACT_COOLDOWN
+			break
 
 
 func take_damage(amount: float) -> void:

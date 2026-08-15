@@ -752,3 +752,18 @@ Short dated entries when a design decision is made and worth remembering
   names). Underlying stat IDs (`damage`, `move_speed`, etc.) are
   unchanged — this is a display-name-only rename, no save compatibility
   impact.
+- 2026-08-15 — v7 Enemy Types implemented: Bruiser and Elite built
+  alongside the existing Minion, matching this doc's stats/roles exactly
+  (Bruiser: HP 35, pause/charge state machine, contact damage only while
+  charging; Elite: HP 40, kites to ~300px and fires a projectile dealing
+  8 damage). `Enemy` was refactored into a base class with an
+  overridable `_update_behavior()` so both share Minion's HP/hit-flash/
+  death-spark plumbing. Per-tier loot weighting (`Enemy.loot_weights` +
+  `LootTypes.pick_random_weighted`) and the Phase 1/2/3 spawn-mix gating
+  from the "Spawn Rules" section are both wired into `arena.gd`. One
+  deliberate deviation: Minion's own HP/speed were left at their
+  already-shipped 30/120 rather than reconciled to this doc's 20/100
+  baseline, since that would silently rebalance already-tuned content;
+  Bruiser/Elite use this doc's absolute numbers directly rather than
+  recomputing off Minion's real baseline. Distinct sprite art and full
+  balance playtesting are still open — see TODO.md.

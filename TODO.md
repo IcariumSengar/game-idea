@@ -25,15 +25,20 @@ this file should stay short enough to skim.
 
 ## Future Content (Locked Design, Post-v6)
 
-### Enemy Types (v7 or v8)
+### Enemy Types (v7)
 
-- [ ] Enemy types: Bruiser (charge) and Elite (projectile ranged)
-  - [ ] Bruiser spawns Phase 2 (20+ sec), 30% spawn mix, 50% Uncommon drops
-  - [ ] Elite spawns Phase 3 (40+ sec), 25% spawn mix, 70% Rare+ drops
-  - [ ] Loot weighting: implement dynamic drop rates based on enemy tier
-  - [ ] Attack behaviors: charge attack (Bruiser), projectile system (Elite)
-  - [ ] Visuals/audio: distinct sprites and effects per tier (placeholder OK initially)
-  - [ ] Verify progression: early runs (Phase 1 only) feel accessible, reaching Phase 3 feels like milestone
+- [x] Enemy types: Bruiser (charge) and Elite (projectile ranged)
+  - [x] Bruiser spawns Phase 2 (20+ sec), 30% spawn mix, 50% Uncommon drops
+  - [x] Elite spawns Phase 3 (40+ sec), 25% spawn mix, 75% Rare+ drops
+  - [x] Loot weighting: dynamic per-enemy-tier drop rates (`Enemy.loot_weights` +
+        `LootTypes.pick_random_weighted`)
+  - [x] Attack behaviors: pause/charge state machine (Bruiser), kite +
+        projectile (Elite, new `enemy_projectile.gd`/`.tscn`)
+  - [ ] Visuals/audio: still the shared Minion sprite frames, tinted red
+        (Bruiser) / blue (Elite) and rescaled -- real distinct sprite art
+        not done yet (placeholder OK initially, per this section's own note)
+  - [ ] Verify progression: early runs (Phase 1 only) feel accessible,
+        reaching Phase 3 feels like milestone -- needs real playtesting
 
 ### Magic Spells (v7)
 
