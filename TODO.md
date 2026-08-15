@@ -23,24 +23,9 @@ this file should stay short enough to skim.
 - [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server integration not implemented (placeholder only)
 - [ ] Settings menu: UI skeleton exists, no settings stored yet
 
-## Future Content (Locked Design, Post-v6)
+## Future Content (Locked Design, Post-v7)
 
-### Enemy Types (v7)
-
-- [x] Enemy types: Bruiser (charge) and Elite (projectile ranged)
-  - [x] Bruiser spawns Phase 2 (20+ sec), 30% spawn mix, 50% Uncommon drops
-  - [x] Elite spawns Phase 3 (40+ sec), 25% spawn mix, 75% Rare+ drops
-  - [x] Loot weighting: dynamic per-enemy-tier drop rates (`Enemy.loot_weights` +
-        `LootTypes.pick_random_weighted`)
-  - [x] Attack behaviors: pause/charge state machine (Bruiser), kite +
-        projectile (Elite, new `enemy_projectile.gd`/`.tscn`)
-  - [ ] Visuals/audio: still the shared Minion sprite frames, tinted red
-        (Bruiser) / blue (Elite) and rescaled -- real distinct sprite art
-        not done yet (placeholder OK initially, per this section's own note)
-  - [ ] Verify progression: early runs (Phase 1 only) feel accessible,
-        reaching Phase 3 feels like milestone -- needs real playtesting
-
-### Magic Spells (v7)
+### Magic Spells (v8)
 
 - [ ] Single-spell system: player chooses 1 active spell (switch in shop)
   - [ ] Arcane Bolt: ranged projectile spell, base game
@@ -51,13 +36,21 @@ this file should stay short enough to skim.
   - [ ] Spell visuals: magic-themed (blue, orange/red, cyan effects)
   - [ ] Verify feel: each spell plays differently, swapping spells changes strategy
 
-### Multiple Active Spells (v8+, expansion)
+### Multiple Active Spells (v9+, expansion)
 
 - [ ] Multi-spell system: player equips 2–3 spells simultaneously
   - [ ] Spell slots: "Spell Slot 1", "Spell Slot 2", "Spell Slot 3" (unlock via progression)
   - [ ] Casting behavior: rotate between slots or all cast on shared cooldown (TBD)
   - [ ] MetaProgression redesign: track multiple active spells per save
   - [ ] Goal: unlock new spell → major power spike, keeps "getting stronger" feeling fresh
+
+### Enemy Types follow-up (not blocking v7)
+
+- [ ] Visuals/audio: Bruiser/Elite still reuse the shared Minion sprite
+      frames, tinted red/blue and rescaled -- real distinct sprite art
+      not done yet (placeholder OK initially)
+- [ ] Verify progression: early runs (Phase 1 only) feel accessible,
+      reaching Phase 3 feels like milestone -- needs real playtesting
 
 ## v6 Balance (Implemented, Pending Playtest)
 
@@ -77,6 +70,10 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
       Stardust), full death summary screen (rewards, loot breakdown, run
       stats, previous best), and skill tree tooltips (colored border,
       before/after values, affordability status)
+- [x] Enemy Types (v7) — Bruiser (pause/charge) and Elite (kite +
+      projectile) added alongside Minion, phase-gated spawn mix, and
+      per-tier loot weighting (`Enemy.loot_weights` +
+      `LootTypes.pick_random_weighted`)
 
 ## Done
 

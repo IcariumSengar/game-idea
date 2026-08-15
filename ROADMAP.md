@@ -10,6 +10,8 @@
 - **v5 (released):** Polish & juice (UI/audio/animations)
 - **v6 (released):** Balance rebalance + HUD/UI system (stats overlay,
   death summary, skill tree tooltips)
+- **v7 (released):** Enemy types — Bruiser (charge) and Elite
+  (projectile), phase-gated spawn mix, per-tier loot weighting
 
 ---
 
@@ -17,8 +19,8 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v7** | Enemy types + Magic spells | In progress |
-| **v8+** | Multi-spell expansion | Design noted for future |
+| **v8** | Magic spells (single active spell) | Design locked, ready next |
+| **v9+** | Multi-spell expansion | Design noted for future |
 
 **For details on each version:** See [DESIGN.md](DESIGN.md)
 

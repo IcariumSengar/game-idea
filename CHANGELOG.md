@@ -2,6 +2,28 @@
 
 All notable fixed versions of this project are documented here.
 
+## v7 - 2026-08-15
+
+Two new enemy tiers join the Minion, with tactical roles instead of
+just more HP: a charger that punishes standing still and a kiter that
+punishes standing at range.
+
+- **Bruiser** (Phase 2, 20+ sec): pauses 2-3s to telegraph, then
+  charges in a straight line. Only deals contact damage while
+  charging, so the pause is a real dodge window.
+- **Elite** (Phase 3, 40+ sec): kites to hold ~300px of distance and
+  fires a projectile instead of melee-attacking, so closing the
+  distance is the counter-play against it.
+- Each tier now drops loot from its own weighted table (per DESIGN.md's
+  "Enemy Types & Loot Tiers") instead of the single flat global table
+  every enemy shared before — Bruisers lean Uncommon, Elites lean
+  Rare/Epic.
+- `Enemy` is now a base class with an overridable behavior hook, so
+  both new tiers reuse the Minion's HP/hit-flash/death-spark plumbing
+  rather than duplicating it.
+- Visuals are still the shared Minion sprite, tinted red (Bruiser) and
+  blue (Elite) and rescaled — distinct sprite art is follow-up work.
+
 ## v6 - 2026-08-15
 
 Balance rebalance plus the HUD/UI system promised for v5's follow-up:
