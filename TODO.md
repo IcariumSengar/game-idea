@@ -31,10 +31,12 @@ this file should stay short enough to skim.
       together, check they don't step on each other visually/audibly once
       the player has two or three going at once -- individual spells were
       verified live, full multi-spell combat wasn't
-- [ ] Real spell visuals/SFX (Inferno Blade got a small procedural
-      flame-burst per player feedback; Frost Nova still only has the
-      generic spark-particle burst, same placeholder approach as
-      Bruiser/Elite)
+- [x] Real spell visuals/SFX -- Inferno Blade (flame-burst) and Frost Nova
+      (ice-ring, sized to its radius stat) both have dedicated procedural
+      visuals now; Arcane Bolt's projectile already had one from the
+      start. All still procedural vector shapes, not sprite art.
+- [x] Inferno Blade's 200px knockback -- Enemy now has a decaying
+      `_knockback` velocity (mirrors Player's own)
 
 
 ### Enemy Types follow-up (not blocking v7)
@@ -43,7 +45,15 @@ this file should stay short enough to skim.
       frames, tinted red/blue and rescaled -- real distinct sprite art
       not done yet (placeholder OK initially)
 - [ ] Verify progression: early runs (Phase 1 only) feel accessible,
-      reaching Phase 3 feels like milestone -- needs real playtesting
+      reaching Phase 3 feels like milestone -- needs real playtesting.
+      Playtest harness data so far: a heavily-seeded bot reaches Phase 3
+      consistently (~44-52s avg survival) but a fresh/lightly-seeded one
+      never does -- consistent with "milestone," not yet confirmed as
+      *feeling* like one to an actual player.
+- [x] Tier 4 Boss -- unique, spawns once at 55+ sec, hybrid pursuit +
+      3-shot projectile spread, guaranteed Mythic+ drop
+- [x] Enemy variants within tiers -- Fast/Tanky Minion, same loot table,
+      70/15/15 split of each phase's existing Minion spawn weight
 
 ## v6 Balance (Implemented, Pending Playtest)
 

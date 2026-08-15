@@ -58,10 +58,11 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 What's actually built and playable today (see `scripts/`, as of v10):
 
-- Top-down movement + dash in a single arena; three enemy tiers (Minion
-  melee chaser, Bruiser pause/charge, Elite kite + projectile), gated
-  into the run by phase (see "Enemy Types & Loot Tiers" below) and
-  spawning faster/more over run duration. A full bag also slows the
+- Top-down movement + dash in a single arena; four enemy tiers (Minion
+  melee chaser with Fast/Tanky variants, Bruiser pause/charge, Elite
+  kite + projectile, and a unique Boss at 55+ sec), gated into the run
+  by phase (see "Enemy Types & Loot Tiers" below) and spawning
+  faster/more over run duration. A full bag also slows the
   player's movement (floor 80% of base speed) on top of the max-HP
   shrink, per the backpack-fill penalty below.
 - Casting-based combat (`spell_caster.gd`): every unlocked spell casts
@@ -99,7 +100,7 @@ for open follow-ups.
 
 ## Enemy Types & Loot Tiers
 
-Three enemy tiers, each with distinct attack pattern and loot weighting. Higher-tier enemies drop better loot, creating progression incentive: survive longer → face harder enemies → earn better loot → upgrade → tackle longer runs.
+Four enemy tiers, each with distinct attack pattern and loot weighting. Higher-tier enemies drop better loot, creating progression incentive: survive longer → face harder enemies → earn better loot → upgrade → tackle longer runs.
 
 ### Tier 1: Minion (baseline, current)
 
@@ -114,6 +115,13 @@ Three enemy tiers, each with distinct attack pattern and loot weighting. Higher-
 **Loot:** 60% Common, 30% Uncommon, 10% Rare
 
 **Role:** Bulk enemy; teaches fundamentals
+
+**Variants (same tier, same loot table):** Fast (speed 160, HP 14 -- glass
+cannon chaser, hard to outrun but dies quick) and Tanky (speed 65, HP 45 --
+easy to outrun but slow to kill if cornered), tinted yellow-green and
+purple respectively. Each phase's Minion spawn weight splits 70/15/15
+between base/Fast/Tanky, so the tier-level Minion-vs-Bruiser-vs-Elite
+ratios below are unchanged -- this only diversifies what "Minion" means.
 
 ### Tier 2: Bruiser (mid-game)
 
@@ -143,13 +151,35 @@ Three enemy tiers, each with distinct attack pattern and loot weighting. Higher-
 
 **Role:** Requires positioning and kiting; tactical combat
 
+### Tier 4: Boss (unique, one per run)
+
+**Attack:** Hybrid -- relentlessly approaches like a Minion (including
+contact damage) while periodically firing a 3-shot projectile spread at
+the player, combining pursuit with Elite-style ranged pressure.
+
+**Stats:**
+- Base HP: 250 (well past Elite's 40 -- meant to be a real damage sponge)
+- Base speed: 90
+- Spread attack: 3 projectiles per volley (±20° from center), every 2.2–2.8 sec, 140 px/sec, 10 damage each
+- Scaling: HP and projectile speed scale with run duration, same as every other tier
+
+**Loot:** Guaranteed Mythic+ -- 80% Mythic, 20% Legendary. Skips the
+normal weighted per-tier table entirely; this is the one enemy where
+what drops isn't a gamble across all six tiers.
+
+**Role:** Unique, not part of the repeating phase roll -- spawns once,
+the first time the spawn timer fires at or after 55 seconds survived,
+alongside (not instead of) that tick's normal roll. A real climax
+milestone for a run that's gone the distance.
+
 ### Spawn Rules
 
 Timing gates harder enemies so early runs stay accessible:
 
-- **0–20 sec (Phase 1):** Minions only
+- **0–20 sec (Phase 1):** Minions only (incl. Fast/Tanky variants)
 - **20–40 sec (Phase 2):** Minions 70%, Bruisers 30%
 - **40+ sec (Phase 3):** Minions 40%, Bruisers 35%, Elites 25%
+- **55+ sec:** Boss spawns once, on top of whichever phase mix is active
 
 Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
 
@@ -162,8 +192,6 @@ Within each phase, spawn *frequency* accelerates; spawn *mix* stays consistent.
 
 ### Future Expansions (Enemy Types)
 
-- Tier 4: Boss (unique, 55+ sec, guaranteed Mythic+ drop)
-- Enemy variants within tiers (fast Minion, tanky Minion)
 - Projectile types (different speeds/colors per enemy)
 - Loot affixes (higher tiers drop items with +modifiers)
 
@@ -930,3 +958,23 @@ Short dated entries when a design decision is made and worth remembering
   did. So: this is now a deliberate, informed re-decision superseding the
   v7 one, not an accidental fix that happened to also match the table --
   worth recording accurately since the two read very differently.
+- 2026-08-15 — Cleared most of the open backlog in one pass, on direct
+  request ("do it all"): Inferno Blade's 200px knockback (`Enemy` gained
+  a decaying `_knockback` velocity, same shape as Player's own, applied
+  in every behavior branch across Minion/Bruiser/Elite -- also fixed
+  Bruiser's PAUSE state, which never called `move_and_slide()` at all
+  before, so knockback would've silently done nothing there); Frost
+  Nova's own expanding ice-ring visual (`frost_burst.gd`, sized to its
+  actual radius stat) replacing the generic spark burst, which also
+  caught `frost_cast`'s SFX playing unconditionally regardless of
+  whether anything was hit -- the same bug fixed for Inferno Blade
+  earlier, just not noticed here until now; Fast/Tanky Minion variants
+  (same tier, same loot table, reuse `enemy.gd` directly -- just
+  stat/tint overrides, splitting each phase's existing Minion weight
+  70/15/15 rather than changing the documented tier ratios); and the
+  Tier 4 Boss (unique, 55+ sec, guaranteed Mythic+ drop, hybrid
+  pursuit+projectile-spread attack). All four verified via the playtest
+  harness with no runtime errors (Boss specifically verified by
+  temporarily lowering its spawn time to 5s -- getting a bot to
+  naturally survive to 55s took heavy stat seeding and wasn't reliable
+  enough on its own to confirm the code path).

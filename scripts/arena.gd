@@ -2,18 +2,41 @@ class_name Arena
 extends Node2D
 
 const MINION_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
+const MINION_FAST_SCENE: PackedScene = preload("res://scenes/enemy_minion_fast.tscn")
+const MINION_TANKY_SCENE: PackedScene = preload("res://scenes/enemy_minion_tanky.tscn")
 const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy_bruiser.tscn")
 const ELITE_SCENE: PackedScene = preload("res://scenes/enemy_elite.tscn")
+const BOSS_SCENE: PackedScene = preload("res://scenes/enemy_boss.tscn")
 const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
+## Tier 4: unique, one per run, spawned directly at this mark rather than
+## through PHASE_SPAWN_WEIGHTS' repeating roll -- per DESIGN.md's "Future
+## Expansions" note ("unique, 55+ sec, guaranteed Mythic+ drop").
+const BOSS_SPAWN_TIME: float = 55.0
 
 ## Phase -> {enemy scene: spawn weight}, per DESIGN.md's "Spawn Rules":
 ## spawn mix stays fixed within a phase while frequency (RAMP_DURATION
-## below) keeps accelerating independently.
+## below) keeps accelerating independently. Each phase's "Minion" bucket is
+## split 70/15/15 between the base chaser and its Fast/Tanky variants --
+## same tier, same loot table (they share enemy.gd's defaults), just a
+## speed/HP tradeoff for visual and tactical variety within the tier. Splits
+## the existing per-phase Minion weight rather than changing the documented
+## Minion-vs-Bruiser-vs-Elite ratios themselves.
 const PHASE_SPAWN_WEIGHTS: Array[Dictionary] = [
 	{},
-	{MINION_SCENE: 1.0},
-	{MINION_SCENE: 0.7, BRUISER_SCENE: 0.3},
-	{MINION_SCENE: 0.4, BRUISER_SCENE: 0.35, ELITE_SCENE: 0.25},
+	{MINION_SCENE: 0.7, MINION_FAST_SCENE: 0.15, MINION_TANKY_SCENE: 0.15},
+	{
+		MINION_SCENE: 0.49,
+		MINION_FAST_SCENE: 0.105,
+		MINION_TANKY_SCENE: 0.105,
+		BRUISER_SCENE: 0.3,
+	},
+	{
+		MINION_SCENE: 0.28,
+		MINION_FAST_SCENE: 0.06,
+		MINION_TANKY_SCENE: 0.06,
+		BRUISER_SCENE: 0.35,
+		ELITE_SCENE: 0.25,
+	},
 ]
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
@@ -35,6 +58,7 @@ var _shake_time_left: float = 0.0
 var _shake_magnitude: float = SHAKE_MAGNITUDE
 var _run_time: float = 0.0
 var _enemies_killed: int = 0
+var _boss_spawned: bool = false
 
 @onready var _spawn_timer: Timer = $EnemySpawnTimer
 
@@ -111,6 +135,8 @@ func get_phase() -> int:
 
 func _on_enemy_spawn_timer_timeout() -> void:
 	var ramp: float = clamp(_run_time / RAMP_DURATION, 0.0, 1.0)
+	if not _boss_spawned and _run_time >= BOSS_SPAWN_TIME:
+		_spawn_boss(ramp)
 	var enemy: Enemy = _pick_enemy_scene().instantiate()
 	enemy.position = _random_edge_position()
 	enemy.apply_difficulty_scale(
@@ -120,6 +146,20 @@ func _on_enemy_spawn_timer_timeout() -> void:
 	enemy.died.connect(_on_enemy_died)
 	add_child(enemy)
 	_spawn_timer.wait_time = lerp(SPAWN_INTERVAL_START, SPAWN_INTERVAL_MIN, ramp)
+
+
+## Spawned once, alongside (not instead of) the regularly-scheduled roll,
+## the first time the spawn timer fires at/after BOSS_SPAWN_TIME.
+func _spawn_boss(ramp: float) -> void:
+	_boss_spawned = true
+	var boss: Enemy = BOSS_SCENE.instantiate()
+	boss.position = _random_edge_position()
+	boss.apply_difficulty_scale(
+		lerp(ENEMY_HP_SCALE_MIN, ENEMY_HP_SCALE_MAX, ramp),
+		lerp(ENEMY_SPEED_SCALE_MIN, ENEMY_SPEED_SCALE_MAX, ramp)
+	)
+	boss.died.connect(_on_enemy_died)
+	add_child(boss)
 
 
 func _pick_enemy_scene() -> PackedScene:
