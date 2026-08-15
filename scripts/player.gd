@@ -73,8 +73,9 @@ func _physics_process(delta: float) -> void:
 	if input_direction != Vector2.ZERO:
 		_facing = input_direction
 		_sprite.flip_h = _facing.x < 0.0
-		_sprite.play("run")
-	else:
+		if _sprite.animation != &"run":
+			_sprite.play("run")
+	elif _sprite.animation != &"idle":
 		_sprite.play("idle")
 
 	_check_dash_input()

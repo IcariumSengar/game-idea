@@ -25,7 +25,7 @@ var _magnet_target: Player = null
 var _pull_speed: float = 0.0
 var _color: Color = Color.WHITE
 
-@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _sprite: Node2D = $Gem
 
 
 func _ready() -> void:
