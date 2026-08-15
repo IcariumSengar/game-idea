@@ -34,8 +34,10 @@ this file should stay short enough to skim.
       swapping spells changes strategy -- shop-side switching and the
       Spell Unlock L1/L2 gating were verified live; in-arena combat feel
       for Inferno/Frost specifically wasn't fully played through
-- [ ] Real spell visuals/SFX (currently procedural shapes + synthesized
-      tones, same placeholder approach as Bruiser/Elite)
+- [ ] Real spell visuals/SFX (Inferno Blade got a small procedural
+      flame-burst per player feedback; Frost Nova still only has the
+      generic spark-particle burst, same placeholder approach as
+      Bruiser/Elite)
 
 ### Multiple Active Spells (v10+, expansion)
 

@@ -271,5 +271,13 @@ theme_override_font_sizes/font_size = 20
 text = "Return to Sanctum"
 script = ExtResource("15_link")
 
+[node name="RestartButton" type="Button" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 16
+text = "Restart Run"
+script = ExtResource("15_link")
+
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
+[connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/RestartButton" to="HUD" method="_on_restart_button_pressed"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]

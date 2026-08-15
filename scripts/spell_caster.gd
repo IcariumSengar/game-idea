@@ -12,6 +12,7 @@ extends Node
 
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/spell_projectile.tscn")
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
+const INFERNO_BURST_SCENE: PackedScene = preload("res://scenes/inferno_burst.tscn")
 
 const SPELLPOWER_BASE: float = 20.0
 const ARCANE_RANGE: float = 220.0
@@ -117,6 +118,7 @@ func _cast_inferno_blade() -> void:
 			_apply_burn(enemy, burn_total)
 	if hit_any:
 		_spawn_burst(_owner_body.position, INFERNO_COLOR)
+		_spawn_inferno_graphic(_owner_body.position)
 	AudioManager.play("inferno_cast")
 
 
@@ -147,6 +149,12 @@ func _apply_burn(enemy: Enemy, total_damage: float) -> void:
 		"tick_damage": total_damage / INFERNO_TICK_COUNT,
 		"timer": INFERNO_TICK_INTERVAL,
 	}
+
+
+func _spawn_inferno_graphic(at_position: Vector2) -> void:
+	var burst: InfernoBurst = INFERNO_BURST_SCENE.instantiate()
+	burst.position = at_position
+	_owner_body.get_parent().add_child(burst)
 
 
 func _spawn_burst(at_position: Vector2, color: Color) -> void:

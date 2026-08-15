@@ -857,3 +857,11 @@ Short dated entries when a design decision is made and worth remembering
   so it's repurposed as "Reach" -- its value above the 90 baseline
   now adds directly to the hit radius instead. Stat ID and cost curve
   are unchanged, just what the number does and its display name.
+- 2026-08-15 — Two small player-requested additions: Inferno Blade gets
+  a small procedural flame-burst (`inferno_burst.gd`, an expanding ring
+  with radiating spikes) on top of the existing generic spark particles,
+  since being omnidirectional it has no travelling projectile to carry
+  visual weight the way Arcane Bolt's does. The death/run-summary screen
+  gained a "Restart Run" button alongside "Return to Sanctum", going
+  straight back into `arena.tscn` for players who want to jump into
+  another run without a shop stop in between.

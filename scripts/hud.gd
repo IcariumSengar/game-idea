@@ -168,3 +168,8 @@ func _hp_color(fraction: float) -> Color:
 func _on_continue_button_pressed() -> void:
 	get_tree().paused = false
 	SceneTransition.goto_scene("res://scenes/shop.tscn")
+
+
+func _on_restart_button_pressed() -> void:
+	get_tree().paused = false
+	SceneTransition.goto_scene("res://scenes/arena.tscn")
