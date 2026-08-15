@@ -1,12 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://run_prep"]
+[gd_scene load_steps=4 format=3 uid="uid://run_prep"]
 
 [ext_resource type="Script" path="res://scripts/run_prep.gd" id="1_prep"]
-[ext_resource type="Script" path="res://scripts/juicy_button.gd" id="2_juicy"]
+[ext_resource type="Script" path="res://scripts/night_sky_background.gd" id="2_sky"]
 [ext_resource type="StyleBoxFlat" path="res://resources/panel_dark.tres" id="3_panel_dark"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_normal.tres" id="4_btn_normal"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_hover.tres" id="5_btn_hover"]
-[ext_resource type="StyleBoxFlat" path="res://resources/button_pressed.tres" id="6_btn_pressed"]
-[ext_resource type="Texture2D" path="res://assets/dungeon_tileset/frames/floor_1.png" id="7_floor_tile"]
+[ext_resource type="Script" path="res://scripts/menu_link_button.gd" id="4_link"]
 
 [node name="RunPrep" type="Control"]
 layout_mode = 3
@@ -17,24 +14,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_prep")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="NightSky" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("7_floor_tile")
-stretch_mode = 1
-
-[node name="Dim" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.05, 0.06, 0.05, 0.55)
+script = ExtResource("2_sky")
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -77,37 +64,28 @@ vertical_alignment = 1
 
 [node name="ButtonContainer" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="StartRunButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(400, 48)
+custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = ExtResource("4_btn_normal")
-theme_override_styles/hover = ExtResource("5_btn_hover")
-theme_override_styles/pressed = ExtResource("6_btn_pressed")
+theme_override_font_sizes/font_size = 22
 text = "START RUN"
-script = ExtResource("2_juicy")
+script = ExtResource("4_link")
 
 [node name="ViewTreeButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(400, 48)
+custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = ExtResource("4_btn_normal")
-theme_override_styles/hover = ExtResource("5_btn_hover")
-theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "VIEW SKILL TREE"
-script = ExtResource("2_juicy")
+script = ExtResource("4_link")
 
 [node name="BackButton" type="Button" parent="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer"]
-custom_minimum_size = Vector2(400, 48)
+custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = ExtResource("4_btn_normal")
-theme_override_styles/hover = ExtResource("5_btn_hover")
-theme_override_styles/pressed = ExtResource("6_btn_pressed")
 text = "← BACK"
-script = ExtResource("2_juicy")
+script = ExtResource("4_link")
 
 [connection signal="pressed" from="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer/StartRunButton" to="." method="_on_start_run_pressed"]
 [connection signal="pressed" from="CenterContainer/Panel/Margin/VBoxContainer/ButtonContainer/ViewTreeButton" to="." method="_on_view_tree_pressed"]
