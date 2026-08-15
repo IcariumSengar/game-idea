@@ -56,6 +56,16 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(0, 460)
 	mouse_filter = MOUSE_FILTER_STOP
 	set_process(false)
+	resized.connect(_on_resized)
+
+
+## The container layout pass finishes after _ready(), so size.x isn't
+## known yet when set_tree_data() first lays out the tree. Once resized
+## fires with the real column width, recenter using it.
+func _on_resized() -> void:
+	if not _nodes.is_empty():
+		_calculate_positions()
+		queue_redraw()
 
 
 func pulse(stat_id: StringName) -> void:
@@ -154,10 +164,11 @@ func _calculate_positions() -> void:
 		if node.parent == null:
 			roots.append(node)
 
-	# Fixed anchor rather than size.x / 2.0: the container layout pass
-	# hasn't run yet when set_tree_data() is first called from _ready(),
-	# so size.x reads as 0 at that point.
-	var center_x: float = CAPSTONE_RADIUS + ZIGZAG_AMOUNT + 20.0
+	# size.x isn't known yet on the first call (before the container layout
+	# pass runs), so fall back to a fixed anchor until _on_resized() fires
+	# and recenters using the real column width.
+	var min_anchor: float = CAPSTONE_RADIUS + ZIGZAG_AMOUNT + 20.0
+	var center_x: float = size.x / 2.0 if size.x > min_anchor * 2.0 else min_anchor
 	var current_y: float = 36.0
 	for root in roots:
 		_position_subtree(root, center_x, current_y, NODE_SPACING.x, 0)
