@@ -107,6 +107,11 @@ See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementat
       switching: every unlocked spell now fires simultaneously and
       independently (own cooldown per spell), no slots or manual
       switching. Shop's spell panel is now a read-only unlock-status list.
+- [x] Headless auto-playtest harness — `scripts/playtest_harness.gd` +
+      `scripts/playtest_bot_ai.gd`, see CLAUDE.md's Testing section for
+      usage. Runs N bot-played runs back to back, sandboxed save slot,
+      prints an aggregate report; found and fixed two latent physics-flush
+      bugs (`loot.gd`, `arena.gd`'s `_on_enemy_died`) along the way.
 
 ## Done
 

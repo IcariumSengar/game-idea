@@ -111,3 +111,19 @@ No automated test framework yet — the project is too early-stage to warrant
 one. Before that changes, verify changes by running the game and checking
 the specific behavior touched. Revisit this once there's real gameplay
 logic worth regression-testing (e.g. via GUT or gdUnit4).
+
+For balance work specifically, there's a headless auto-playtest harness
+(`scripts/playtest_harness.gd` + `scripts/playtest_bot_ai.gd`): a reactive
+bot plays full runs back to back with no window and no manual input, and
+prints a per-run + aggregate survival/economy report. Sandboxed to its own
+save slot (`MetaProgression.PLAYTEST_SLOT`) — never touches real save data.
+
+```
+Godot.exe --headless --path . -- --playtest [--playtest-runs=N] \
+    [--playtest-seed=stat_id:level,...]
+```
+
+`--playtest-seed` pre-sets stat levels for the sandboxed run (e.g.
+`spell_unlock:2` to test with all spells unlocked) so a batch can target
+whatever progression point is under test without grinding a real save —
+see the memory note on pre-seeding progression for playtests.
