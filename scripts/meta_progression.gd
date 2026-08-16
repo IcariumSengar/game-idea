@@ -31,10 +31,32 @@ const STAT_INFERNO_BURN_DAMAGE: StringName = &"inferno_burn_damage"
 const STAT_FROST_FREQUENCY: StringName = &"frost_frequency"
 const STAT_FROST_RADIUS: StringName = &"frost_radius"
 const STAT_FROST_SLOW_STRENGTH: StringName = &"frost_slow_strength"
+const STAT_METEOR_FREQUENCY: StringName = &"meteor_frequency"
+const STAT_LIGHTNING_FREQUENCY: StringName = &"lightning_frequency"
+const STAT_TIME_WARP_FREQUENCY: StringName = &"time_warp_frequency"
+const STAT_TELEPORT_FREQUENCY: StringName = &"teleport_frequency"
+const STAT_FAMILIAR_DURATION: StringName = &"familiar_duration"
 
 const SPELL_ARCANE_BOLT: StringName = &"arcane_bolt"
 const SPELL_INFERNO_BLADE: StringName = &"inferno_blade"
 const SPELL_FROST_NOVA: StringName = &"frost_nova"
+const SPELL_METEOR_STRIKE: StringName = &"meteor_strike"
+const SPELL_LIGHTNING_CHAIN: StringName = &"lightning_chain"
+const SPELL_TIME_WARP: StringName = &"time_warp"
+const SPELL_TELEPORT_PULSE: StringName = &"teleport_pulse"
+const SPELL_SUMMON_FAMILIAR: StringName = &"summon_familiar"
+
+## Spell -> Spell Unlock level required. Arcane Bolt isn't listed -- it's
+## always available, checked separately in is_spell_unlocked().
+const SPELL_UNLOCK_REQUIREMENTS: Dictionary = {
+	SPELL_INFERNO_BLADE: 1,
+	SPELL_FROST_NOVA: 2,
+	SPELL_METEOR_STRIKE: 3,
+	SPELL_LIGHTNING_CHAIN: 4,
+	SPELL_TIME_WARP: 5,
+	SPELL_TELEPORT_PULSE: 6,
+	SPELL_SUMMON_FAMILIAR: 7,
+}
 
 ## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
@@ -102,8 +124,10 @@ func _ready() -> void:
 		STAT_COMPACTOR_MYTHIC, "Mythic Hoard", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Discard", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	# Cap raised 5->7 for v11's five new spells (L3-L7) on top of Inferno/Frost
+	# (L1/L2) -- same base cost/growth as originally locked in, just extended.
 	_register_stat(
-		STAT_SPELL_UNLOCK, "Spell Unlock", 0.0, 0.0, 25, 1.20, 5, 0, StatDef.Currency.PLAYER
+		STAT_SPELL_UNLOCK, "Spell Unlock", 0.0, 0.0, 25, 1.20, 7, 0, StatDef.Currency.PLAYER
 	)
 	# Base/per-level both scaled by 1/1.5 vs the original curve (0.5, -0.05) so
 	# Arcane Bolt fires 50% faster by default and at every upgrade level, per
@@ -143,6 +167,65 @@ func _ready() -> void:
 		18,
 		1.16,
 		10,
+		0,
+		StatDef.Currency.PLAYER
+	)
+	# v11 spells: each gets one upgrade stat (cast-rate or, for Familiar,
+	# uptime duration) rather than the 2-3 the original three spells got --
+	# keeps five new spells' worth of shop surface proportional. Cost
+	# curves invented, same treatment as the original three's stats.
+	_register_stat(
+		STAT_METEOR_FREQUENCY,
+		"Meteor Frequency",
+		5.0,
+		-0.5,
+		22,
+		1.18,
+		5,
+		1,
+		StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_LIGHTNING_FREQUENCY,
+		"Chain Frequency",
+		1.5,
+		-0.15,
+		18,
+		1.16,
+		5,
+		2,
+		StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_TIME_WARP_FREQUENCY,
+		"Warp Frequency",
+		4.0,
+		-0.4,
+		20,
+		1.17,
+		5,
+		1,
+		StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_TELEPORT_FREQUENCY,
+		"Pulse Frequency",
+		3.5,
+		-0.3,
+		18,
+		1.16,
+		5,
+		1,
+		StatDef.Currency.PLAYER
+	)
+	_register_stat(
+		STAT_FAMILIAR_DURATION,
+		"Familiar Uptime",
+		12.0,
+		2.0,
+		20,
+		1.17,
+		5,
 		0,
 		StatDef.Currency.PLAYER
 	)
@@ -201,14 +284,10 @@ func update_best_run(seconds_survived: float) -> float:
 
 
 func is_spell_unlocked(spell_id: StringName) -> bool:
-	match spell_id:
-		SPELL_ARCANE_BOLT:
-			return true
-		SPELL_INFERNO_BLADE:
-			return get_level(STAT_SPELL_UNLOCK) >= 1
-		SPELL_FROST_NOVA:
-			return get_level(STAT_SPELL_UNLOCK) >= 2
-	return false
+	if spell_id == SPELL_ARCANE_BOLT:
+		return true
+	var required_level: int = SPELL_UNLOCK_REQUIREMENTS.get(spell_id, -1)
+	return required_level >= 0 and get_level(STAT_SPELL_UNLOCK) >= required_level
 
 
 func buy_upgrade(id: StringName) -> bool:

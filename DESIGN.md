@@ -56,7 +56,7 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v10):
+What's actually built and playable today (see `scripts/`, as of v11):
 
 - Top-down movement + dash in a single arena; four enemy tiers (Minion
   melee chaser with Fast/Tanky variants, Bruiser pause/charge, Elite
@@ -67,10 +67,12 @@ What's actually built and playable today (see `scripts/`, as of v10):
   shrink, per the backpack-fill penalty below.
 - Casting-based combat (`spell_caster.gd`): every unlocked spell casts
   simultaneously and independently, no switching. Arcane Bolt (ranged
-  projectile) is always available; Inferno Blade (melee arc + burn) and
-  Frost Nova (AOE + slow) join in permanently once unlocked via the Spell
-  Unlock skill-tree node. Spellpower is upgradeable and scales all three
-  spells proportionally.
+  projectile) is always available; the other seven -- Inferno Blade,
+  Frost Nova, Meteor Strike, Lightning Chain, Time Warp, Teleport Pulse,
+  Summon Familiar -- join in permanently as their Spell Unlock tier (L1-L7)
+  gets bought. Spellpower is upgradeable and scales all of them
+  proportionally (except Summon Familiar's own attack, which is the
+  pet's fixed stat, not the caster's).
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
   drop weight, picked up via a proximity-based magnet radius (Gleam
@@ -290,10 +292,14 @@ Player is a **magic user**. Weapons are **spells**, casting-based combat with di
 ### Spell System Structure
 
 **Spell Unlock node** (gated root in Player Tree):
-- Base cost: 25, ×1.20/lvl, cap 5
+- Base cost: 25, ×1.20/lvl, cap 7 (raised from 5 for v11's five new spells)
 - L1: Unlock Inferno Blade
 - L2: Unlock Frost Nova
-- L3+: Reserved for future spells
+- L3: Unlock Meteor Strike
+- L4: Unlock Lightning Chain
+- L5: Unlock Time Warp
+- L6: Unlock Teleport Pulse
+- L7: Unlock Summon Familiar
 
 As of **v10**, every unlocked spell casts automatically and simultaneously
 -- no switching, no slots. Arcane Bolt is always active; Inferno Blade and
@@ -366,17 +372,87 @@ Every unlocked spell casts automatically and simultaneously, each on its
 own independent cooldown -- no slots, no rotation, no manual switching.
 Resolves the "rotating vs. auto-casting all" question this section
 originally left open, in favor of the simpler option. Unlocking a new
-spell is a real power milestone: early runs are Arcane-only, mid-game
-(Spell Unlock L1) adds Inferno Blade, late-game (L2) runs all three at
-once.
+spell is a real power milestone: early runs are Arcane-only, and each
+Spell Unlock level (now L1-L7, see Spell System Structure above) adds
+one more spell permanently to the mix, up to all eight running at once
+at L7.
 
-### Future: Additional Spells (v11+)
+### Spell 4: Meteor Strike (unlock at Spell Unlock L3)
 
-- **Meteor Strike:** High-damage AOE impact, long cooldown (boss-killer)
-- **Teleport Pulse:** Dash + damage on arrival, mobility spell
-- **Time Warp:** Slow time in area, massive crowd control
-- **Lightning Chain:** Arc between enemies, spreads on contact
-- **Summon Familiar:** Passive pet that auto-attacks, mana-limited
+**Feel:** Boss-killer -- high-damage single-target-area impact on a long cooldown.
+
+**Base stats:**
+- Power: 90 (scales with Spellpower -- highest of any spell, matching the "boss-killer" role)
+- Cast rate: 5.0 sec/strike
+- Impact radius: 100px, centered on the nearest enemy at cast time
+- Telegraph: 0.5 sec warning ring before the hit actually lands
+
+**Upgrades:**
+- Frequency (cast speed): -0.5 sec/lvl, cap 2.5 sec
+
+### Spell 5: Lightning Chain (unlock at Spell Unlock L4)
+
+**Feel:** Arcs from the player to the nearest enemy, then hops to whichever
+unhit enemy is nearest the last one struck -- rewards facing clustered
+enemies rather than a lone target.
+
+**Base stats:**
+- Power: 15/hit (scales with Spellpower), decaying ×0.8 per hop
+- Cast rate: 1.5 sec/cast
+- Initial range: 200px, chain-hop range: 150px
+- Max hits: 4 (initial + 3 chains)
+
+**Upgrades:**
+- Frequency (cast speed): -0.15 sec/lvl, cap 0.75 sec
+
+### Spell 6: Time Warp (unlock at Spell Unlock L5)
+
+**Feel:** Massive crowd control -- low damage, but slows everything in a
+wide radius hard and long. Distinct from Frost Nova via scale (bigger
+radius/duration/slow-strength) rather than raw power.
+
+**Base stats:**
+- Power: 10 (scales with Spellpower -- intentionally the lowest of any spell, this is a CC tool not a damage one)
+- Cast rate: 4.0 sec/cast
+- Radius: 200px
+- Slow strength: 80%, duration: 2.0 sec
+
+**Upgrades:**
+- Frequency (cast speed): -0.4 sec/lvl, cap 2.0 sec
+
+### Spell 7: Teleport Pulse (unlock at Spell Unlock L6)
+
+**Feel:** Mobility spell -- blinks the player 250px in their current
+movement direction (or a random direction if standing still), dealing
+AOE damage at both the departure and arrival points. Always fires, even
+if nothing's in range to hit -- repositioning is the point, unlike the
+damage/CC spells which stay silent on a whiff.
+
+**Base stats:**
+- Power: 20/burst (scales with Spellpower), applied at both ends
+- Cast rate: 3.5 sec/cast
+- Teleport distance: 250px, burst radius: 80px at each end
+
+**Upgrades:**
+- Frequency (cast speed): -0.3 sec/lvl, cap 1.5 sec
+
+### Spell 8: Summon Familiar (unlock at Spell Unlock L7, final tier)
+
+**Feel:** A persistent pet that hovers near the player and independently
+fires bolts at the nearest enemy in range -- "mana-limited" per the
+original concept, stood in for by a fixed resummon cooldown plus an
+upgradeable active-duration window rather than introducing a whole new
+mana resource for one spell.
+
+**Base stats:**
+- Familiar attack power: 8/hit, fixed (doesn't scale with Spellpower --
+  it's the pet's own stat, not the caster's)
+- Familiar attack rate: 0.8 sec/shot, range 160px
+- Resummon cooldown: 8.0 sec, fixed (not upgradeable)
+- Active duration: 12.0 sec base
+
+**Upgrades:**
+- Familiar Uptime (active duration): +2.0 sec/lvl, cap 20.0 sec
 
 ## Loot, backpack & shop economy
 
@@ -1014,3 +1090,24 @@ Short dated entries when a design decision is made and worth remembering
   question this doc left unresolved on purpose (tension with "everything
   is eventually maxable") -- building either unilaterally would be
   guessing at a decision that isn't mine to make.
+- 2026-08-16 — v11 Additional Spells implemented: Meteor Strike (boss-
+  killer AOE with a telegraph-then-impact delay), Lightning Chain (arcs
+  to the nearest unhit enemy up to 4 times, damage decaying per hop),
+  Time Warp (Frost Nova's `apply_slow()` reused at a much bigger
+  radius/duration for pure crowd control), Teleport Pulse (blinks the
+  player in their current movement direction, damage at both ends,
+  always fires even on a whiff since repositioning is the point), and
+  Summon Familiar (a persistent pet -- `familiar.gd`, imp sprite frames
+  from the same DungeonTilesetII pack -- that independently fires its
+  own bolts at the nearest enemy). Spell Unlock's cap raised 5->7 to fit
+  all five new tiers (L3-L7) alongside Inferno/Frost's existing L1/L2.
+  Each new spell got exactly one upgrade stat (frequency, or duration
+  for Familiar) instead of the 2-3 the original three got, keeping five
+  new spells' worth of shop surface proportional -- shop's spell status
+  list extended from 3 to all 8 entries to match. "Mana-limited" for
+  Familiar is stood in for by a fixed resummon cooldown + upgradeable
+  active-duration window rather than inventing a whole mana resource
+  for one spell. Verified via the playtest harness across multiple
+  batches (moderate and heavy seeding, plus a minimal-seed run to
+  exercise the "no target found" guards) -- zero runtime errors with
+  all 8 spells active and casting concurrently.

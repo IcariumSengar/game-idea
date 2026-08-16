@@ -2,20 +2,23 @@ extends Node
 
 ## Casts every spell the player has unlocked, simultaneously and
 ## independently -- v10 replaces v9's single-active-spell switching.
-## Arcane Bolt is always available; Inferno Blade and Frost Nova join in
-## permanently once unlocked via the Spell Unlock skill-tree node. Each
-## spell tracks its own cast-rate cooldown so they don't interfere with
-## each other.
+## Arcane Bolt is always available; the rest join in permanently once
+## unlocked via the Spell Unlock skill-tree node (L1-L7, see
+## MetaProgression.SPELL_UNLOCK_REQUIREMENTS). Each spell tracks its own
+## cast-rate cooldown so they don't interfere with each other.
 ##
 ## Each spell's "Power" scales with Spellpower proportionally to its base
-## value (20 for Arcane, 25 for Inferno, 15 for Frost) relative to
-## Spellpower's own base of 20, per DESIGN.md's "Spellpower stat applies
-## to all spells uniformly" note.
+## value relative to Spellpower's own base of 20, per DESIGN.md's
+## "Spellpower stat applies to all spells uniformly" note.
 
 const PROJECTILE_SCENE: PackedScene = preload("res://scenes/spell_projectile.tscn")
 const SPARK_SCENE: PackedScene = preload("res://scenes/spark_burst.tscn")
 const INFERNO_BURST_SCENE: PackedScene = preload("res://scenes/inferno_burst.tscn")
 const FROST_BURST_SCENE: PackedScene = preload("res://scenes/frost_burst.tscn")
+const METEOR_FX_SCENE: PackedScene = preload("res://scenes/meteor_strike_fx.tscn")
+const LIGHTNING_FX_SCENE: PackedScene = preload("res://scenes/lightning_bolt_fx.tscn")
+const TIME_WARP_BURST_SCENE: PackedScene = preload("res://scenes/time_warp_burst.tscn")
+const FAMILIAR_SCENE: PackedScene = preload("res://scenes/familiar.tscn")
 
 const SPELLPOWER_BASE: float = 20.0
 const ARCANE_RANGE: float = 220.0
@@ -31,13 +34,42 @@ const FROST_BASE_POWER: float = 15.0
 const FROST_FREEZE_DURATION: float = 0.8
 const FROST_COLOR: Color = Color(0.5, 0.85, 1.0)
 
+## v11 spells. Each got exactly one upgrade stat (see meta_progression.gd)
+## instead of the 2-3 the original three got, to keep five new spells'
+## worth of shop surface proportional -- all other numbers below are fixed.
+const METEOR_SEEK_RANGE: float = 99999.0
+const METEOR_BASE_POWER: float = 90.0
+const METEOR_RADIUS: float = 100.0
+const LIGHTNING_RANGE: float = 200.0
+const LIGHTNING_CHAIN_RANGE: float = 150.0
+const LIGHTNING_MAX_HITS: int = 4
+const LIGHTNING_BASE_POWER: float = 15.0
+const LIGHTNING_DAMAGE_DECAY: float = 0.8
+const TIME_WARP_RADIUS: float = 200.0
+const TIME_WARP_BASE_POWER: float = 10.0
+const TIME_WARP_SLOW_STRENGTH: float = 0.8
+const TIME_WARP_DURATION: float = 2.0
+const TIME_WARP_COLOR: Color = Color(0.65, 0.45, 0.95)
+const TELEPORT_BASE_POWER: float = 20.0
+const TELEPORT_DISTANCE: float = 250.0
+const TELEPORT_BURST_RADIUS: float = 80.0
+const TELEPORT_ARENA_MARGIN: float = 20.0
+const TELEPORT_COLOR: Color = Color(0.6, 0.85, 1.0)
+const FAMILIAR_RESUMMON_COOLDOWN: float = 8.0
+
 var _owner_body: Player
 ## Enemy -> {ticks_left: int, tick_damage: float, timer: float}
 var _burning: Dictionary = {}
+var _active_familiar: Familiar = null
 
 var _arcane_cooldown: float = 0.0
 var _inferno_cooldown: float = 0.0
 var _frost_cooldown: float = 0.0
+var _meteor_cooldown: float = 0.0
+var _lightning_cooldown: float = 0.0
+var _time_warp_cooldown: float = 0.0
+var _teleport_cooldown: float = 0.0
+var _familiar_cooldown: float = 0.0
 
 
 func _ready() -> void:
@@ -45,6 +77,11 @@ func _ready() -> void:
 	_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
 	_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
 	_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+	_meteor_cooldown = MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
+	_lightning_cooldown = MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
+	_time_warp_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
+	_teleport_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
+	_familiar_cooldown = FAMILIAR_RESUMMON_COOLDOWN
 
 
 func _process(delta: float) -> void:
@@ -63,6 +100,31 @@ func _process(delta: float) -> void:
 		if _frost_cooldown <= 0.0:
 			_cast_frost_nova()
 			_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_METEOR_STRIKE):
+		_meteor_cooldown -= delta
+		if _meteor_cooldown <= 0.0:
+			_cast_meteor_strike()
+			_meteor_cooldown = MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_LIGHTNING_CHAIN):
+		_lightning_cooldown -= delta
+		if _lightning_cooldown <= 0.0:
+			_cast_lightning_chain()
+			_lightning_cooldown = MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_TIME_WARP):
+		_time_warp_cooldown -= delta
+		if _time_warp_cooldown <= 0.0:
+			_cast_time_warp()
+			_time_warp_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_TELEPORT_PULSE):
+		_teleport_cooldown -= delta
+		if _teleport_cooldown <= 0.0:
+			_cast_teleport_pulse()
+			_teleport_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
+	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_SUMMON_FAMILIAR):
+		_familiar_cooldown -= delta
+		if _familiar_cooldown <= 0.0:
+			_cast_summon_familiar()
+			_familiar_cooldown = FAMILIAR_RESUMMON_COOLDOWN
 
 
 func _process_burns(delta: float) -> void:
@@ -151,6 +213,142 @@ func _cast_frost_nova() -> void:
 		AudioManager.play("frost_cast")
 
 
+## Boss-killer: telegraphs briefly at the nearest enemy's position, then
+## deals heavy AOE damage there. Damage is applied on MeteorStrikeFx's
+## `impact` signal, not at cast time, so the hit always lands in sync with
+## the visual instead of resolving instantly under a still-rising telegraph.
+func _cast_meteor_strike() -> void:
+	var enemy := _find_nearest_enemy(METEOR_SEEK_RANGE)
+	if enemy == null:
+		return
+	var target_position: Vector2 = enemy.position
+	var fx: MeteorStrikeFx = METEOR_FX_SCENE.instantiate()
+	fx.position = target_position
+	fx.radius = METEOR_RADIUS
+	_owner_body.get_parent().add_child(fx)
+	var damage: float = _scaled_power(METEOR_BASE_POWER)
+	fx.impact.connect(_on_meteor_impact.bind(target_position, damage))
+	AudioManager.play("meteor_cast")
+
+
+func _on_meteor_impact(target_position: Vector2, damage: float) -> void:
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null:
+			continue
+		if target_position.distance_to(enemy.position) <= METEOR_RADIUS:
+			enemy.take_damage(damage)
+
+
+## Arcs from the player to the nearest enemy, then hops to whichever
+## unhit enemy is nearest the last one struck, up to LIGHTNING_MAX_HITS
+## total, damage decaying a little each hop.
+func _cast_lightning_chain() -> void:
+	var first := _find_nearest_enemy(LIGHTNING_RANGE)
+	if first == null:
+		return
+	var damage: float = _scaled_power(LIGHTNING_BASE_POWER)
+	var hit: Array[Enemy] = []
+	var current: Enemy = first
+	var current_position: Vector2 = _owner_body.position
+	for i in LIGHTNING_MAX_HITS:
+		if current == null:
+			break
+		current.take_damage(damage)
+		_spawn_lightning_bolt(current_position, current.position)
+		hit.append(current)
+		current_position = current.position
+		damage *= LIGHTNING_DAMAGE_DECAY
+		current = _find_chain_target(current_position, hit)
+	AudioManager.play("lightning_cast")
+
+
+func _find_chain_target(from_position: Vector2, exclude: Array[Enemy]) -> Enemy:
+	var nearest: Enemy = null
+	var nearest_distance := LIGHTNING_CHAIN_RANGE
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null or enemy in exclude:
+			continue
+		var distance := from_position.distance_to(enemy.position)
+		if distance <= nearest_distance:
+			nearest = enemy
+			nearest_distance = distance
+	return nearest
+
+
+## Massive crowd control, light damage -- distinct from Frost Nova via a
+## much bigger radius/duration/slow-strength rather than raw power.
+func _cast_time_warp() -> void:
+	var damage: float = _scaled_power(TIME_WARP_BASE_POWER)
+	var hit_any := false
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null:
+			continue
+		if _owner_body.position.distance_to(enemy.position) > TIME_WARP_RADIUS:
+			continue
+		hit_any = true
+		enemy.take_damage(damage)
+		enemy.apply_slow(1.0 - TIME_WARP_SLOW_STRENGTH, TIME_WARP_DURATION)
+	if hit_any:
+		_spawn_time_warp_graphic(_owner_body.position)
+		AudioManager.play("warp_cast")
+
+
+## Mobility spell: bursts damage at the departure point, blinks the player
+## in their current movement direction (or a random one if standing
+## still), then bursts again on arrival. Always fires -- unlike the
+## damage/CC spells, repositioning is the point even when nothing's hit,
+## so gating audio/visuals on hit_any does't apply here.
+func _cast_teleport_pulse() -> void:
+	var damage: float = _scaled_power(TELEPORT_BASE_POWER)
+	var start_position: Vector2 = _owner_body.position
+	_damage_in_radius(start_position, TELEPORT_BURST_RADIUS, damage)
+	_spawn_burst(start_position, TELEPORT_COLOR)
+
+	var direction: Vector2 = _teleport_direction()
+	var target_position: Vector2 = start_position + direction * TELEPORT_DISTANCE
+	target_position = target_position.clamp(
+		Vector2(TELEPORT_ARENA_MARGIN, TELEPORT_ARENA_MARGIN),
+		_owner_body.arena_size - Vector2(TELEPORT_ARENA_MARGIN, TELEPORT_ARENA_MARGIN)
+	)
+	_owner_body.position = target_position
+	_damage_in_radius(target_position, TELEPORT_BURST_RADIUS, damage)
+	_spawn_burst(target_position, TELEPORT_COLOR)
+	AudioManager.play("teleport_cast")
+
+
+func _teleport_direction() -> Vector2:
+	if _owner_body.velocity.length() > 1.0:
+		return _owner_body.velocity.normalized()
+	return Vector2.RIGHT.rotated(randf() * TAU)
+
+
+func _damage_in_radius(at_position: Vector2, radius: float, damage: float) -> void:
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null:
+			continue
+		if at_position.distance_to(enemy.position) <= radius:
+			enemy.take_damage(damage)
+
+
+## "Mana-limited" per DESIGN.md's flavor text, stood in for by a fixed
+## resummon cooldown + an upgradeable active duration rather than a whole
+## new mana resource just for this one spell (see STAT_FAMILIAR_DURATION).
+func _cast_summon_familiar() -> void:
+	if _active_familiar != null and is_instance_valid(_active_familiar):
+		_active_familiar.queue_free()
+	var familiar: Familiar = FAMILIAR_SCENE.instantiate()
+	familiar.position = _owner_body.position
+	familiar.owner_body = _owner_body
+	familiar.duration = MetaProgression.get_stat(MetaProgression.STAT_FAMILIAR_DURATION)
+	_owner_body.get_parent().add_child(familiar)
+	_active_familiar = familiar
+	AudioManager.play("familiar_summon")
+
+
 func _apply_burn(enemy: Enemy, total_damage: float) -> void:
 	_burning[enemy] = {
 		"ticks_left": INFERNO_TICK_COUNT,
@@ -170,6 +368,20 @@ func _spawn_frost_graphic(at_position: Vector2, radius: float) -> void:
 	burst.position = at_position
 	burst.target_radius = radius
 	_owner_body.get_parent().add_child(burst)
+
+
+func _spawn_time_warp_graphic(at_position: Vector2) -> void:
+	var burst: TimeWarpBurst = TIME_WARP_BURST_SCENE.instantiate()
+	burst.position = at_position
+	burst.target_radius = TIME_WARP_RADIUS
+	_owner_body.get_parent().add_child(burst)
+
+
+func _spawn_lightning_bolt(from_point: Vector2, to_point: Vector2) -> void:
+	var bolt: LightningBoltFx = LIGHTNING_FX_SCENE.instantiate()
+	bolt.from_point = from_point
+	bolt.to_point = to_point
+	_owner_body.get_parent().add_child(bolt)
 
 
 func _spawn_burst(at_position: Vector2, color: Color) -> void:

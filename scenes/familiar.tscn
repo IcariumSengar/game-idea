@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/familiar.gd" id="1_familiar"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/familiar_sprite_frames.tres" id="2_familiar_frames"]
+
+[node name="Familiar" type="Node2D"]
+script = ExtResource("1_familiar")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.0, 0.0, 0.0, 0.3)
+polygon = PackedVector2Array(10, 10, 8.66, 11.43, 5, 12.61, 0, 12.86, -5, 12.61, -8.66, 11.43, -10, 10, -8.66, 8.57, -5, 7.39, 0, 7.14, 5, 7.39, 8.66, 8.57)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(1.8, 1.8)
+sprite_frames = ExtResource("2_familiar_frames")
+animation = &"idle"

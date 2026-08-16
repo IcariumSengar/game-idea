@@ -27,6 +27,11 @@ func _ready() -> void:
 	_streams["arcane_cast"] = _make_tone(600.0, 0.05, 0.25, "sine")
 	_streams["inferno_cast"] = _make_sweep(700.0, 140.0, 0.13, 0.38, "square")
 	_streams["frost_cast"] = _make_chime([500.0, 750.0], 0.06, 0.3)
+	_streams["meteor_cast"] = _make_tone(110.0, 0.22, 0.5, "square", true)
+	_streams["lightning_cast"] = _make_sweep(900.0, 1300.0, 0.05, 0.32, "square")
+	_streams["warp_cast"] = _make_sweep(600.0, 220.0, 0.32, 0.3)
+	_streams["teleport_cast"] = _make_sweep(400.0, 900.0, 0.11, 0.3)
+	_streams["familiar_summon"] = _make_chime([440.0, 660.0, 880.0], 0.07, 0.3)
 
 	for i in POOL_SIZE:
 		var player := AudioStreamPlayer.new()

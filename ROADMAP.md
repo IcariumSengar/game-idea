@@ -23,7 +23,10 @@
 |---------|-------|--------|
 | **v9** | Magic spells | Built, pending release tag |
 | **v10** | Multi-spell casting (all unlocked spells fire at once) | Built, pending release tag |
-| **v11+** | Additional spells (Meteor Strike, Teleport Pulse, ...) | Design noted for future |
+| **v11** | Additional spells (Meteor Strike, Lightning Chain, Time Warp, Teleport Pulse, Summon Familiar) | Built, pending release tag |
+| — | Tier 4 Boss, Fast/Tanky Minion variants, distinct enemy sprites, Settings menu, loot affixes, backpack ghost-slot preview, headless playtest harness | Built alongside v11, pending release tag |
+
+Cloud-sync backend and mutually-exclusive skill-tree branches are open items, not yet started — see TODO.md/DESIGN.md for why (both need a decision only the player can make).
 
 **For details on each version:** See [DESIGN.md](DESIGN.md)
 

@@ -31,7 +31,7 @@ this file should stay short enough to skim.
 
 ## Future Content (Locked Design, Post-v8)
 
-### Magic Spells (v9/v10) follow-up
+### Magic Spells (v9/v10/v11) follow-up
 
 - [x] Verify *functional* correctness with all 3 spells firing together:
       10-run playtest batches (moderate and heavy stat seeding) show zero
@@ -57,6 +57,15 @@ this file should stay short enough to skim.
       count per tier, not item instances -- see DESIGN.md's Loot
       Affixes section for why a true instance-level version is a
       bigger architecture change, left as a future direction.
+- [x] v11 Additional Spells: Meteor Strike, Lightning Chain, Time Warp,
+      Teleport Pulse, Summon Familiar all implemented and gated behind
+      Spell Unlock L3-L7 (cap raised 5->7). See DESIGN.md's Magic Spells
+      section for full specs and the decision log for scope notes
+      (each got 1 upgrade stat instead of 2-3, Familiar's "mana-limited"
+      flavor stood in for by duration+cooldown rather than a new mana
+      resource). Functional correctness verified via the playtest
+      harness with all 8 spells active; visual/audio feel has the same
+      "needs a human" caveat as the original three above.
 
 ### Enemy Types follow-up (not blocking v7)
 

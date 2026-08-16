@@ -17,11 +17,21 @@ var _last_backpack_currency: int = -1
 	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltStatusLabel,
 	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeStatusLabel,
 	MetaProgression.SPELL_FROST_NOVA: %FrostNovaStatusLabel,
+	MetaProgression.SPELL_METEOR_STRIKE: %MeteorStrikeStatusLabel,
+	MetaProgression.SPELL_LIGHTNING_CHAIN: %LightningChainStatusLabel,
+	MetaProgression.SPELL_TIME_WARP: %TimeWarpStatusLabel,
+	MetaProgression.SPELL_TELEPORT_PULSE: %TeleportPulseStatusLabel,
+	MetaProgression.SPELL_SUMMON_FAMILIAR: %SummonFamiliarStatusLabel,
 }
 @onready var _spell_display_names: Dictionary = {
 	MetaProgression.SPELL_ARCANE_BOLT: "Arcane Bolt",
 	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
 	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
+	MetaProgression.SPELL_METEOR_STRIKE: "Meteor Strike",
+	MetaProgression.SPELL_LIGHTNING_CHAIN: "Lightning Chain",
+	MetaProgression.SPELL_TIME_WARP: "Time Warp",
+	MetaProgression.SPELL_TELEPORT_PULSE: "Teleport Pulse",
+	MetaProgression.SPELL_SUMMON_FAMILIAR: "Summon Familiar",
 }
 
 
@@ -160,6 +170,11 @@ func _gate_requirements() -> Dictionary:
 		MetaProgression.STAT_FROST_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 2],
 		MetaProgression.STAT_FROST_RADIUS: [MetaProgression.STAT_SPELL_UNLOCK, 2],
 		MetaProgression.STAT_FROST_SLOW_STRENGTH: [MetaProgression.STAT_SPELL_UNLOCK, 2],
+		MetaProgression.STAT_METEOR_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 3],
+		MetaProgression.STAT_LIGHTNING_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 4],
+		MetaProgression.STAT_TIME_WARP_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 5],
+		MetaProgression.STAT_TELEPORT_FREQUENCY: [MetaProgression.STAT_SPELL_UNLOCK, 6],
+		MetaProgression.STAT_FAMILIAR_DURATION: [MetaProgression.STAT_SPELL_UNLOCK, 7],
 	}
 
 
