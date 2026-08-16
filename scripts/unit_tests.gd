@@ -33,6 +33,7 @@ func _ready() -> void:
 	_test_backpack_fill_effects()
 	_test_backpack_slots_used()
 	_test_manual_triage_queue()
+	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
@@ -318,6 +319,58 @@ func _test_manual_triage_queue() -> void:
 	_assert(player._pending_gem == null, "queue is empty once everything's resolved")
 
 	player.queue_free()
+
+
+## Verifies the Grimoire's progressive-discovery tracking round-trips
+## through save/load correctly -- combos themselves stay purely in-run
+## (DESIGN.md), but *whether one's ever been seen* has to survive across
+## saves, which means it has to go through export_save_data()/
+## import_save_data() like everything else persistent.
+func _test_combo_discovery_save_round_trip() -> void:
+	# reset_progress() (exercised below) touches more than discovered_combos --
+	# snapshot everything it can reach so this test can't leak state into
+	# whatever runs after it, not just the one field this test cares about.
+	var original_discovered: Dictionary = MetaProgression.discovered_combos.duplicate()
+	var original_player_currency := MetaProgression.player_currency
+	var original_backpack_currency := MetaProgression.backpack_currency
+	var original_best_run_time := MetaProgression.best_run_time
+	var original_levels: Dictionary = MetaProgression._stat_levels.duplicate()
+
+	MetaProgression.discovered_combos.clear()
+	_assert(
+		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
+		"a combo starts undiscovered"
+	)
+
+	MetaProgression.mark_combo_discovered(MetaProgression.COMBO_FULL_SET)
+	_assert(
+		MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
+		"marking a combo discovered makes is_combo_discovered() true"
+	)
+	_assert(
+		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_STREAK),
+		"discovering one combo doesn't discover the other"
+	)
+
+	var exported := MetaProgression.export_save_data()
+	MetaProgression.discovered_combos.clear()
+	MetaProgression.import_save_data(exported)
+	_assert(
+		MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
+		"discovery survives an export/import round-trip"
+	)
+
+	MetaProgression.reset_progress()
+	_assert(
+		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
+		"reset_progress() clears discovered combos along with everything else"
+	)
+
+	MetaProgression.discovered_combos = original_discovered
+	MetaProgression.player_currency = original_player_currency
+	MetaProgression.backpack_currency = original_backpack_currency
+	MetaProgression.best_run_time = original_best_run_time
+	MetaProgression._stat_levels = original_levels
 
 
 ## Verifies Gem Combos' "Full Set" (DESIGN.md's Tweak 3): holding one of

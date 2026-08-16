@@ -1,0 +1,115 @@
+extends Control
+
+## Grimoire: an in-game reference for spells and Gem Combos, since none of
+## this is otherwise taught -- 8 spells with a specific unlock ladder and
+## Gem Combos with their own trigger conditions previously only existed in
+## DESIGN.md and chat history. Progressive discovery, not a full list from
+## run 1 (direct decision): spells show once unlocked
+## (MetaProgression.is_spell_unlocked()), combos show once triggered at
+## least once ever (MetaProgression.is_combo_discovered()) -- everything
+## else reads "???" rather than spoiling what hasn't happened yet.
+
+const LOCKED_COLOR: String = "#666660"
+const NAME_COLOR: String = "#e0e0dc"
+const DESC_COLOR: String = "#a0a09c"
+const HEADER_COLOR: String = "#e6cc99"
+
+const SPELLS: Array[Dictionary] = [
+	{
+		"id": &"arcane_bolt",
+		"name": "Arcane Bolt",
+		"desc": "Fires a homing bolt at the nearest enemy.",
+	},
+	{
+		"id": &"inferno_blade",
+		"name": "Inferno Blade",
+		"desc": "Omnidirectional melee burn -- hits everything in range.",
+	},
+	{"id": &"frost_nova", "name": "Frost Nova", "desc": "AOE damage and slows everything nearby."},
+	{
+		"id": &"meteor_strike",
+		"name": "Meteor Strike",
+		"desc": "Telegraphed strike, heavy AOE damage on impact.",
+	},
+	{
+		"id": &"lightning_chain",
+		"name": "Lightning Chain",
+		"desc": "Arcs between up to 4 enemies, damage fading each hop.",
+	},
+	{
+		"id": &"time_warp",
+		"name": "Time Warp",
+		"desc": "Large-radius crowd control, slows everything caught in it.",
+	},
+	{
+		"id": &"teleport_pulse",
+		"name": "Teleport Pulse",
+		"desc": "Blinks you forward, damaging enemies at both ends.",
+	},
+	{
+		"id": &"summon_familiar",
+		"name": "Summon Familiar",
+		"desc": "Summons a pet that fires its own bolts at enemies.",
+	},
+]
+
+const COMBOS: Array[Dictionary] = [
+	{
+		"id": &"full_set",
+		"name": "Full Set",
+		"desc": (
+			"Hold one of each of the six rarity tiers at once. Clears every"
+			+ " enemy on screen. Once per run."
+		),
+	},
+	{
+		"id": &"streak",
+		"name": "Streak",
+		"desc": (
+			"Collect three of the same tier in a row. AOE damage burst,"
+			+ " stronger for rarer tiers. Repeatable."
+		),
+	},
+]
+
+@onready var _body: RichTextLabel = %GrimoireBody
+
+
+func _ready() -> void:
+	_body.text = _build_bbcode()
+
+
+func _build_bbcode() -> String:
+	var lines: Array[String] = []
+	lines.append("[color=%s][b]SPELLS[/b][/color]" % HEADER_COLOR)
+	lines.append("")
+	for spell: Dictionary in SPELLS:
+		if MetaProgression.is_spell_unlocked(spell["id"]):
+			lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, spell["name"]])
+			lines.append("[color=%s]%s[/color]" % [DESC_COLOR, spell["desc"]])
+		else:
+			var required: int = MetaProgression.SPELL_UNLOCK_REQUIREMENTS.get(spell["id"], 0)
+			lines.append(
+				"[color=%s][b]???[/b]  (Spell Unlock Lv %d)[/color]" % [LOCKED_COLOR, required]
+			)
+		lines.append("")
+
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[color=%s][b]GEM COMBOS[/b][/color]" % HEADER_COLOR)
+	lines.append("")
+	for combo: Dictionary in COMBOS:
+		if MetaProgression.is_combo_discovered(combo["id"]):
+			lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, combo["name"]])
+			lines.append("[color=%s]%s[/color]" % [DESC_COLOR, combo["desc"]])
+		else:
+			lines.append(
+				"[color=%s][b]???[/b]  (undiscovered -- trigger it to reveal)[/color]"
+				% LOCKED_COLOR
+			)
+		lines.append("")
+
+	return "\n".join(lines)
+
+
+func _on_back_pressed() -> void:
+	SceneTransition.goto_scene("res://scenes/ui/run_prep.tscn")

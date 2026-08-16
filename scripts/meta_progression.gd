@@ -58,6 +58,15 @@ const SPELL_UNLOCK_REQUIREMENTS: Dictionary = {
 	SPELL_SUMMON_FAMILIAR: 7,
 }
 
+## Gem Combos, for the codex's progressive-discovery tracking (see
+## discovered_combos below) -- combos themselves stay purely in-run/
+## ephemeral (DESIGN.md: "no currency, no meta-progression, no
+## persistence"), but *whether a combo has ever been seen* is a real,
+## persistent save fact the codex needs, distinct from the combo's own
+## per-run state.
+const COMBO_FULL_SET: StringName = &"full_set"
+const COMBO_STREAK: StringName = &"streak"
+
 ## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
@@ -65,6 +74,10 @@ const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
 var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
+## Combo id -> true, once ever triggered on this save. Codex-only state --
+## nothing in actual gameplay reads this, combos work identically whether
+## discovered or not.
+var discovered_combos: Dictionary = {}
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -270,6 +283,16 @@ func is_spell_unlocked(spell_id: StringName) -> bool:
 	return required_level >= 0 and get_level(STAT_SPELL_UNLOCK) >= required_level
 
 
+## Called by spell_caster.gd the moment a combo actually fires. Harmless
+## to call repeatedly -- a combo stays discovered forever once seen once.
+func mark_combo_discovered(combo_id: StringName) -> void:
+	discovered_combos[combo_id] = true
+
+
+func is_combo_discovered(combo_id: StringName) -> bool:
+	return discovered_combos.get(combo_id, false)
+
+
 func buy_upgrade(id: StringName) -> bool:
 	var def := get_stat_def(id)
 	if def == null or is_maxed(id):
@@ -334,11 +357,15 @@ func debug_set_level(id: StringName, level: int) -> void:
 ## mechanics (paths, slots, when to write) live on SaveManager; only the
 ## shape of what gets saved lives here, next to the data itself.
 func export_save_data() -> Dictionary:
+	var discovered: Array = []
+	for combo_id: StringName in discovered_combos:
+		discovered.append(String(combo_id))
 	return {
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
-		"stat_levels": _stat_levels
+		"stat_levels": _stat_levels,
+		"discovered_combos": discovered
 	}
 
 
@@ -354,6 +381,10 @@ func import_save_data(data: Dictionary) -> void:
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
+	discovered_combos.clear()
+	var saved_combos: Array = data.get("discovered_combos", [])
+	for combo_id: String in saved_combos:
+		discovered_combos[StringName(combo_id)] = true
 	currency_changed.emit()
 
 
@@ -368,4 +399,5 @@ func reset_progress() -> void:
 	best_run_time = 0.0
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
+	discovered_combos.clear()
 	currency_changed.emit()

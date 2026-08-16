@@ -91,10 +91,12 @@ What's actually built and playable today:
   gets auto-vacuumed in.
 - A real slot-grid backpack (`backpack_grid.gd`) — fill % is driven by
   real slot count (one slot per stack instance of a tier, capped by that
-  tier's Compacting stack size; a tier spans multiple slots once its
-  current stack fills), not by how many distinct rarities have ever been
-  touched (an earlier bug in the fill-% formula, since fixed — see the
-  decision log).
+  tier's fixed stack size; a tier spans multiple slots once its current
+  stack fills), not by how many distinct rarities have ever been touched
+  (an earlier bug in the fill-% formula, since fixed — see the decision
+  log). Stack sizes are permanent per-tier constants now, not
+  upgradeable — Compacting (the shop system that used to raise them) has
+  been removed, see the decision log.
 - **The backpack-fill risk signal is size/hitbox now, not HP.** A fuller
   bag grows the player's own sprite and actual `CollisionShape2D`
   hitbox — a bigger, easier target — on top of the existing speed-
@@ -522,14 +524,16 @@ at different cadences instead of competing for the same pool:
   damage, movement speed, and magnet/pickup range.
 - **Backpack currency** — earned from time survived in the run,
   independent of what got picked up. Funds backpack-only upgrades: slot
-  capacity, per-tier Compacting, and Purge.
+  capacity (Bearing) and Discard. (Used to also fund per-tier
+  Compacting — removed, see the decision log.)
 
 Rate (v6 balance): `backpack_currency = round(0.05 × seconds_survived)` — 0.05
 currency per second alive. Very gradual accumulation; a 60-second run
 earns ~3 currency. Designed so player upgrades (from loot) drive early
 progression, while backpack upgrades (from survival time) come later as
-a long-term goal. A player can afford early Compacting after ~5 good
-runs, but Capacity remains a prestige milestone for 20+ runs in.
+a long-term goal. Capacity (Bearing) remains a prestige milestone,
+20+ runs in for a meaningful investment — now the sole backpack-capacity
+lever, see "Backpack-track upgrade curve" below.
 
 The two tracks aren't directly linked, but both still answer to the same
 core risk mechanic: a greedy loot run fills the bag (shrinking max HP)
@@ -552,16 +556,14 @@ two tabs sharing a currency doesn't read as a naming conflict; the
 always-visible Essence/Stardust totals on screen carry the currency
 identity instead.
 
-- **Backpack Tree** is a real chain: Bearing sits at the root (always
-  purchasable). Compactor nodes unlock in rarity order — Commons Hoard →
-  Uncommon Stash → Rare Vault → Epic Trove → Mythic Hoard — each locked
-  until the previous tier's compactor has at least one level bought.
-  Discard unlocks the same way, as a capstone gated behind the Rare
-  Vault's first level — reusing the same "previous node bought once"
-  gate as everything else rather than a separate threshold rule. Alchemy
-  sits ungated alongside Bearing. This resolves the earlier open
-  question about Compacting's purchase order: it's a hard gate now,
-  enforced by the tree, not just a cost-driven nudge.
+- **Backpack Tree** is now just two nodes: Bearing at the root (always
+  purchasable) and Discard, gated behind Bearing's first level bought —
+  reusing the same "previous node bought once" gate as everything else
+  in the shop rather than a separate threshold rule. Used to be a longer
+  chain (a five-node Compactor ladder plus Alchemy) — both removed, see
+  the decision log for why. Much smaller tree now, deliberately: the
+  backpack's identity moved to the in-run layer (Active Pickup, Gem
+  Combos) rather than a shelf of permanent passive purchases.
 - **Player Tree** is flat: just Spellpower, Swiftness, and Gleam, no
   cross-gating between them, since nothing in the design requires one
   before another. (Spell Unlock and all per-spell upgrade stats have
@@ -570,9 +572,9 @@ identity instead.
 - **Spell Tree** (new, split out of Player Tree): Spell Unlock is the
   gated trunk (unchanged ladder — L1 Inferno Blade through L7 Summon
   Familiar). Each level's node branches into that spell's own upgrade
-  stats, reusing the exact same "previous node bought once" gate pattern
-  as Backpack Tree's Compactor chain, just applied to spells instead of
-  rarity tiers. Arcane Bolt's two upgrades (Haste, Velocity) branch
+  stats, reusing the same "previous node bought once" gate pattern used
+  throughout the shop, just applied to spells instead of a gear ladder.
+  Arcane Bolt's two upgrades (Haste, Velocity) branch
   directly off the trunk's root, ungated, since Arcane itself needs no
   unlock. Replaces the old static sidebar that just showed spell
   lock-state with no interaction — every spell upgrade is now a real,
@@ -654,25 +656,27 @@ exact numbers above.
 
 Same framework as the player track — geometric cost growth, flat/additive
 effect per level, capped levels — applied to backpack currency instead.
-Bearing gets its own table here; Compacting and Discard (already
-tier/threshold-shaped) get their leveled cost curves in their own
-sections below.
+Bearing gets its own table here; Discard (already threshold-shaped) gets
+its own leveled cost curve in its own section below. (Compacting used to
+have a table here too — removed, see the decision log.)
 
 | Stat | Base | Per-level gain | Base cost | Cost growth | Level cap | Value at cap |
 |---|---:|---:|---:|---:|---:|---:|
-| Bearing | 1 slot | +1 slot | 100 | ×1.25/lvl | 10 | 11 slots (11×) |
+| Bearing | 5 slots | +1 slot | 100 | ×1.25/lvl | 10 | 15 slots (3×) |
+
+(Base raised from the original 1 slot to 5 during the size/hitbox
+rework's live-play tuning — see the decision log.)
 
 Bearing is deliberately the prestige upgrade — expensive (base cost 100)
-and steep cost growth (×1.25/lvl). Starting at 1 slot creates an immediate
-constraint that forces the use of Compacting early on. Each new slot
-(especially the 2nd and 3rd) feels like a major milestone/level-up moment,
-keeping engagement high through a long progression series. By design,
-players should have access to Compacting upgrades in their first 5 runs,
-but won't afford a 2nd Bearing slot until run 15–20+.
+and steep cost growth (×1.25/lvl). It's now the *only* backpack-capacity
+lever (Compacting's removal means stack sizes per tier are fixed, not
+purchasable) — each new slot is a direct, uncomplicated capacity gain,
+and, especially at the higher levels, a major milestone/level-up moment
+that keeps engagement high through a long progression series.
 
 **Fill %** = slots used ÷ capacity, where **one slot is one stack
-instance of a tier** (capped at that tier's Compacting-modified stack
-size) — a tier can occupy more than one slot once its current stack is
+instance of a tier** (capped at that tier's fixed stack size) — a tier
+can occupy more than one slot once its current stack is
 full, matching what the six-tier value table already implies. (Currently
 shipped: `backpack` is a dictionary keyed only by tier, so "slots used"
 is really "distinct tiers touched," hard-capped at 6 regardless of
@@ -807,11 +811,10 @@ living on the item itself.
 
 That's a deliberate scope cut, not the full vision: the backpack tracks
 a *count per tier*, not individual item instances (that's what makes
-Compacting/stacking work at all), so there's no slot to durably attach a
-modifier to. Reworking to per-instance tracking just to support affixes
-would be a real architecture change with knock-on effects on Compacting,
-Discard, and the loot grid UI -- out of scope for what this doc actually
-asked for. A true persistent-modifier version (visible in the backpack
+stacking work at all), so there's no slot to durably attach a modifier
+to. Reworking to per-instance tracking just to support affixes would be
+a real architecture change with knock-on effects on Discard and the
+loot grid UI -- out of scope for what this doc actually asked for. A true persistent-modifier version (visible in the backpack
 grid, tradeable value vs. slot space like everything else in the rarity
 system) is a real future direction if this scope cut doesn't hold up.
 
@@ -844,54 +847,17 @@ curve (base cost 15, ×1.15/lvl), that covers the first several levels of
 one stat — a reasonable early pace, a few runs to a first couple of
 upgrades.
 
-### Compacting upgrades
-
-A **separate upgrade per rarity tier, Common through Mythic** — Commons
-Hoard, Uncommon Stash, Rare Vault, Epic Trove, Mythic Hoard — each
-raising that tier's max stack size (e.g. Commons Hoard lvl 1: 64 → 96,
-lvl 2: 96 → 128 — several levels per tier for a granular shop ladder).
-Compacting never touches item value, only how many of that tier fit in
-one slot.
-
-**Legendary is permanently uncompactable** — no Compacting node exists
-for it, stack size stays 1 forever. It's the one item that always eats a
-whole slot on its own, by design: that's the top-tier risk/reward
-tension the whole rarity system is built around, and it shouldn't be
-tunable away.
-
-Purchase order follows the rarity ladder — Commons Hoard first, Mythic
-Hoard last — because relevance follows the drop curve: commons flood the
-bag from the first run, so Commons Hoard pays off immediately and keeps
-paying off for a long stretch, while Mythic Hoard is nearly irrelevant
-until mythics are dropping often enough for stack depth to matter at
-all. In the skill-tree shop (see above) this is a **hard gate**: each
-Compacting node is locked until the previous tier's node has at least
-one level bought, not just nudged by price.
-
-Per-tier cost curve (illustrative):
-
-| Compacting node | Base stack | Per-level gain | Base cost | Cost growth | Level cap | Stack at cap |
-|---|---:|---:|---:|---:|---:|---:|
-| Commons Hoard | 10 | +10 | 12 | ×1.12/lvl | 8 | 90 (9×) |
-| Uncommon Stash | 8 | +5 | 18 | ×1.14/lvl | 6 | 38 (4.75×) |
-| Rare Vault | 5 | +3 | 28 | ×1.16/lvl | 5 | 20 (4×) |
-| Epic Trove | 3 | +2 | 42 | ×1.18/lvl | 4 | 11 (3.67×) |
-| Mythic Hoard | 2 | +1 | 75 | ×1.20/lvl | 3 | 5 (2.5×) |
-| Legendary | 1 | — | — | — | — | 1 (never stacks) |
-
-Base cost and growth rate also climb with rarity on top of the gate
-itself, so even a player who's unlocked a later node still feels the
-common-first pull through price.
-
 ### Discard upgrade
 
 A single, late-game upgrade (formerly "Purge"): once bag fill crosses a
 threshold (e.g. 90%), automatically discards the lowest-rarity item(s)
 to free space instead of blocking further pickups. Only becomes
-relevant once slot count and stack depth (via Compacting) are both near
-their ceiling and fullness is still the thing killing runs — a last
-safety valve after the other two upgrade paths are mostly exhausted,
-not a substitute for them.
+relevant once Bearing's slot count is near its ceiling and fullness is
+still the thing killing runs — a last safety valve after the run's
+been fully invested in, not a substitute for it. Gated behind Bearing's
+first level bought (reused the standard "previous node bought once"
+gate) — previously gated behind Compacting's Rare Vault node, re-pointed
+here when Compacting was removed, see the decision log.
 
 Leveled via its trigger threshold rather than a flat on/off:
 
@@ -1018,16 +984,18 @@ tension-building pip-brightening -- see the matrix above and TODO.md.
 ### Backpack UI
 
 The backpack should be visible on-screen as a real slot grid
-(Minecraft-style), not an abstract fill bar. This makes upgrades
-self-explanatory in play: Compacting is *seen* as a stack climbing
-higher in the same slot, Bearing is *seen* as the grid growing, and
+(Minecraft-style), not an abstract fill bar. This makes progress
+self-explanatory in play: Bearing is *seen* as the grid growing, and
 rarity is *seen* via the color-coded item border from the table above.
-Fill% and HP shrink should feel visually linked (e.g. slots trending red
-as the bag nears full, in sync with the HP bar draining) so the core risk
-mechanic reads at a glance without any tutorial text. Built: a ghost slot
-(`backpack_grid.gd`) previews the next Bearing purchase right in the
-HUD -- fainter and dashed rather than solid, appearing one slot past the
-real grid whenever Bearing isn't maxed, gone once it is.
+(Used to also apply to Compacting — a stack visibly climbing higher in
+its slot — moot now that Compacting's gone and stack sizes are fixed.)
+Fill% and the player's size/hitbox growth (see "Player size/hitbox as
+the fill-risk signal" via the decision log) should feel visually linked
+so the core risk mechanic reads at a glance without any tutorial text.
+Built: a ghost slot (`backpack_grid.gd`) previews the next Bearing
+purchase right in the HUD -- fainter and dashed rather than solid,
+appearing one slot past the real grid whenever Bearing isn't maxed, gone
+once it is.
 
 ## Decisions log
 
@@ -1906,3 +1874,61 @@ Short dated entries when a design decision is made and worth remembering
   hold up under the new mechanic as-is -- re-tuning via the harness
   doesn't always mean changing numbers, sometimes it means confirming
   the ones already there are fine. No values changed.
+- 2026-08-16 — Compacting removed entirely, direct instruction, on
+  design-direction grounds rather than balance ones -- the re-tune right
+  above this entry had just confirmed Compacting was working exactly as
+  intended (real, felt, non-trivializing effect on fill %). Removed
+  anyway: it's a *fixed* ability -- buy it once with Stardust, it's a
+  permanent passive forever -- and the direction this session has been
+  moving is away from permanent purchased passives and toward dynamic,
+  skill-expressed in-run systems (Gem Combos, Active Pickup). Compacting
+  was the last major piece of the backpack still living entirely in the
+  old model. `Discard` is unaffected in spirit (still a real upgrade,
+  still threshold-leveled) but re-gated: it was gated behind Compacting's
+  Rare Vault node, which no longer exists, so it's re-pointed to gate
+  behind Bearing's first level instead -- keeps *some* progression
+  structure in Backpack Tree (now just two nodes: Bearing, then Discard)
+  rather than leaving it fully flat.
+  Real consequence, not swept under the rug: stack sizes per tier are
+  now **permanently fixed** at their Rarity tiers table values (Common
+  10, Uncommon 8, Rare 5, Epic 3, Mythic 2, Legendary 1 -- unchanged
+  numbers, just no longer purchasable upward). Bearing becomes the
+  *only* backpack-capacity lever left. This will bite sooner than
+  Compacting's removal alone suggests -- the just-confirmed A/B/C data
+  above showed Compacting cutting fill % roughly in half at the ladder's
+  midpoint and further at max, so removing it outright (not just
+  freezing it at some in-between level) pushes real fill-%-driven
+  pressure earlier and harder than any state that was actually
+  playtested. Flagged directly for the implementing process: re-verify
+  balance via the playtest harness after removal, specifically whether
+  Bearing's cost curve/base value (already raised 1 -> 5 once this
+  session for an unrelated reason) still paces correctly as the sole
+  capacity lever, and whether the base stack sizes themselves are worth
+  revisiting now that they're permanent instead of a starting point.
+  Not decided here -- a balance question for the harness, not a design
+  call to guess at. See TODO.md for the removal instructions.
+- 2026-08-16 — Grimoire implemented: an in-game reference screen for the
+  8 spells and 2 shipped Gem Combos (Full Set, Streak), none of which
+  were taught anywhere in-game before this -- only DESIGN.md and chat
+  history. Progressive discovery, per direct decision: spells show once
+  unlocked (`MetaProgression.is_spell_unlocked()`), combos show once
+  triggered at least once ever, everything else reads "???" rather than
+  spoiling what hasn't happened yet. Combos needed genuinely new
+  persistent state for this -- `MetaProgression.discovered_combos`,
+  wired into `export_save_data()`/`import_save_data()`/
+  `reset_progress()` like everything else that survives a save -- since
+  the combos themselves are deliberately ephemeral/in-run-only
+  (DESIGN.md's Gem Combos section), but *whether one's ever been seen*
+  has to persist across runs regardless. Spells needed no new tracking;
+  unlock state already lives on the Spell Unlock stat level.
+  Named "Grimoire" (not "Codex") to match the project's existing magic-
+  themed renames (Sanctum, Hoard, Essence, Stardust). Reachable from a
+  new button on `run_prep.tscn` ("Sanctum"'s pre-run screen), its own
+  scene (`scenes/ui/grimoire.tscn`), a scrollable `RichTextLabel` in the
+  same visual style as the death-summary/run-prep panels. Verified via
+  the unit-test runner (5 new cases covering discovery marking and its
+  save round-trip, 209 total passing), boot checks on both new/touched
+  scenes directly (`grimoire.tscn`, `run_prep.tscn`), and a playtest
+  batch exercising both combos' discovery-marking calls with zero
+  errors. Not verified: how the screen actually reads/scrolls in a real
+  window -- needs a human via `playdev`.

@@ -85,6 +85,13 @@ theme_override_font_sizes/font_size = 18
 text = "ENTER SANCTUM"
 script = ExtResource("4_link")
 
+[node name="GrimoireButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
+custom_minimum_size = Vector2(400, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "GRIMOIRE"
+script = ExtResource("4_link")
+
 [node name="BackButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
@@ -94,4 +101,5 @@ script = ExtResource("4_link")
 
 [connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/StartRunButton" to="." method="_on_start_run_pressed"]
 [connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/ViewTreeButton" to="." method="_on_view_tree_pressed"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/GrimoireButton" to="." method="_on_grimoire_pressed"]
 [connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/BackButton" to="." method="_on_back_pressed"]

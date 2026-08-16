@@ -404,6 +404,7 @@ func _on_loot_changed(backpack: Dictionary) -> void:
 		if backpack.get(def.id, 0) <= 0:
 			return
 	_full_set_used_this_run = true
+	MetaProgression.mark_combo_discovered(MetaProgression.COMBO_FULL_SET)
 	_cast_full_set_clear()
 
 
@@ -455,6 +456,7 @@ func _on_loot_collected(type_id: StringName) -> void:
 
 
 func _cast_streak_burst(tier_id: StringName) -> void:
+	MetaProgression.mark_combo_discovered(MetaProgression.COMBO_STREAK)
 	var tier_index: int = maxi(TIER_ORDER.find(tier_id), 0)
 	var damage: float = _scaled_power(STREAK_BASE_POWER) * float(tier_index + 1)
 	var def := LootTypes.get_type(tier_id)
