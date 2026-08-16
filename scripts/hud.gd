@@ -68,7 +68,7 @@ func _on_player_died() -> void:
 	var previous_best := MetaProgression.update_best_run(seconds_survived)
 
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
-	MetaProgression.save()
+	SaveManager.save()
 	CloudSync.sync_now()
 
 	if PlaytestHarness.active:

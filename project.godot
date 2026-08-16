@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 MetaProgression="*res://scripts/meta_progression.gd"
+SaveManager="*res://scripts/save_manager.gd"
 LootTypes="*res://scripts/loot_registry.gd"
 CloudSync="*res://scripts/cloud_sync.gd"
 SceneTransition="*res://scripts/scene_transition.gd"

@@ -12,8 +12,8 @@ extends Node
 ## is what OS.get_cmdline_user_args() filters on, keeping this separate
 ## from engine flags like --headless.
 ##
-## Uses MetaProgression.PLAYTEST_SLOT so it never reads or writes the
-## player's real save data (see meta_progression.gd's _playtest_mode).
+## Uses SaveManager.PLAYTEST_SLOT so it never reads or writes the
+## player's real save data (see save_manager.gd's _playtest_mode).
 
 const DEFAULT_RUNS: int = 15
 const SEED_ARG_PREFIX: String = "--playtest-seed="

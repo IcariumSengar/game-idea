@@ -57,7 +57,7 @@ failed -- scriptable in CI as well as ad hoc.
 
 ### Save isolation
 
-Same sandboxing as the playtest harness: `meta_progression.gd`'s
+Same sandboxing as the playtest harness: `save_manager.gd`'s
 `_playtest_mode` triggers on `--unit-test` too, so `current_slot` becomes
 `PLAYTEST_SLOT` and `save()` no-ops. Never reads or writes the player's
 real save files. Safe to run anytime without asking.
@@ -127,7 +127,7 @@ Godot.exe --headless --path . -- --playtest [--playtest-runs=N] \
 
 ### Save isolation
 
-Sandboxed to `MetaProgression.PLAYTEST_SLOT` (99), outside the normal
+Sandboxed to `SaveManager.PLAYTEST_SLOT` (99), outside the normal
 0-3 slot range the Load Game screen manages. `--playtest-seed` writes
 directly into that sandbox's in-memory stat levels
 (`MetaProgression.debug_set_level()`, bypassing currency cost -- it's

@@ -74,7 +74,8 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 - Soft size ceiling, not a hard rule: a script pushing past ~400-500 lines,
   or a function past ~60, is a prompt to look for an extractable
   responsibility — check before reflexively adding more to it.
-- Autoloads own data and logic (`MetaProgression`, `LootTypes`); scenes/
+- Autoloads own data and logic (`MetaProgression`, `SaveManager`,
+  `LootTypes`); scenes/
   nodes own presentation (`SkillTreeView`, `HUD`). Keep that direction
   one-way — presentation reads from autoloads, autoloads never reach into
   a specific scene's nodes.

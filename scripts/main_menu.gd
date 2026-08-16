@@ -10,9 +10,9 @@ func _ready() -> void:
 	if PlaytestHarness.active:
 		return
 	# Auto-load last save if it exists
-	var last_slot := MetaProgression.get_last_slot()
+	var last_slot := SaveManager.get_last_slot()
 	if last_slot >= 0:
-		MetaProgression.set_slot(last_slot)
+		SaveManager.set_slot(last_slot)
 		SceneTransition.goto_scene.call_deferred("res://scenes/run_prep.tscn")
 		return
 
@@ -33,7 +33,7 @@ func _on_settings_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
-	MetaProgression.save()
+	SaveManager.save()
 	CloudSync.sync_now()
 	get_tree().quit()
 

@@ -16,8 +16,8 @@ func _ready() -> void:
 
 
 func _populate_slots() -> void:
-	for slot in range(MetaProgression.SAVE_SLOTS):
-		var metadata := MetaProgression.get_slot_metadata(slot)
+	for slot in range(SaveManager.SAVE_SLOTS):
+		var metadata := SaveManager.get_slot_metadata(slot)
 		_add_slot_button(slot, metadata)
 
 
@@ -54,7 +54,7 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 	var is_empty: bool = metadata.get("last_played", 0) == 0
 
 	# Load/Start button -- always enabled. Empty slots start fresh there
-	# (MetaProgression.set_slot resets to defaults when a slot has no save
+	# (SaveManager.set_slot resets to defaults when a slot has no save
 	# file); occupied slots load existing progress.
 	var load_btn := _make_styled_button("Start" if is_empty else "Load", Vector2(80, 40))
 	load_btn.pressed.connect(_on_load_pressed.bind(slot))
@@ -88,20 +88,17 @@ func _make_styled_button(text: String, min_size: Vector2) -> Button:
 
 
 func _on_load_pressed(slot: int) -> void:
-	MetaProgression.set_slot(slot)
+	SaveManager.set_slot(slot)
 	SceneTransition.goto_scene("res://scenes/run_prep.tscn")
 
 
 func _on_overwrite_pressed(slot: int) -> void:
-	MetaProgression.overwrite_slot(slot)
+	SaveManager.overwrite_slot(slot)
 	SceneTransition.goto_scene("res://scenes/run_prep.tscn")
 
 
 func _on_delete_pressed(slot: int) -> void:
-	var file_path := "user://saves/slot_%d.json" % slot
-	if ResourceLoader.exists(file_path):
-		DirAccess.remove_absolute(file_path)
-	MetaProgression.get_slot_metadata(slot).clear()
+	SaveManager.delete_slot(slot)
 	get_tree().reload_current_scene()
 
 

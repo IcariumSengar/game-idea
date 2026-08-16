@@ -12,9 +12,9 @@ extends Node
 ## non-zero on any failure.
 ##
 ## Runs against the live MetaProgression/LootTypes autoloads rather than
-## reimplementing their data -- meta_progression.gd's _playtest_mode also
+## reimplementing their data -- save_manager.gd's _playtest_mode also
 ## triggers on --unit-test, so this never touches the player's real save
-## (see PLAYTEST_SLOT).
+## (see SaveManager.PLAYTEST_SLOT).
 
 var _pass_count: int = 0
 var _fail_count: int = 0
