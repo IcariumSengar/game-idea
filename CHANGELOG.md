@@ -2,6 +2,65 @@
 
 All notable fixed versions of this project are documented here.
 
+## v0.2.0 - 2026-08-17
+
+New mechanics, not just polish: the backpack-fill risk signal, gem
+combos, and how loot gets collected in the first place all changed.
+Playtested clean via a real windowed pass before tagging.
+
+**Active Pickup: Manual Triage** — gems no longer auto-collect on
+contact. They queue in front of the player and wait on a K (keep) / L
+(discard) decision, with a distinct sprite gesture for each outcome.
+Turns loot collection into a moment-to-moment decision instead of a
+passive pickup, and sets up the fill-risk tradeoff below to actually be
+felt. Bots bypass the queue entirely so playtest-harness balance signal
+is unaffected.
+
+**Backpack-fill risk: size/hitbox replaces HP-shrink** — a fuller
+backpack now scales the player's sprite and hitbox up instead of
+shrinking max HP. Makes the risk legible at a glance (you can see
+yourself getting bigger and easier to hit) rather than buried in a
+stat you have to check.
+
+**Gem Combos** — Full Set (hold one of every rarity tier at once, one-time
+AOE clear) and Streak (three consecutive same-tier pickups, repeatable
+AOE burst scaled by tier). Both land with a shake/hit-stop/callout-label
+hit (`"FULL SET!"` / `"STREAK!"`) so completing one actually feels like
+something.
+
+**Gem visuals reworked** — smaller, faceted "pips" at rest with a
+punchier pop on pickup, replacing the old plain gem sprites; iterated
+twice on size after initial passes read as either too flat or too small
+to track at a glance.
+
+**Backpack Ability and Compacting removed** — the pre-run Condense/Clear
+choice and the Compacting stat line are both gone; they were built for
+the old HP-shrink risk model and didn't carry over cleanly to the new
+size/hitbox one. A design-direction call, not a balance nerf — see
+DESIGN.md's decision log for the reasoning. The Backpack skill tree's
+gating was re-pointed at Bearing so it isn't left flat.
+
+**Also:**
+- The Grimoire: an in-game spell/combo reference screen, reachable from
+  Run Prep, that reveals each entry only once you've actually unlocked
+  the spell or triggered the combo — progressive discovery instead of a
+  full spoiler list.
+- An Escape pause menu mid-run (resume/quit), so a run can be exited
+  without alt-tabbing.
+- Enemy-tier and loot-tier unlock announcements ("BRUISERS!" /
+  "ELITES!" / "BOSS!") called out on screen as a run's difficulty ramps.
+- Per-enemy drop rates tuned toward rarer tiers, focused specifically on
+  arena-play feel rather than the meta-progression economy.
+- A `(DEV)` marker next to the version label when launched via `--dev`.
+
+**Engineering:** a headless pure-logic unit-test runner
+(`scripts/unit_tests.gd`, `--unit-test`) joins the playtest harness as a
+second, faster verification tier for pure-math changes. Save-slot
+persistence split out of `MetaProgression` into a new `SaveManager`
+autoload. `scripts/`/`scenes/` reorganized into domain subfolders
+(`player/`, `enemy/`, `loot/`, `fx/`, `ui/`) now that the flat layout was
+getting hard to navigate.
+
 ## v0.1.1 - 2026-08-16
 
 Stabilization pass: no new gameplay content, all polish/tooling/docs.
