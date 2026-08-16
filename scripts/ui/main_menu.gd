@@ -17,7 +17,8 @@ func _ready() -> void:
 		return
 
 	var version := _read_version()
-	$CenterContainer/ContentVBox/VersionLabel.text = "v%s" % version
+	var dev_suffix := " (DEV)" if "--dev" in OS.get_cmdline_user_args() else ""
+	$CenterContainer/ContentVBox/VersionLabel.text = "v%s%s" % [version, dev_suffix]
 
 
 func _on_new_game_pressed() -> void:
