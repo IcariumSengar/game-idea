@@ -262,7 +262,7 @@ func get_stat_defs() -> Array[StatDef]:
 
 
 func get_stat(id: StringName) -> float:
-	var def := _find_def(id)
+	var def := get_stat_def(id)
 	if def == null:
 		push_error("Unknown stat id: %s" % id)
 		return 0.0
@@ -274,14 +274,14 @@ func get_level(id: StringName) -> int:
 
 
 func get_cost(id: StringName) -> int:
-	var def := _find_def(id)
+	var def := get_stat_def(id)
 	if def == null:
 		return 0
 	return roundi(float(def.base_cost) * pow(def.cost_growth, get_level(id)))
 
 
 func is_maxed(id: StringName) -> bool:
-	var def := _find_def(id)
+	var def := get_stat_def(id)
 	if def == null:
 		return true
 	return get_level(id) >= def.level_cap
@@ -314,7 +314,7 @@ func is_spell_unlocked(spell_id: StringName) -> bool:
 
 
 func buy_upgrade(id: StringName) -> bool:
-	var def := _find_def(id)
+	var def := get_stat_def(id)
 	if def == null or is_maxed(id):
 		return false
 	var cost := get_cost(id)
@@ -359,7 +359,7 @@ func _register_stat(
 	_stat_levels[id] = 0
 
 
-func _find_def(id: StringName) -> StatDef:
+func get_stat_def(id: StringName) -> StatDef:
 	for def in _stat_defs:
 		if def.id == id:
 			return def

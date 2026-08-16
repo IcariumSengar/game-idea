@@ -208,7 +208,7 @@ func _is_stat_gated(stat_id: StringName) -> bool:
 
 
 func _is_locked_by_currency(stat_id: StringName) -> bool:
-	var def := _find_def(stat_id)
+	var def := MetaProgression.get_stat_def(stat_id)
 	if def == null or MetaProgression.is_maxed(stat_id):
 		return false
 	var cost := MetaProgression.get_cost(stat_id)
@@ -218,13 +218,6 @@ func _is_locked_by_currency(stat_id: StringName) -> bool:
 		StatDef.Currency.BACKPACK:
 			return MetaProgression.backpack_currency < cost
 	return false
-
-
-func _find_def(stat_id: StringName) -> StatDef:
-	for def in MetaProgression.get_stat_defs():
-		if def.id == stat_id:
-			return def
-	return null
 
 
 func _on_back_pressed() -> void:
