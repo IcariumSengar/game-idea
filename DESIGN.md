@@ -1378,3 +1378,28 @@ Short dated entries when a design decision is made and worth remembering
   Whether the HUD backpack panel gets removed/simplified once the
   on-player signal exists is left open, not decided here. Queued as
   TODO.md's Tweak 4; not built.
+- 2026-08-16 — Tweak 4 implemented, along with the fill-%-fix half of
+  Tweak 3 it depends on (Gem Combos and the Compacting re-tune are still
+  outstanding). `player.gd`'s `backpack.size()` (distinct tiers touched,
+  hard-capped at 6) replaced with `_slots_used()` -- one slot per stack
+  instance of a tier (`ceili(count / effective_stack_size)`), so a tier
+  spans multiple slots once its current stack fills. `can_collect_loot()`/
+  `collect_loot()` now gate on whether the next item would cross into a
+  new slot (`_needs_new_slot()`), not just "is this a brand-new tier."
+  HP-shrink-on-fill removed outright (`max_hp` no longer touches fill
+  ratio at all); the freed lerp slot goes to a new `MAX_SIZE_FRACTION`
+  (1.5, invented starting value, not yet playtest-tuned) scaling both the
+  player's `AnimatedSprite2D` and its actual `CollisionShape2D` radius
+  with fill %, on top of the existing unchanged speed-shrink. Local
+  sub-resource shapes get `.duplicate()`d in `_ready()` before any
+  runtime mutation, since scene-instanced local resources can otherwise
+  be shared across `instantiate()` calls (the playtest harness spawns
+  many Players per batch) -- this was a latent risk on the pre-existing
+  pickup-range shape too, fixed alongside. Verified via the unit-test
+  runner (7 new/updated cases covering the slot math and size/speed
+  lerps, 198 total passing) and playtest batches at both a fresh-save
+  1-slot capacity and a heavily-seeded 9-slot one -- the seeded batch's
+  fill % moved gradually (11%/22%/33%) instead of jumping straight to
+  100% within the first few kills, confirming the fix. Not yet checked
+  visually/by a human -- headless can't confirm the sprite growth reads
+  well or that the new hitbox size feels fair rather than cheap.

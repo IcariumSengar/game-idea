@@ -12,10 +12,12 @@ const FLASH_DECAY_PER_SEC: float = 6.0
 const HIT_FLASH_COLOR: Color = Color(1.0, 0.35, 0.35)
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
-const MIN_HP_FRACTION: float = 0.2
-## Secondary backpack-fill penalty per DESIGN.md: shallower floor than HP's
-## (-20% vs -80% at a full bag) -- HP shrink stays the dominant risk signal,
-## this is a compounding pressure on top of it, not a replacement.
+## Backpack-fill penalty (Tweak 4, DESIGN.md 2026-08-16): a full bag no
+## longer shrinks HP -- it grows the player's sprite and actual
+## CollisionShape2D radius instead, making a fuller bag a mechanically
+## bigger, easier-to-hit target. Invented starting value (50% bigger at
+## 100% fill), not yet playtest-tuned.
+const MAX_SIZE_FRACTION: float = 1.5
 const MIN_SPEED_FRACTION: float = 0.8
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
@@ -54,7 +56,10 @@ var _bot_dash_requested: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
+@onready var _body_shape: CollisionShape2D = $CollisionShape2D
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+
+var _base_sprite_scale: Vector2 = Vector2.ONE
 
 
 func _ready() -> void:
@@ -66,6 +71,13 @@ func _ready() -> void:
 	max_hp = base_max_hp
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
+	_base_sprite_scale = _sprite.scale
+	# Shapes on an instanced scene's local sub-resources can be shared
+	# across instantiate() calls (e.g. the playtest harness spawns many
+	# Players per batch) -- duplicate before ever mutating radius so one
+	# instance's fill state can't leak into another's.
+	_pickup_shape.shape = _pickup_shape.shape.duplicate()
+	_body_shape.shape = _body_shape.shape.duplicate()
 	(_pickup_shape.shape as CircleShape2D).radius = pickup_range
 	_pickup_area.area_entered.connect(_on_pickup_area_entered)
 
@@ -77,9 +89,10 @@ func _on_pickup_area_entered(area: Area2D) -> void:
 
 func can_collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
-	if count > 0:
-		return count < LootTypes.get_effective_stack_size(type_id)
-	return backpack.size() < backpack_capacity
+	var stack_size: int = LootTypes.get_effective_stack_size(type_id)
+	if _needs_new_slot(count, stack_size):
+		return _slots_used() < backpack_capacity
+	return true
 
 
 func _physics_process(delta: float) -> void:
@@ -137,18 +150,14 @@ func bot_set_input(direction: Vector2, want_dash: bool) -> void:
 
 func collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
-	if count > 0:
-		var stack_size: int = LootTypes.get_effective_stack_size(type_id)
-		if count >= stack_size:
-			return false
-		backpack[type_id] = count + 1
-	else:
-		if backpack.size() >= backpack_capacity:
+	var stack_size: int = LootTypes.get_effective_stack_size(type_id)
+	if _needs_new_slot(count, stack_size):
+		if _slots_used() >= backpack_capacity:
 			_try_purge()
-			if backpack.size() >= backpack_capacity:
+			if _slots_used() >= backpack_capacity:
 				return false
-		backpack[type_id] = 1
-	_update_hp_from_backpack()
+	backpack[type_id] = count + 1
+	_update_fill_effects()
 	loot_changed.emit(backpack)
 	return true
 
@@ -167,16 +176,40 @@ func consume_loot(type_id: StringName, count: int) -> int:
 		backpack.erase(type_id)
 	else:
 		backpack[type_id] = available - removed
-	_update_hp_from_backpack()
+	_update_fill_effects()
 	loot_changed.emit(backpack)
 	return removed
+
+
+## True if adding one more `type_id` item would need a slot beyond
+## whatever's already allocated to it -- i.e. count is at a stack-size
+## boundary (e.g. a 10-stack tier going from 10 to 11 needs a 2nd slot,
+## but 7 to 8 doesn't). Slots, not distinct tiers, are what fill %/
+## capacity are measured against (see DESIGN.md's Tweak 3).
+func _needs_new_slot(count: int, stack_size: int) -> bool:
+	var current_slots: int = ceili(float(count) / float(stack_size)) if count > 0 else 0
+	var next_slots: int = ceili(float(count + 1) / float(stack_size))
+	return next_slots > current_slots
+
+
+## Total occupied slots: one slot per stack instance of a tier, capped by
+## that tier's Compacting-modified stack size -- a tier spans multiple
+## slots once its current stack is full, instead of the old "one slot per
+## distinct tier touched" (which silently hard-capped fill % at the 6
+## rarity tiers regardless of Bearing/Compacting level).
+func _slots_used() -> int:
+	var total := 0
+	for type_id: StringName in backpack:
+		var stack_size: int = LootTypes.get_effective_stack_size(type_id)
+		total += ceili(float(backpack[type_id]) / float(stack_size))
+	return total
 
 
 func _try_purge() -> void:
 	var purge_level := MetaProgression.get_level(MetaProgression.STAT_PURGE)
 	if purge_level == 0:
 		return
-	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
+	var fill_ratio := float(_slots_used()) / float(backpack_capacity)
 	var threshold := _get_purge_threshold(purge_level)
 	if fill_ratio < threshold:
 		return
@@ -210,12 +243,16 @@ func _find_lowest_rarity_type() -> StringName:
 	return StringName()
 
 
-func _update_hp_from_backpack() -> void:
-	var fill_ratio := float(backpack.size()) / float(backpack_capacity)
+## Backpack fill no longer touches max_hp (Tweak 4) -- it scales speed
+## down and the player's visual/physical size up instead. Renamed from
+## _update_hp_from_backpack to match what it actually drives now.
+func _update_fill_effects() -> void:
+	var fill_ratio := float(_slots_used()) / float(backpack_capacity)
 	_max_fill_ratio = max(_max_fill_ratio, fill_ratio)
-	max_hp = base_max_hp * lerp(1.0, MIN_HP_FRACTION, fill_ratio)
 	_effective_speed = speed * lerp(1.0, MIN_SPEED_FRACTION, fill_ratio)
-	_set_hp(min(hp, max_hp))
+	var size_scale: float = lerp(1.0, MAX_SIZE_FRACTION, fill_ratio)
+	_sprite.scale = _base_sprite_scale * size_scale
+	(_body_shape.shape as CircleShape2D).radius = RADIUS * size_scale
 
 
 func get_max_fill_ratio() -> float:

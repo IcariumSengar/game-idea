@@ -30,7 +30,8 @@ func _ready() -> void:
 	_test_meta_progression_buy_upgrade()
 	_test_loot_weighted_pick()
 	_test_loot_effective_stack_size()
-	_test_backpack_fill_lerp()
+	_test_backpack_fill_effects()
+	_test_backpack_slots_used()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
 
@@ -182,45 +183,93 @@ func _test_loot_effective_stack_size() -> void:
 	MetaProgression.debug_set_level(MetaProgression.STAT_COMPACTOR_MYTHIC, original_legendary_level)
 
 
-## Verifies player.gd's backpack-fill HP/speed lerp by driving a real,
-## isolated Player instance through its actual public API (collect_loot/
-## consume_loot), not by reaching into the private lerp directly.
-func _test_backpack_fill_lerp() -> void:
+## Verifies player.gd's backpack-fill speed/size lerp (Tweak 4: HP no
+## longer shrinks with fill -- size/hitbox grows instead) by driving a
+## real, isolated Player instance through its actual public API
+## (collect_loot/consume_loot), not by reaching into the private lerp
+## directly.
+func _test_backpack_fill_effects() -> void:
 	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
 	add_child(player)
 	var base_max_hp := player.base_max_hp
 	var base_speed := player.speed
+	var base_shape_radius: float = (player._body_shape.shape as CircleShape2D).radius
+	var base_sprite_scale := player._sprite.scale
 	player.backpack_capacity = 4
 	player.backpack.clear()
 
 	player.collect_loot(&"__test_a")
-	var expected_hp := base_max_hp * lerpf(1.0, Player.MIN_HP_FRACTION, 0.25)
 	var expected_speed := base_speed * lerpf(1.0, Player.MIN_SPEED_FRACTION, 0.25)
-	_assert(_almost_eq(player.max_hp, expected_hp), "max_hp at 25% fill matches lerp formula")
+	var expected_size := lerpf(1.0, Player.MAX_SIZE_FRACTION, 0.25)
+	_assert(_almost_eq(player.max_hp, base_max_hp), "max_hp is unaffected by fill (Tweak 4)")
 	_assert(
 		_almost_eq(player._effective_speed, expected_speed),
 		"effective_speed at 25% fill matches lerp formula"
+	)
+	_assert(
+		_almost_eq((player._body_shape.shape as CircleShape2D).radius, base_shape_radius * expected_size),
+		"hitbox radius at 25% fill matches size lerp formula"
+	)
+	_assert(
+		_almost_eq(player._sprite.scale.x, base_sprite_scale.x * expected_size),
+		"sprite scale at 25% fill matches size lerp formula"
 	)
 
 	player.collect_loot(&"__test_b")
 	player.collect_loot(&"__test_c")
 	player.collect_loot(&"__test_d")
-	_assert(
-		_almost_eq(player.max_hp, base_max_hp * Player.MIN_HP_FRACTION),
-		"max_hp at 100% fill hits the MIN_HP_FRACTION floor"
-	)
+	_assert(_almost_eq(player.max_hp, base_max_hp), "max_hp still unaffected at 100% fill")
 	_assert(
 		_almost_eq(player._effective_speed, base_speed * Player.MIN_SPEED_FRACTION),
 		"effective_speed at 100% fill hits the MIN_SPEED_FRACTION floor"
+	)
+	_assert(
+		_almost_eq(
+			(player._body_shape.shape as CircleShape2D).radius,
+			base_shape_radius * Player.MAX_SIZE_FRACTION
+		),
+		"hitbox radius at 100% fill hits the MAX_SIZE_FRACTION ceiling"
 	)
 
 	player.consume_loot(&"__test_a", 1)
 	player.consume_loot(&"__test_b", 1)
 	player.consume_loot(&"__test_c", 1)
 	player.consume_loot(&"__test_d", 1)
-	_assert(_almost_eq(player.max_hp, base_max_hp), "max_hp returns to baseline once empty")
 	_assert(
 		_almost_eq(player._effective_speed, base_speed), "effective_speed returns to baseline once empty"
+	)
+	_assert(
+		_almost_eq((player._body_shape.shape as CircleShape2D).radius, base_shape_radius),
+		"hitbox radius returns to baseline once empty"
+	)
+
+	player.queue_free()
+
+
+## Verifies the slot-based fill % fix (DESIGN.md's Tweak 3): a tier
+## should consume more than one slot once its stack fills, instead of
+## fill % being capped at "distinct tiers touched." Uses legendary since
+## its effective stack size is always 1 (no Compactor tier for it),
+## making the slot math deterministic regardless of Compactor levels.
+func _test_backpack_slots_used() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 3
+	player.backpack.clear()
+
+	player.collect_loot(&"legendary")
+	_assert(player._slots_used() == 1, "one legendary item uses one slot")
+
+	player.collect_loot(&"legendary")
+	_assert(
+		player._slots_used() == 2, "a second legendary consumes a second slot (stack size 1)"
+	)
+
+	player.collect_loot(&"legendary")
+	_assert(player._slots_used() == 3, "a third legendary fills capacity (3/3 slots)")
+	_assert(
+		not player.can_collect_loot(&"legendary"),
+		"a fourth legendary can't fit once slots are full (stack size 1, needs a new slot)"
 	)
 
 	player.queue_free()
