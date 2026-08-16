@@ -2,6 +2,62 @@
 
 All notable fixed versions of this project are documented here.
 
+## v0.1.0 - 2026-08-16
+
+First release under semantic versioning (see VERSIONING.md) — earlier
+releases used flat whole-number tags (v1–v8); this isn't a continuation
+of that numbering, it's the first tag under the new scheme, and the
+biggest single release yet. Consolidates everything built since v8 into
+one milestone: the full Magic Spells system (8 spells across three
+unlock waves), a fourth enemy tier, real enemy sprite art, several new
+backpack/economy systems, a headless playtest harness, and a
+data-driven early-game rebalance.
+
+**Magic Spells, complete:**
+- Player is a magic user. Casting-based combat replaced the old flat
+  weapon — Arcane Bolt (ranged, always available), Inferno Blade (melee
+  AOE + burn), Frost Nova (AOE + slow), unlocked via a new Spell Unlock
+  skill-tree node.
+- Every unlocked spell now casts simultaneously and independently
+  rather than switching between one active spell at a time.
+- Five more spells joined the roster: Meteor Strike (boss-killer AOE),
+  Lightning Chain (arcs between enemies), Time Warp (crowd control),
+  Teleport Pulse (mobility + damage), Summon Familiar (persistent pet)
+  — Spell Unlock now runs L1–L7.
+- Inferno Blade gained its documented 200px knockback; Inferno and
+  Frost Nova both got dedicated procedural visuals instead of reusing
+  generic spark particles.
+
+**Enemy Types:**
+- Tier 4 Boss: unique, spawns once at 55+ seconds, hybrid melee
+  pursuit + projectile-spread attack, guaranteed Mythic+ drop.
+- Fast/Tanky Minion variants diversify Phase 1 without changing the
+  documented tier ratios.
+- Bruiser, Elite, and the Boss all got distinct sprites (from the
+  existing DungeonTilesetII asset pack) instead of tinted reuse of the
+  Minion's frames.
+
+**Backpack & economy:**
+- Backpack Ability: a pre-run choice between Condense (merge 2 items of
+  a tier into 1 of the next tier up) and Clear (bank an item's value
+  immediately, free the slot) — a new Alchemy stat speeds up whichever
+  is active.
+- Loot affixes: Epic+ drops have a chance to roll "Blessed" for +50%
+  value.
+- A ghost slot in the backpack grid previews the next Bearing purchase.
+
+**Balance, driven by data:** a new headless auto-playtest harness
+(bot-controlled runs, no window, sandboxed save data) found that
+Minion's actual stats had drifted from the documented spec (120/30 vs.
+the documented 100/20) and that contact damage was the dominant early
+lethality driver — both corrected. Arcane Bolt's fire rate and the
+backpack-fill speed penalty were also eased on direct feedback.
+
+**Also:** a real Settings menu (volume, fullscreen), and a few bugs
+fixed along the way — a physics-flush crash when AOE spells killed
+multiple enemies at once, and two spell cast sounds that played
+regardless of whether anything was actually hit.
+
 ## v8 - 2026-08-15
 
 Correctness pass: a full audit of every DESIGN.md number and behavior

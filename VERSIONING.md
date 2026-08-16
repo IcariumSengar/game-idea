@@ -1,6 +1,23 @@
 # Versioning
 
-This project uses **fixed milestone versions** (`v1`, `v2`, …) so you can always roll back to a known-good state.
+This project uses **semantic versioning** (`vMAJOR.MINOR.PATCH`, e.g.
+`v0.1.0`) so you can always roll back to a known-good state and the
+version number itself says something about the size of the change.
+
+Earlier releases (`v1`–`v8`) used flat whole-number milestone tags instead
+— good practice at the time, but not semantic and not worth preserving
+the scheme for. `v0.1.0` is the first release under the new scheme; it
+isn't a continuation of the `v8` numbering, and the whole-number tags
+before it remain in git history as-is (not renamed or removed).
+
+## What each number means
+
+- **MAJOR** — reserved for `1.0.0` (first release considered a complete,
+  shippable game) and later breaking reworks. Stays `0` until then.
+- **MINOR** — new player-facing content or systems (a new spell, enemy
+  tier, mechanic). Roughly what the old whole-number tags used to mean.
+- **PATCH** — fixes, balance tweaks, and polish that don't add new
+  content.
 
 ## What counts as a version
 
@@ -12,27 +29,27 @@ This project uses **fixed milestone versions** (`v1`, `v2`, …) so you can alwa
 
 | File | Role |
 |------|------|
-| `VERSION` | Current released version number (single line, e.g. `1`) |
+| `VERSION` | Current released version number (single line, e.g. `0.1.0`) |
 | `CHANGELOG.md` | Human-readable history of each release |
-| Git tag `vN` | Immutable pointer to the release commit (source of truth) |
+| Git tag `vMAJOR.MINOR.PATCH` | Immutable pointer to the release commit (source of truth) |
 
 The tag is authoritative. `VERSION` and `CHANGELOG.md` mirror it for humans and in-game display.
 
 ## Cutting a new version
 
 1. Finish and test the milestone on a branch.
-2. Update `VERSION` (e.g. `1` → `2`).
+2. Update `VERSION` (e.g. `0.1.0` → `0.2.0` for new content, `0.1.1` for a fix-only release).
 3. Add a dated section to `CHANGELOG.md` describing what changed.
-4. Commit with message: `Release vN: <short summary>`.
+4. Commit with message: `Release vX.Y.Z: <short summary>`.
 5. Create an annotated tag:
    ```bash
-   git tag -a vN -m "Release vN: <short summary>"
+   git tag -a vX.Y.Z -m "Release vX.Y.Z: <short summary>"
    ```
 6. Merge to `main` if the release commit is not already there.
 7. Push when ready:
    ```bash
    git push origin main
-   git push origin vN
+   git push origin vX.Y.Z
    ```
 
 ## Rollback options
