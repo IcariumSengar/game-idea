@@ -6,19 +6,31 @@ made; don't try to fill it in all at once upfront.
 
 ## Genre
 
-Top-down, Vampire Survivors-like roguelike. Auto-attack combat — the
-player's only input is movement/positioning, weapons fire automatically at
-nearby enemies.
+Top-down, Vampire Survivors-like roguelike, built on two simultaneous
+input pillars rather than one: **auto-attack combat** (movement/
+positioning is the only combat input — weapons fire automatically at
+nearby enemies, no aiming or manual casting) and **active inventory
+triage** (loot never auto-commits — every pickup is a deliberate
+keep-or-discard decision, made in real time while still dodging).
+Managing both at once, especially at volume during a heavy fight, is the
+core skill the game is built around — not a side mechanic layered on top
+of combat.
 
 ## Core loop
 
 1. Run starts in an arena. Enemies spawn continuously and get harder /
    more plentiful the longer the run goes on.
 2. Player auto-attacks nearby enemies and kills them; kills drop loot.
-3. Loot is picked up into a capacity-limited **backpack**.
-4. As the backpack fills up, **max HP shrinks** proportionally to fill %
-   — the fuller the bag, the more fragile the player is. This is the
-   core risk/reward tension: keep collecting loot vs. survive.
+3. Loot doesn't auto-collect — each drop queues in front of the player,
+   who actively **keeps or discards** it under pressure while still
+   dodging combat. Kept loot goes into a capacity-limited **backpack**;
+   discarded loot is gone for good. This active triage, not the backpack
+   number itself, is the core skill the game is built around.
+4. As the backpack fills up, the player **grows larger and slower** —
+   fill % scales up the player's own size/hitbox (an easier target to
+   hit) and shrinks move speed. The fuller the bag, the more exposed the
+   player is. This is the core risk/reward tension: keep collecting loot
+   vs. survive.
 5. Death is inevitable — there's no "win" state within a run, just how
    much you collect before it happens.
 6. Run ends in a **summary screen**: loot collected this run.
@@ -75,8 +87,11 @@ What's actually built and playable today (see `scripts/`, as of v11):
   pet's fixed stat, not the caster's).
 - Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
   the Rarity tiers table below. One item drops per kill, tier rolled by
-  drop weight, picked up via a proximity-based magnet radius (Gleam
-  upgradeable).
+  drop weight. Currently picked up via a fully-automatic proximity magnet
+  (Gleam upgradeable) — no player choice in what enters the backpack. A
+  manual keep/discard triage system (see "Active Pickup: Manual Triage"
+  below) is a decided but not-yet-implemented pivot away from this — see
+  TODO.md.
 - A real slot-grid backpack (`backpack_grid.gd`) — one slot per loot
   type held, colored by rarity, growing with Bearing; fill % shrinks
   max HP.
@@ -120,7 +135,7 @@ Four enemy tiers, each with distinct attack pattern and loot weighting. Higher-t
 - Attack: On-contact damage
 - Scaling: HP and speed scale with run duration (45-sec ramp, ×1.5–3.0 by end)
 
-**Loot:** 60% Common, 30% Uncommon, 10% Rare
+**Loot:** 55% Common, 30% Uncommon, 14% Rare, 1% Epic
 
 **Role:** Bulk enemy; teaches fundamentals
 
@@ -141,7 +156,7 @@ ratios below are unchanged -- this only diversifies what "Minion" means.
 - Charge distance: ~400 pixels
 - Scaling: HP and charge speed scale with run duration
 
-**Loot:** 20% Common, 50% Uncommon, 25% Rare, 5% Epic
+**Loot:** 15% Common, 40% Uncommon, 30% Rare, 13% Epic, 2% Mythic
 
 **Role:** Introduces evasion timing; requires dodge-ability
 
@@ -155,7 +170,7 @@ ratios below are unchanged -- this only diversifies what "Minion" means.
 - Projectile speed: 150
 - Scaling: HP and projectile speed scale with run duration
 
-**Loot:** 5% Common, 20% Uncommon, 40% Rare, 30% Epic, 5% Mythic
+**Loot:** 3% Common, 12% Uncommon, 30% Rare, 40% Epic, 15% Mythic
 
 **Role:** Requires positioning and kiting; tactical combat
 
@@ -171,7 +186,7 @@ the player, combining pursuit with Elite-style ranged pressure.
 - Spread attack: 3 projectiles per volley (±20° from center), every 2.2–2.8 sec, 140 px/sec, 10 damage each
 - Scaling: HP and projectile speed scale with run duration, same as every other tier
 
-**Loot:** Guaranteed Mythic+ -- 80% Mythic, 20% Legendary. Skips the
+**Loot:** Guaranteed Mythic+ -- 65% Mythic, 35% Legendary. Skips the
 normal weighted per-tier table entirely; this is the one enemy where
 what drops isn't a gamble across all six tiers.
 
@@ -675,6 +690,54 @@ Drop weight, stack size, and value are three independent tuning knobs and
 don't have to move in lockstep — this table is a first-pass shape, not a
 locked formula.
 
+### Active Pickup: Manual Triage
+
+**Locked in — a genuine pivot, not an addition.** The backpack has been
+sitting at the center of this game's pitch since the first decision log
+entry, but pickup itself has always been fully automatic (magnet in,
+auto-commit) — there's no actual *management* happening, just RNG
+accumulation from whichever enemies happened to die nearby. This replaces
+that with a real decision point: gems still magnetize toward the player
+within Gleam range, but instead of auto-committing, each one queues in
+front of the character awaiting input — one button keeps it (adds to the
+backpack), another discards it (**gone for good**, no banking, matching
+Discard's existing philosophy — see "Discard upgrade" below). Movement
+stays entirely automatic-combat-free per the Genre pillar above; triage
+is the second, equally-weighted input pillar layered on top of it.
+
+**Queueing, not throttling — deliberately.** When multiple gems arrive
+faster than they can be triaged (a cluster of kills, or Full Set's own
+AOE clear dropping several at once), they queue rather than being
+auto-resolved or dropped. No auto-timer, no default-to-keep safety net —
+direct call: "managing that at scale isn't an issue, it's the fun."
+Processing a backlog quickly and correctly *while still dodging* is the
+intended skill ceiling, not something to design away. A neglected queue
+is its own visible, felt pressure rather than a forced countdown.
+
+**Gleam's role shifts** from "how much gets vacuumed in" to "how far
+away a gem starts being eligible to enter the queue" — same stat,
+different job, since there's no longer a pure auto-collect volume to
+scale.
+
+**Downstream effects, not yet resolved:**
+- The already-implemented "pips, not gems" pickup pop (spark burst, "+N"
+  text, punchy scale-tween — see "Gem Pickup Visual" below) needs to move
+  from "plays on magnet-arrival" to "plays on the keep decision" — the
+  visual language stays, just re-anchored to the new trigger point.
+  Queued/pending gems need their own held-in-place visual treatment,
+  not yet designed.
+- Gem Combos (Full Set, Streak, and the considered Ratio pattern below)
+  become skill-driven once backpack contents are curated on purpose
+  instead of accumulated by luck — likely changes how often they
+  realistically fire and may need rebalancing once this lands, since
+  their existing numbers were tuned against full-auto pickup.
+- Two different "gone for good" mechanics now coexist and need
+  distinguishing in eventual UI/flavor text: this manual per-pickup
+  discard, and the existing threshold-triggered Discard upgrade. Not a
+  blocker, just flagged so they don't read as the same thing.
+
+**Not built** — see TODO.md.
+
 ### Gem Pickup Visual
 
 Loot drops (`loot_gem.gd`) currently render as a fully-detailed faceted
@@ -819,6 +882,7 @@ move again without it being updated here):
 | **Streak** | 3 consecutive same-tier pickups, uninterrupted (`SpellCaster.STREAK_THRESHOLD`) | Instant AOE damage burst at the player, radius 200, scales with tier rarity | Repeatable, all run | 0.6x screen shake + "STREAK!" callout (tier's own color) | ✅ Implemented |
 | **Rampage** | Volume/speed threshold — illustrative only (~8 pickups within 5s, any tier), not locked | Brief buff rewarding aggressive clear speed — not yet specified | TBD | TBD | ❌ Considered, not built |
 | **Ascension** | Strict ascending order, Common → Legendary, no break — exact break condition undecided | Bigger/different payout than Full Set — not yet specified | TBD | TBD | ❌ Considered, not built |
+| **Ratio** | Hold two tiers in a specific proportion — illustrative only (2 Uncommon : 1 Common), not locked | Short-radius repel/pushback pulse, ~2 sec — the first defensive/utility combo, the rest are offense or buffs | Repeatable (as long as the ratio holds) | TBD | ❌ Considered, not built |
 
 Also not yet built for either implemented combo: the "tension-building"
 half of combo feedback (held tiers' pips reading progressively brighter
@@ -865,6 +929,14 @@ adding more combo shapes:
   being strictly better. Resolves the earlier open question of whether
   set-completion should be order-strict or order-agnostic by having
   both exist as different difficulty tiers instead of picking one.
+- **Ratio** — hold two tiers in a specific proportion (e.g. 2 Uncommon to
+  1 Common) rather than a fixed count or full diversity, triggering a
+  short-radius repel/pushback pulse. The first *defensive/utility* combo
+  in the set — Full Set/Streak/Rampage/Ascension all lean offense or
+  buffs, this is a "buy yourself space" panic tool instead. Only really
+  makes sense once backpack contents are deliberately curated (see
+  "Active Pickup: Manual Triage" above) — under full-auto pickup, hitting
+  a specific ratio is closer to luck than skill.
 
 **Combo feedback -- locked in:** completing a combo should read as a
 tension-then-release beat, not a flat trigger. Vibe reference: *Hyperslice*
@@ -1633,3 +1705,53 @@ Short dated entries when a design decision is made and worth remembering
   (unmodified-timing) playtest batch reaching Phase 2/3 repeatedly, and
   a separate batch with `Arena.BOSS_SPAWN_TIME` temporarily lowered to
   reliably exercise the boss-announcement path -- both zero errors.
+- 2026-08-16 — Pickup itself gets a core rework: Active Pickup / Manual
+  Triage. Direct player critique of the whole session's backpack work so
+  far: "the premise is a backpack management game" but pickup has always
+  been fully automatic (magnet in, auto-commit) -- there's no actual
+  management happening, just RNG accumulation. Fixes the thing every
+  earlier backpack pass this session (fill %, Gem Combos, the pip
+  visual) was quietly built on top of without noticing it was broken.
+  Replaces auto-commit with a real decision: each magnetized gem queues
+  in front of the player awaiting input -- one button keeps it (adds to
+  backpack), one discards it (gone for good, no banking, matching
+  Discard's existing philosophy). This is a genuine pillar change, not
+  an addition -- the Genre section's "only input is movement/
+  positioning" line (referenced repeatedly this session, including as
+  Full Set's own design rationale) is rewritten to two co-equal input
+  pillars: automatic combat, and active inventory triage. Reconciled as
+  "combat stays automatic, triage is a separate deliberate layer,"
+  rather than a contradiction. Queueing under pressure (rather than an
+  auto-timer or default-to-keep safety net) was a direct, deliberate
+  call: "managing that at scale isn't an issue, it's the fun" -- a
+  neglected queue is meant to be its own felt pressure while still
+  dodging, not something designed away. Gleam's role shifts from "how
+  much gets vacuumed in" to "how far away a gem starts being eligible to
+  queue." Also developed a fifth Gem Combo alongside this, since it only
+  really makes sense once pickup is deliberate: **Ratio** -- hold two
+  tiers in a specific proportion (illustrative: 2 Uncommon to 1 Common)
+  to trigger a short repel/pushback pulse, the first defensive/utility
+  combo (the other four are all offense or buffs). Flagged, not yet
+  resolved: Gem Combos' existing tuning (Full Set, Streak) assumed
+  full-auto pickup and likely needs rebalancing once curation is real;
+  the shipped pip/pop pickup visual needs to move from "plays on
+  magnet-arrival" to "plays on the keep decision." See TODO.md; not yet
+  built.
+- 2026-08-16 — Drop-rate tuning pass, explicitly scoped to arena play
+  only (not meta-progression/economy, which the player wants to balance
+  separately): rarer tiers still felt too locked-away even once a
+  player actually reached the enemy that unlocks them. Per-enemy tables
+  reshaped rather than the flat fallback table (which nothing in normal
+  play actually reads -- every enemy already has its own non-empty
+  `loot_weights`, so `pick_random_type()`'s flat table is dead weight
+  for drop purposes, confirmed while making this change). Minion now
+  has a small 1% Epic chance (previously hard-capped at Rare) so Phase 1
+  isn't a total dead zone. Bruiser's Epic 5->13% plus a new 2% Mythic
+  (previously Elite/Boss-exclusive). Elite's Epic 30->40%, Mythic
+  5->15%. Boss's Legendary 20->35% -- it's the only guaranteed shot at
+  Legendary all run (0.5% base weight otherwise), so tilted further
+  toward the payoff landing when a player actually gets there. All
+  four tables re-verified to sum to 100. Verified via a heavily-seeded
+  playtest batch (12 runs, reaching Phase 2/3): avg loot value rose from
+  ~99 to ~147 versus the prior comparable batch, consistent with the
+  rarer/higher-value drops landing more often, zero errors.

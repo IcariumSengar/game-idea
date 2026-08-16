@@ -38,8 +38,13 @@ const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 ## Loot tier -> drop weight for kills of this enemy, per DESIGN.md's
 ## "Enemy Types & Loot Tiers" table. Only tiers listed here can drop.
 ## Not @export'd -- each tier's table is a locked design value, not
-## something to hand-tune per scene instance in the inspector.
-var loot_weights: Dictionary = {&"common": 60.0, &"uncommon": 30.0, &"rare": 10.0}
+## something to hand-tune per scene instance in the inspector. Gives
+## Phase 1 a small (1%) Epic chance -- previously capped hard at Rare,
+## per live-play feedback that rarer tiers should feel reachable, not
+## exclusively gated behind surviving to a later phase.
+var loot_weights: Dictionary = {
+	&"common": 55.0, &"uncommon": 30.0, &"rare": 14.0, &"epic": 1.0
+}
 
 var hp: float
 var target: Player

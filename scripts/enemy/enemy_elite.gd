@@ -20,7 +20,12 @@ var _attack_timer: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	loot_weights = {&"common": 5.0, &"uncommon": 20.0, &"rare": 40.0, &"epic": 30.0, &"mythic": 5.0}
+	# Epic 30->40%, Mythic 5->15% -- Elite is where rarer tiers should
+	# feel real (Phase 3, 40s+), per live-play feedback that they were
+	# still too rare even once a player actually reached this enemy tier.
+	loot_weights = {
+		&"common": 3.0, &"uncommon": 12.0, &"rare": 30.0, &"epic": 40.0, &"mythic": 15.0
+	}
 	_attack_timer = randf_range(attack_cooldown_min, attack_cooldown_max)
 
 

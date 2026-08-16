@@ -21,7 +21,12 @@ var _charge_distance_left: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	loot_weights = {&"common": 20.0, &"uncommon": 50.0, &"rare": 25.0, &"epic": 5.0}
+	# Epic 5->13%, plus a new small Mythic chance (2%) -- previously
+	# Mythic was Elite/Boss-exclusive; live-play feedback wanted rarer
+	# tiers to feel reachable sooner, not locked to a single enemy type.
+	loot_weights = {
+		&"common": 15.0, &"uncommon": 40.0, &"rare": 30.0, &"epic": 13.0, &"mythic": 2.0
+	}
 	_state_timer = randf_range(pause_duration_min, pause_duration_max)
 
 

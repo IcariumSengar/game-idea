@@ -23,7 +23,10 @@ var _attack_timer: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	loot_weights = {&"mythic": 80.0, &"legendary": 20.0}
+	# Legendary 20->35% -- the Boss is the one guaranteed shot at it all
+	# run (it's otherwise Boss-exclusive, 0.5% base drop weight), so
+	# tilted further toward the payoff actually landing when it counts.
+	loot_weights = {&"mythic": 65.0, &"legendary": 35.0}
 	_attack_timer = randf_range(attack_cooldown_min, attack_cooldown_max)
 
 
