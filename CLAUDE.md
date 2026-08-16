@@ -84,7 +84,7 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 
 ```
 project.godot       Godot project config
-scenes/              .tscn scene files
+scenes/              .tscn scene files, in the same domain subfolders as scripts/
 scripts/             .gd scripts, filename matches the node/scene it drives
 icon.svg             project icon
 VERSION              current released version
@@ -95,10 +95,35 @@ DESIGN.md            what the game is: core loop, scope, design decisions
 ```
 
 Keep this pairing as the project grows: a scene's primary script lives in
-`scripts/` under the same base name as the scene (`main.tscn` ↔ `main.gd`).
-Once there are enough scenes to warrant it, introduce subfolders
-(`scenes/ui/`, `scripts/player/`, etc.) rather than flattening everything
-into the two top-level folders indefinitely.
+`scripts/` under the same base name as the scene (`main.tscn` ↔ `main.gd`),
+mirrored in `scenes/` under the matching domain subfolder.
+
+`scripts/` and `scenes/` are split into domain subfolders --
+`player/` (player, spells, backpack ability, familiar), `enemy/` (all
+enemy tiers, enemy projectiles), `loot/` (drops), `fx/` (procedural
+visual effects: bursts, projectiles, background decor), `ui/` (HUD, shop,
+skill tree, menus, save-slot screen). Autoloads (`MetaProgression`,
+`SaveManager`, `LootTypes`, `CloudSync`, `SceneTransition`,
+`AudioManager`, `Settings`, `PlaytestHarness`, `UnitTests`) and the two
+root-flow scenes/scripts (`main`, `arena`) stay at `scripts/`/`scenes/`
+top level -- they're cross-cutting or the entry points into everything
+else, not domain-specific. Shared `class_name` data-model definitions
+(`StatDef`, `LootTypeDef`) also stay at top level since nothing
+references them by path (GDScript resolves `class_name` globally).
+
+When adding a new script/scene, put it in the subfolder matching its
+domain rather than defaulting to the top level -- top level is reserved
+for autoloads, root-flow scenes, and shared data classes specifically.
+
+**Moving/renaming a script or scene file:** Godot's global `class_name`
+resolution is cached in `.godot/global_script_class_cache.cfg`, rebuilt
+by the editor's filesystem scan -- a plain `Godot.exe --headless --quit`
+does **not** rebuild it, so a moved file with a stale cache produces
+cascading "Could not find type X" parse errors project-wide even though
+every actual `path=`/`preload()` reference is correct. Force a rebuild
+headlessly with `Godot.exe --headless --editor --quit --path .` (or just
+delete the gitignored cache file and let the next run regenerate it)
+before trusting a boot check after a move.
 
 ## UI Screenshots & References
 

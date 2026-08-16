@@ -1,13 +1,13 @@
 class_name Arena
 extends Node2D
 
-const MINION_SCENE: PackedScene = preload("res://scenes/enemy.tscn")
-const MINION_FAST_SCENE: PackedScene = preload("res://scenes/enemy_minion_fast.tscn")
-const MINION_TANKY_SCENE: PackedScene = preload("res://scenes/enemy_minion_tanky.tscn")
-const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy_bruiser.tscn")
-const ELITE_SCENE: PackedScene = preload("res://scenes/enemy_elite.tscn")
-const BOSS_SCENE: PackedScene = preload("res://scenes/enemy_boss.tscn")
-const LOOT_SCENE: PackedScene = preload("res://scenes/loot.tscn")
+const MINION_SCENE: PackedScene = preload("res://scenes/enemy/enemy.tscn")
+const MINION_FAST_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_fast.tscn")
+const MINION_TANKY_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_tanky.tscn")
+const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy/enemy_bruiser.tscn")
+const ELITE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_elite.tscn")
+const BOSS_SCENE: PackedScene = preload("res://scenes/enemy/enemy_boss.tscn")
+const LOOT_SCENE: PackedScene = preload("res://scenes/loot/loot.tscn")
 ## Tier 4: unique, one per run, spawned directly at this mark rather than
 ## through PHASE_SPAWN_WEIGHTS' repeating roll -- per DESIGN.md's "Future
 ## Expansions" note ("unique, 55+ sec, guaranteed Mythic+ drop").

@@ -186,7 +186,7 @@ func _test_loot_effective_stack_size() -> void:
 ## isolated Player instance through its actual public API (collect_loot/
 ## consume_loot), not by reaching into the private lerp directly.
 func _test_backpack_fill_lerp() -> void:
-	var player: Player = preload("res://scenes/player.tscn").instantiate()
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
 	add_child(player)
 	var base_max_hp := player.base_max_hp
 	var base_speed := player.speed

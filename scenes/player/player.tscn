@@ -1,0 +1,39 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/player/spell_caster.gd" id="2_spell_caster"]
+[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/player_sprite_frames.tres" id="3_player_frames"]
+[ext_resource type="Script" path="res://scripts/player/backpack_ability.gd" id="4_backpack_ability"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 60.0
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_player")
+
+[node name="Shadow" type="Polygon2D" parent="."]
+color = Color(0.0, 0.0, 0.0, 0.35)
+polygon = PackedVector2Array(16, 16, 13.86, 18.5, 8, 20.6, 0, 21, -8, 20.6, -13.86, 18.5, -16, 16, -13.86, 13.5, -8, 11.4, 0, 11, 8, 11.4, 13.86, 13.5)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -10)
+scale = Vector2(2.5, 2.5)
+sprite_frames = ExtResource("3_player_frames")
+animation = &"idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_player")
+
+[node name="PickupArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PickupArea"]
+shape = SubResource("CircleShape2D_pickup")
+
+[node name="SpellCaster" type="Node" parent="."]
+script = ExtResource("2_spell_caster")
+
+[node name="BackpackAbility" type="Node" parent="."]
+script = ExtResource("4_backpack_ability")

@@ -1,0 +1,172 @@
+class_name Enemy
+extends CharacterBody2D
+
+## Base enemy: shared HP/hit-flash/death-spark/damage-text plumbing plus
+## the default Tier 1 "Minion" behavior (melee chaser, contact damage).
+## Bruiser/Elite subclass this and override _update_behavior() for their
+## own movement/attack pattern while reusing everything else.
+
+signal died(enemy: Enemy)
+
+## Balance call (not a documented spec value): playtest data showed kill
+## count roughly tripling after the Minion HP/speed fix above while
+## survival time barely moved -- contact lethality, not the player's own
+## weak offense, was the actual bottleneck. Eased 10->8 (25->20 effective
+## DPS while in contact) to let the offense fix actually extend survival.
+const CONTACT_DAMAGE: float = 8.0
+const CONTACT_COOLDOWN: float = 0.4
+const SPARK_COLOR: Color = Color.CRIMSON
+const FLASH_DECAY_PER_SEC: float = 8.0
+const HIT_FLASH_COLOR: Color = Color(4.0, 4.0, 4.0)
+const HIT_SPARK_AMOUNT: int = 6
+const DEATH_SPARK_AMOUNT: int = 18
+const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
+const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
+const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
+const ARENA_MARGIN: float = 16.0
+const FROST_TINT: Color = Color(0.6, 0.9, 1.3, 1.0)
+const KNOCKBACK_DECAY_PER_SEC: float = 8.0
+
+## Minion (Tier 1) baseline -- per DESIGN.md's Enemy Types table (Base HP
+## 20, Base speed 100). enemy.tscn doesn't override these, so they'd
+## drifted to 120/30 at some point, making every Phase 1 encounter ~50%
+## tankier and 20% faster than the documented design.
+@export var speed: float = 100.0
+@export var max_hp: float = 20.0
+
+## Loot tier -> drop weight for kills of this enemy, per DESIGN.md's
+## "Enemy Types & Loot Tiers" table. Only tiers listed here can drop.
+## Not @export'd -- each tier's table is a locked design value, not
+## something to hand-tune per scene instance in the inspector.
+var loot_weights: Dictionary = {&"common": 60.0, &"uncommon": 30.0, &"rare": 10.0}
+
+var hp: float
+var target: Player
+
+var _flash_amount: float = 0.0
+var _contact_cooldown: float = 0.0
+var _approach_offset: Vector2 = Vector2.ZERO
+var _base_modulate: Color = Color.WHITE
+var _slow_multiplier: float = 1.0
+var _slow_time_left: float = 0.0
+var _knockback: Vector2 = Vector2.ZERO
+
+@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+
+
+func _ready() -> void:
+	target = get_tree().get_first_node_in_group("player")
+	hp = max_hp
+	add_to_group("enemies")
+	var angle := randf() * TAU
+	var radius := randf_range(20.0, 60.0)
+	_approach_offset = Vector2(cos(angle), sin(angle)) * radius
+	_sprite.play("run")
+	_base_modulate = modulate
+
+
+func _physics_process(delta: float) -> void:
+	if target == null:
+		return
+	_update_behavior(delta)
+	# Only the player was ever clamped to the arena; a Bruiser's charge (or
+	# an Elite kiting away) could otherwise carry it past the edge with
+	# nothing to bring it back, stranding it off-screen for good.
+	position = position.clamp(
+		Vector2(ARENA_MARGIN, ARENA_MARGIN), ARENA_SIZE - Vector2(ARENA_MARGIN, ARENA_MARGIN)
+	)
+	if velocity.x != 0.0:
+		_sprite.flip_h = velocity.x < 0.0
+	if _flash_amount > 0.0:
+		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
+	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
+	if _slow_time_left > 0.0:
+		_slow_time_left -= delta
+		modulate = _base_modulate * FROST_TINT
+		if _slow_time_left <= 0.0:
+			_slow_multiplier = 1.0
+			modulate = _base_modulate
+	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
+
+
+## Applied by Inferno Blade (and any future knockback source). Same
+## decaying-velocity shape as Player's own knockback in player.gd.
+func apply_knockback(from_position: Vector2, strength: float) -> void:
+	if from_position != position:
+		_knockback = position.direction_to(from_position) * -strength
+
+
+## Frost Nova's slow -- a re-cast while already slowed takes whichever
+## effect is stronger/longer rather than just overwriting, so overlapping
+## casts don't accidentally weaken an existing slow.
+func apply_slow(multiplier: float, duration: float) -> void:
+	_slow_multiplier = min(_slow_multiplier, multiplier)
+	_slow_time_left = max(_slow_time_left, duration)
+
+
+func _slowed(value: float) -> float:
+	return value * _slow_multiplier
+
+
+## Applies the run's difficulty ramp (see Arena.RAMP_DURATION). Subclasses
+## with an extra speed-like stat -- Bruiser's charge_speed, Elite's
+## projectile_speed -- override this to also scale that, per DESIGN.md's
+## per-tier "Scaling" notes ("HP and charge/projectile speed scale with
+## run duration").
+func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
+	max_hp *= hp_scale
+	speed *= speed_scale
+
+
+## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
+## this for their own movement/attack pattern.
+func _update_behavior(delta: float) -> void:
+	velocity = (
+		position.direction_to(target.position + _approach_offset) * _slowed(speed) + _knockback
+	)
+	move_and_slide()
+	_apply_contact_damage(delta)
+
+
+## Shared "deal damage on physical collision with the player" used by
+## Minion (always) and Bruiser (only while charging).
+func _apply_contact_damage(delta: float) -> void:
+	_contact_cooldown = max(_contact_cooldown - delta, 0.0)
+	if _contact_cooldown > 0.0:
+		return
+	for i in get_slide_collision_count():
+		if get_slide_collision(i).get_collider() == target:
+			target.take_damage(CONTACT_DAMAGE, position)
+			_contact_cooldown = CONTACT_COOLDOWN
+			break
+
+
+func take_damage(amount: float) -> void:
+	hp -= amount
+	_spawn_damage_text(amount)
+	if hp <= 0.0:
+		_spawn_spark(DEATH_SPARK_AMOUNT)
+		AudioManager.play("enemy_death")
+		died.emit(self)
+		queue_free()
+		return
+	_flash_amount = 1.0
+	_spawn_spark(HIT_SPARK_AMOUNT)
+	AudioManager.play("enemy_hit")
+
+
+func _spawn_spark(amount: int) -> void:
+	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
+	spark.position = position
+	spark.color = SPARK_COLOR
+	spark.amount = amount
+	get_parent().add_child(spark)
+	spark.emitting = true
+
+
+func _spawn_damage_text(amount: float) -> void:
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = position + Vector2(0.0, -20.0)
+	get_parent().add_child(text)
+	text.setup("%d" % roundi(amount), DAMAGE_TEXT_COLOR)

@@ -3,7 +3,7 @@ extends Control
 
 func _ready() -> void:
 	# Always show slot selector at startup to let player choose which save to use
-	get_tree().change_scene_to_file("res://scenes/save_slot_selector.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/save_slot_selector.tscn")
 	return
 
 
