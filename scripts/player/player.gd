@@ -41,6 +41,19 @@ const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 const QUEUE_ACTIVE_OFFSET: Vector2 = Vector2(0.0, -34.0)
 const QUEUE_STACK_OFFSET: Vector2 = Vector2(0.0, -13.0)
 const QUEUE_STACK_SCALE: float = 0.7
+## Keep/discard gesture, on the same sprite. No "throw"/"interact" pose
+## exists in the wizzard_m sheet (idle/run/hit are the only animations
+## shipped in this asset pack) and there's no way to draw new frames --
+## approximated instead with a quick tilt + hop on the existing sprite,
+## the same cheap-juice technique (no new art needed) used for every
+## other punch in this game. Keep leans up-and-back (an arm reaching up
+## over the shoulder to stow something); Discard leans the opposite way,
+## sharper and without the hop (a batting-away swipe).
+const KEEP_GESTURE_DURATION: float = 0.22
+const KEEP_GESTURE_HOP: float = -7.0
+const KEEP_GESTURE_TILT: float = -0.32
+const DISCARD_GESTURE_DURATION: float = 0.2
+const DISCARD_GESTURE_TILT: float = 0.4
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
@@ -82,6 +95,7 @@ var _discard_was_pressed: bool = false
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 var _base_sprite_scale: Vector2 = Vector2.ONE
+var _base_sprite_position: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -94,6 +108,7 @@ func _ready() -> void:
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
 	_base_sprite_scale = _sprite.scale
+	_base_sprite_position = _sprite.position
 	# Shapes on an instanced scene's local sub-resources can be shared
 	# across instantiate() calls (e.g. the playtest harness spawns many
 	# Players per batch) -- duplicate before ever mutating radius so one
@@ -225,12 +240,59 @@ func _check_triage_input() -> void:
 	var want_discard := Input.is_physical_key_pressed(KEY_L)
 	if want_keep and not _keep_was_pressed:
 		_pending_gem.collect(self)
+		_play_keep_gesture()
 		_advance_queue()
 	elif want_discard and not _discard_was_pressed:
 		_pending_gem.resolve_discard()
+		_play_discard_gesture()
 		_advance_queue()
 	_keep_was_pressed = want_keep
 	_discard_was_pressed = want_discard
+
+
+## Arm-reaching-up-and-back read: a hop plus a backward tilt, easing out
+## sharply then settling back to neutral -- see the QUEUE_ACTIVE_OFFSET
+## block above for why this is a tilt/hop rather than a real animation.
+func _play_keep_gesture() -> void:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	(
+		tween
+		. tween_property(
+			_sprite, "position:y", _base_sprite_position.y + KEEP_GESTURE_HOP, KEEP_GESTURE_DURATION * 0.4
+		)
+		. set_trans(Tween.TRANS_QUAD)
+		. set_ease(Tween.EASE_OUT)
+	)
+	(
+		tween
+		. tween_property(_sprite, "rotation", KEEP_GESTURE_TILT, KEEP_GESTURE_DURATION * 0.4)
+		. set_trans(Tween.TRANS_QUAD)
+		. set_ease(Tween.EASE_OUT)
+	)
+	(
+		tween
+		. tween_property(_sprite, "position:y", _base_sprite_position.y, KEEP_GESTURE_DURATION * 0.6)
+		. set_delay(KEEP_GESTURE_DURATION * 0.4)
+	)
+	(
+		tween
+		. tween_property(_sprite, "rotation", 0.0, KEEP_GESTURE_DURATION * 0.6)
+		. set_delay(KEEP_GESTURE_DURATION * 0.4)
+	)
+
+
+## Batting-away swipe: a sharper opposite-direction tilt, no hop -- reads
+## as pushing something off rather than reaching for it.
+func _play_discard_gesture() -> void:
+	var tween := create_tween()
+	(
+		tween
+		. tween_property(_sprite, "rotation", DISCARD_GESTURE_TILT, DISCARD_GESTURE_DURATION * 0.35)
+		. set_trans(Tween.TRANS_QUAD)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.tween_property(_sprite, "rotation", 0.0, DISCARD_GESTURE_DURATION * 0.65)
 
 
 ## Promotes the next queued gem (if any) to active. Left null if the

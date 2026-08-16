@@ -68,58 +68,86 @@ Empty slots show "Empty — Start new run" and load defaults. Occupied slots sho
 
 ## Current implementation
 
-What's actually built and playable today (see `scripts/`, as of v11):
+What's actually built and playable today:
 
 - Top-down movement + dash in a single arena; four enemy tiers (Minion
-  melee chaser with Fast/Tanky variants, Bruiser pause/charge, Elite
-  kite + projectile, and a unique Boss at 55+ sec), gated into the run
-  by phase (see "Enemy Types & Loot Tiers" below) and spawning
-  faster/more over run duration. A full bag also slows the
-  player's movement (floor 80% of base speed) on top of the max-HP
-  shrink, per the backpack-fill penalty below.
+  with Fast/Tanky variants, Bruiser pause/charge, Elite kite +
+  projectile, and a unique Boss at 55+ sec), phase-gated into the run
+  (see "Enemy Types & Loot Tiers" below), spawning faster/more over run
+  duration. Per-enemy drop tables were reshaped in a recent tuning pass
+  (Minion now has a small Epic chance, Boss's Legendary odds raised) —
+  see the decision log for the before/after numbers.
 - Casting-based combat (`spell_caster.gd`): every unlocked spell casts
-  simultaneously and independently, no switching. Arcane Bolt (ranged
-  projectile) is always available; the other seven -- Inferno Blade,
-  Frost Nova, Meteor Strike, Lightning Chain, Time Warp, Teleport Pulse,
-  Summon Familiar -- join in permanently as their Spell Unlock tier (L1-L7)
-  gets bought. Spellpower is upgradeable and scales all of them
-  proportionally (except Summon Familiar's own attack, which is the
-  pet's fixed stat, not the caster's).
-- Six rarity tiers (`loot_registry.gd`/`loot_type.gd`), numbers matching
-  the Rarity tiers table below. One item drops per kill, tier rolled by
-  drop weight. Currently picked up via a fully-automatic proximity magnet
-  (Gleam upgradeable) — no player choice in what enters the backpack. A
-  manual keep/discard triage system (see "Active Pickup: Manual Triage"
-  below) is a decided but not-yet-implemented pivot away from this — see
-  TODO.md.
-- A real slot-grid backpack (`backpack_grid.gd`) — one slot per loot
-  type held, colored by rarity, growing with Bearing; fill % shrinks
-  max HP.
-- Two currencies (`meta_progression.gd`): player currency (loot value)
-  funds Spellpower/Swiftness/Gleam; backpack currency (survival
-  time) funds Bearing. Upgrades are leveled with a geometric cost curve
-  and a hard level cap, including Bearing (base cost 100, ×1.25/lvl,
-  cap 10 as of the v6 balance pass).
-- Per-tier Compacting (Commons Hoard through Mythic Hoard) and Discard
-  (formerly Purge) both built and gated as described below. A pre-run
-  Backpack Ability choice (Condense vs. Clear, see below) passively
-  processes backpack items during a run on top of that.
-- Shop is currently a two-tree skill-tree layout (Player Tree / Backpack
-  Tree) with gating and hover tooltips, not a flat button list; the 8
-  spells' unlock/upgrade stats live inside Player Tree today, with a
-  separate read-only sidebar just showing lock state. A three-tree
-  rework (Player / Spells / Backpack, see "Shop structure: skill tree"
-  below) is a decided but not-yet-implemented follow-up — see TODO.md.
+  simultaneously and independently, no switching. Arcane Bolt is always
+  available; the other seven join permanently as their Spell Unlock tier
+  (L1–L7) gets bought. Spellpower scales all of them proportionally
+  (except Summon Familiar's own fixed pet stat).
+- Six rarity tiers (`loot_registry.gd`/`loot_type.gd`). One item drops
+  per kill, tier rolled by drop weight. **Pickup is no longer
+  automatic** — Active Pickup: Manual Triage (see below) queues each
+  drop in front of the player, who presses **K** to keep it or **L** to
+  discard it (gone for good) while still dodging combat. Gleam now
+  governs how far away a gem becomes eligible to queue, not how much
+  gets auto-vacuumed in.
+- A real slot-grid backpack (`backpack_grid.gd`) — fill % is driven by
+  real slot count (one slot per stack instance of a tier, capped by that
+  tier's Compacting stack size; a tier spans multiple slots once its
+  current stack fills), not by how many distinct rarities have ever been
+  touched (an earlier bug in the fill-% formula, since fixed — see the
+  decision log).
+- **The backpack-fill risk signal is size/hitbox now, not HP.** A fuller
+  bag grows the player's own sprite and actual `CollisionShape2D`
+  hitbox — a bigger, easier target — on top of the existing speed-
+  shrink. HP-shrink-on-fill was removed outright once this landed.
+  Bearing's starting capacity was raised 1 → 5 slots after live-play
+  feedback showed the size/speed penalty ramping up too fast otherwise.
+- **Gem Combos**, a purely in-run tactical layer (no currency, no
+  meta-progression, resets every run): **Full Set** (hold one of each of
+  the six rarities at once → one-time AOE clear) and **Streak** (3
+  consecutive same-tier pickups → repeatable AOE damage burst scaled to
+  tier) are both implemented, with tension-then-release feedback (screen
+  shake, a named callout — "FULL SET!"/"STREAK!"). Rampage, Ascension,
+  and Ratio (a proportion-based defensive combo) are designed but not
+  built — see "Gem Combos" below for the full matrix.
+- Gem pickups (`loot_gem.gd`) render as a small faceted-crystal pip,
+  color-coded by rarity, with the visual payoff concentrated at the
+  pickup/keep moment (spark burst, "+N" text, a punchy pop-and-fade)
+  instead of the idle/resting state — went through several live-play
+  sizing passes before landing here.
+- The Backpack Ability (Condense vs. Clear) system that used to sit here
+  has been **removed entirely** — it directly fought the new fill-as-
+  risk mechanic (items silently vanishing on their own undermines
+  "hoarding is a chosen risk"). No longer part of the game.
+- Phase-transition callouts ("BRUISERS!", "ELITES!", "BOSS!") announce
+  when a tougher enemy tier — and the rarer loot that comes with it —
+  becomes available, closing a gap where that gating was real but
+  completely silent.
+- An Escape-triggered pause menu (Resume / Quit to Menu / Quit Game) —
+  previously the only way to leave a run was dying or killing the
+  process.
+- Two currencies (`meta_progression.gd`): Essence (loot value) funds
+  Player Tree and Spell Tree; Stardust (survival time) funds Backpack
+  Tree. Geometric cost curve, hard level caps throughout.
+- Shop is currently a two-tree skill-tree layout (Player Tree /
+  Backpack Tree); the 8 spells' unlock/upgrade stats still live inside
+  Player Tree today, with a separate read-only sidebar just showing
+  lock state. A three-tree rework (Player / Spells / Backpack, see
+  "Shop structure: skill tree" below) is designed but **deliberately on
+  hold** until the current run of mechanics-focused work (backpack /
+  pickup / combos) settles — see TODO.md.
 - Death → full run summary screen (time/phase, rewards, loot breakdown,
-  run stats, previous best) → shop → restart with upgrades carried over.
-- Persistence: 4 save slots with metadata (last played, playtime,
-  upgrade preview); player selects a slot at game start to load/overwrite
-  progress. Cloud-sync infrastructure exists but the server side is still
-  a placeholder — see [TODO.md](TODO.md).
+  run stats, previous best) → shop → restart with upgrades carried
+  over. Predates everything above this line, though — doesn't yet
+  reflect Gem Combo activity, and some of its stat labels have drifted
+  from what the game now actually tracks. Flagged as its own rework,
+  not yet started — see TODO.md.
+- Persistence: 4 save slots with metadata; cloud-sync infrastructure
+  exists but the server side is still a placeholder.
 
 Not yet built: real spell/enemy sprite art (spells and Player are still
-procedural/placeholder; enemies now have real DungeonTilesetII sprites) —
-see [TODO.md](TODO.md) for open follow-ups.
+procedural/placeholder); an in-game reference teaching any of the above
+(spells, Gem Combos) to the player — right now it exists only in this
+doc — see [TODO.md](TODO.md) for these and other open follow-ups.
 
 ## Enemy Types & Loot Tiers
 
@@ -747,17 +775,26 @@ still open (queued-gem visual treatment, combo rebalancing).
 
 ### Gem Pickup Visual
 
-Loot drops (`loot_gem.gd`) currently render as a fully-detailed faceted
+Loot drops (`loot_gem.gd`) used to render as a fully-detailed faceted
 crystal at rest — same level of visual detail whether one enemy died or
-six did, which is why they read as cluttered once they pile up mid-fight.
-**Locked in:** simplify to a small, simple pip at rest — color-forward,
-no facets/glow-ring detail to parse in combat — and move the visual
-payoff to the pickup moment instead (the existing spark burst + "+N"
-floating text, made to actually pop) rather than the idle/resting state.
-Quiet on the ground, loud on collect. This is presentation only — the
-one-drop-per-kill mechanic, drop weights, and values are unchanged; if a
-real multi-drop-per-kill mechanic is wanted later, that's a separate
-balance decision, not this one. Not built — see TODO.md.
+six did, which is why they read as cluttered once they piled up
+mid-fight. **Simplified to a small pip at rest** — color-forward, most
+of the facet/glow-ring detail dropped — with the visual payoff
+concentrated at the pickup/keep moment instead (spark burst, "+N"
+floating text, a punchy pop-and-fade). Quiet on the ground, loud on
+collect. Presentation only — the one-drop-per-kill mechanic, drop
+weights, and values are unchanged; if a real multi-drop-per-kill
+mechanic is wanted later, that's a separate balance decision, not this
+one.
+
+**Status:** Implemented, after several live-play sizing passes (see the
+decision log) — the very first pass over-simplified into a plain dot and
+lost the "gem magic" read entirely, so it landed on a small
+faceted-crystal silhouette rather than either extreme. Combo-completion
+feedback (screen shake, radial flash, a named callout) is also live —
+see "Gem Combos" below. Still open: the "tension-building"
+pre-completion pip-brightening cue — that's backpack-UI work, not
+gem-drop work, tracked separately in TODO.md.
 
 ### Loot affixes
 
@@ -903,13 +940,16 @@ impact visual rather than new art. Order-agnostic was a deliberate
 choice over a strict-sequence requirement — combat timing is too chaotic
 for a hard order to read as skill rather than bad luck.
 
-No new pickup mechanic needed: which enemy tier a player prioritizes
-killing already determines what drops, via the existing per-tier loot
-weighting (Minion → Common-heavy, Bruiser → Uncommon, Elite → Rare+,
-Boss → guaranteed Mythic+) — so "strategically chasing the missing gem"
-is already a real, existing lever. Consistent with the core "the
-player's only input is movement/positioning" pillar — this is a
-positioning/target-priority payoff, not a manual-cast ability.
+Originally designed to need no new pickup mechanic at all: which enemy
+tier a player prioritizes killing already determines what drops, via the
+existing per-tier loot weighting (Minion → Common-heavy, Bruiser →
+Uncommon, Elite → Rare+, Boss → guaranteed Mythic+) — "strategically
+chasing the missing gem" was already a real lever through targeting
+alone. That premise has since been overtaken in a good way: Active
+Pickup: Manual Triage (see below) means completing a set is no longer
+just about who you kill, but also whether you actually keep each needed
+drop when it queues — two stacked levers, target-priority and
+keep/discard curation, instead of one.
 
 Deliberately sequenced after the Fill % fix above: before that fix,
 "holding one of each tier" secretly meant "bag is 100% full," so
@@ -1807,3 +1847,45 @@ Short dated entries when a design decision is made and worth remembering
   pre-change baselines). Not verified: real keyboard input, or how the
   stacked-gem visual actually reads in motion -- needs a human via
   `playdev`.
+- 2026-08-16 — Player gesture on Keep/Discard, requested directly:
+  checked the wizzard_m sprite sheet first rather than assuming -- only
+  `idle`/`run`/`hit` exist in the DungeonTilesetII pack (`hit` isn't
+  even wired into `player_sprite_frames.tres` currently), no "throw" or
+  "interact" pose to use, and no way to draw new frames. Approximated
+  with the same cheap-juice technique already used everywhere else in
+  this game (tween the existing sprite's transform, no new art): Keep
+  is a quick hop + backward tilt on `_sprite` (arm reaching up and over
+  the shoulder to stow something); Discard is a sharper opposite-
+  direction tilt with no hop (a batting-away swipe). Neither touches
+  `_sprite.scale` deliberately -- that's already driven by the backpack-
+  fill size effect (Tweak 4), and animating it here would fight that
+  system the moment a Keep's own `collect_loot()` call recomputes it
+  mid-gesture. Pure visual flourish, no gameplay effect -- verified via
+  boot check only; per this project's own testing tiers, feel like this
+  needs a human via `playdev`, not a headless test.
+- 2026-08-16 — Documentation sync, at the player's request: a lot landed
+  fast across two parallel processes (this design chat and a code-
+  implementing one), and DESIGN.md/TODO.md had drifted from what's
+  actually true in a few places -- fixed as part of this pass, not
+  worth their own entries: "Current implementation" was still
+  describing pre-session behavior (auto-pickup, HP-shrink, the removed
+  Backpack Ability) instead of what's live now; Full Set's own
+  rationale still said "no new pickup mechanic needed," directly
+  contradicted by Active Pickup shipping since; "Gem Pickup Visual"
+  still said "Not built" for a feature that had already gone through
+  three live-play iterations.
+  Worth stating plainly, since it's easy to lose in a log this long: the
+  design found real direction this session. It started as a backpack
+  that filled up and shrank max HP -- a single static number. Across
+  this run of work that's become a live, continuously-relevant risk
+  (fill % now tracks real volume, not a one-time flag; the risk signal
+  is the player's own visible size, not a bar in the corner) with a
+  reward layer bolted directly onto the same act of hoarding (Gem
+  Combos) and, as the capstone, a reason to actually think about every
+  single pickup instead of vacuuming the arena clean (Active Pickup:
+  Manual Triage). Each piece individually was a fix or an addition;
+  together they're what turned "collect loot" into the actual game.
+  Skill-tree and text-flavor work (both fully speced, see TODO.md) are
+  deliberately on hold now, not dropped -- direct instruction, so the
+  mechanics side gets to fully settle before spending effort on
+  presentation of mechanics that might still move.
