@@ -738,7 +738,7 @@ scale.
 
 **Status:** Implemented (`player.gd`'s `enqueue_loot()`/`_advance_queue()`/
 `_check_triage_input()`, `loot.gd`'s `enter_queue()`/`resolve_discard()`).
-Keep = **E**, Discard = **Q** (dedicated keys, chosen over mouse click to
+Keep = **K**, Discard = **L** (dedicated keys, chosen over mouse click to
 keep both hands on the keyboard through a run). Bots (the playtest
 harness) skip the queue entirely and collect exactly as before, so
 balance-signal batches stay meaningful without simulating triage
@@ -1764,10 +1764,11 @@ Short dated entries when a design decision is made and worth remembering
   rarer/higher-value drops landing more often, zero errors.
 - 2026-08-16 — Active Pickup: Manual Triage implemented, the doc's own
   "core pivot, not a small item." Input scheme (the one thing the spec
-  left open) resolved directly with the player: dedicated keys, **E** to
-  keep, **Q** to discard, over mouse-click -- keeps both hands on the
-  keyboard through a run rather than switching to the mouse for a
-  split-second decision made mid-dodge.
+  left open) resolved directly with the player: dedicated keys over
+  mouse-click, keeping both hands on the keyboard through a run rather
+  than switching to the mouse for a split-second decision made
+  mid-dodge. Landed on **K** to keep, **L** to discard (an initial E/Q
+  pass was rebound to this immediately after, per direct follow-up).
   Architecture: `Loot._on_body_entered()` now branches on
   `Player.is_bot_controlled()` -- real players hand off to
   `Player.enqueue_loot()` instead of committing immediately; the
@@ -1798,7 +1799,7 @@ Short dated entries when a design decision is made and worth remembering
   real, tracked separately). Also out of scope per direct instruction:
   any meta-progression/economy rebalancing -- arena play only this pass.
   Verified via the unit-test runner (9 new cases directly exercising
-  enqueue/advance/resolve -- headless has no way to simulate real E/Q
+  enqueue/advance/resolve -- headless has no way to simulate real K/L
   key presses, so `_check_triage_input()`'s input-polling itself is
   unverified here, only the queue mechanics it calls into; 204 total
   passing) and playtest batches confirming the bot-bypass path is

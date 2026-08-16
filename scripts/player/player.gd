@@ -221,8 +221,8 @@ func enqueue_loot(loot: Loot) -> void:
 func _check_triage_input() -> void:
 	if _bot_active or _pending_gem == null:
 		return
-	var want_keep := Input.is_physical_key_pressed(KEY_E)
-	var want_discard := Input.is_physical_key_pressed(KEY_Q)
+	var want_keep := Input.is_physical_key_pressed(KEY_K)
+	var want_discard := Input.is_physical_key_pressed(KEY_L)
 	if want_keep and not _keep_was_pressed:
 		_pending_gem.collect(self)
 		_advance_queue()
