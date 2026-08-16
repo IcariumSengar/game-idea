@@ -1583,3 +1583,12 @@ Short dated entries when a design decision is made and worth remembering
   second press that resumes) -- mirrors the existing GameOverPanel's
   per-node ALWAYS pattern, just applied one level up since the whole
   pause flow, not just one panel, needs to survive the pause.
+- 2026-08-16 — Direct feedback: the shake/burst/flash combo-completion
+  juice told the player *something* happened but not *what*. Added a
+  short callout above the player naming the combo -- "FULL SET!" (in
+  Meteor Strike's own orange) and "STREAK!" (in the streaked tier's own
+  color) -- reusing `floating_text.gd`, same component as damage numbers
+  and loot-value pickups, positioned higher (-48px) so it doesn't
+  compete with the burst/spark visuals at the same spot. Shared through
+  one `_spawn_combo_label()` helper rather than each combo spawning its
+  own copy.

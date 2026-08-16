@@ -19,6 +19,7 @@ const METEOR_FX_SCENE: PackedScene = preload("res://scenes/fx/meteor_strike_fx.t
 const LIGHTNING_FX_SCENE: PackedScene = preload("res://scenes/fx/lightning_bolt_fx.tscn")
 const TIME_WARP_BURST_SCENE: PackedScene = preload("res://scenes/fx/time_warp_burst.tscn")
 const FAMILIAR_SCENE: PackedScene = preload("res://scenes/player/familiar.tscn")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
 
 const SPELLPOWER_BASE: float = 20.0
 const ARCANE_RANGE: float = 220.0
@@ -68,6 +69,8 @@ const FULL_SET_RADIUS: float = 700.0
 ## size, so Full Set hits harder than Streak.
 const FULL_SET_SHAKE_SCALE: float = 2.0
 const FULL_SET_HIT_STOP: float = 0.1
+const FULL_SET_LABEL: String = "FULL SET!"
+const FULL_SET_LABEL_COLOR: Color = Color(1.0, 0.55, 0.1)
 
 ## Gem Combos' "Streak" (DESIGN.md): N consecutive pickups of the *same*
 ## tier, uninterrupted, triggers a small tier-flavored AOE burst -- unlike
@@ -83,6 +86,15 @@ const STREAK_THRESHOLD: int = 3
 const STREAK_BASE_POWER: float = 12.0
 const STREAK_RADIUS: float = 200.0
 const STREAK_SHAKE_SCALE: float = 0.6
+const STREAK_LABEL: String = "STREAK!"
+
+## Combo-trigger callout text, above the player -- per direct feedback
+## that the shake/flash/burst alone weren't enough to tell *what*
+## happened, just that *something* did. Short, single-word-ish, high
+## up so it doesn't compete with the burst/spark visuals at the same
+## spot.
+const COMBO_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
+const COMBO_LABEL_FONT_SIZE: int = 24
 
 var _owner_body: Player
 ## Enemy -> {ticks_left: int, tick_damage: float, timer: float}
@@ -417,6 +429,7 @@ func _on_full_set_impact() -> void:
 	var arena := get_tree().current_scene as Arena
 	if arena != null:
 		arena.trigger_shake(FULL_SET_SHAKE_SCALE, FULL_SET_HIT_STOP)
+	_spawn_combo_label(FULL_SET_LABEL, FULL_SET_LABEL_COLOR)
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Enemy
 		if enemy == null:
@@ -448,10 +461,22 @@ func _cast_streak_burst(tier_id: StringName) -> void:
 	var color: Color = def.color if def != null else Color.WHITE
 	_damage_in_radius(_owner_body.position, STREAK_RADIUS, damage)
 	_spawn_burst(_owner_body.position, color)
+	_spawn_combo_label(STREAK_LABEL, color)
 	var arena := get_tree().current_scene as Arena
 	if arena != null:
 		arena.trigger_shake(STREAK_SHAKE_SCALE)
 	AudioManager.play("lightning_cast")
+
+
+## Callout text above the player naming which combo just triggered --
+## the shake/burst alone told the player *something* happened, not
+## *what*. Shared by Full Set and Streak rather than each spawning their
+## own floating-text boilerplate.
+func _spawn_combo_label(label: String, color: Color) -> void:
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = _owner_body.position + COMBO_LABEL_OFFSET
+	_owner_body.get_parent().add_child(text)
+	text.setup(label, color, COMBO_LABEL_FONT_SIZE)
 
 
 func _apply_burn(enemy: Enemy, total_damage: float) -> void:
