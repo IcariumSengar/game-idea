@@ -32,6 +32,7 @@ func _ready() -> void:
 	_test_loot_effective_stack_size()
 	_test_backpack_fill_effects()
 	_test_backpack_slots_used()
+	_test_manual_triage_queue()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
@@ -272,6 +273,49 @@ func _test_backpack_slots_used() -> void:
 		not player.can_collect_loot(&"legendary"),
 		"a fourth legendary can't fit once slots are full (stack size 1, needs a new slot)"
 	)
+
+	player.queue_free()
+
+
+## Verifies Manual Triage's queue mechanics (DESIGN.md's "Active Pickup:
+## Manual Triage") directly -- enqueue/advance/resolve -- rather than via
+## _check_triage_input()'s real-key polling, which headless has no way to
+## simulate. Exercises the same collect()/resolve_discard() paths a real
+## keep/discard key press would trigger, just called directly.
+func _test_manual_triage_queue() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 10
+	player.backpack.clear()
+
+	var gem_a: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_a.type_id = &"common"
+	var gem_b: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_b.type_id = &"uncommon"
+	add_child(gem_a)
+	add_child(gem_b)
+
+	player.enqueue_loot(gem_a)
+	_assert(player._pending_gem == gem_a, "first enqueued gem becomes active")
+	_assert(player._gem_queue.is_empty(), "queue stays empty with only one gem enqueued")
+
+	player.enqueue_loot(gem_b)
+	_assert(player._pending_gem == gem_a, "active gem is unchanged when a second one arrives")
+	_assert(
+		player._gem_queue.size() == 1 and player._gem_queue[0] == gem_b,
+		"second gem waits behind the active one"
+	)
+
+	gem_a.collect(player)
+	player._advance_queue()
+	_assert(player.backpack.get(&"common", 0) == 1, "keeping the active gem adds it to the backpack")
+	_assert(player._pending_gem == gem_b, "the next queued gem becomes active once the front resolves")
+	_assert(player._gem_queue.is_empty(), "queue empties out as gems advance")
+
+	gem_b.resolve_discard()
+	player._advance_queue()
+	_assert(player.backpack.get(&"uncommon", 0) == 0, "discarding never adds to the backpack")
+	_assert(player._pending_gem == null, "queue is empty once everything's resolved")
 
 	player.queue_free()
 

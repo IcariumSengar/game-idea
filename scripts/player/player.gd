@@ -32,6 +32,16 @@ const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
 const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 
+## Active Pickup: Manual Triage (DESIGN.md 2026-08-16) -- gems no longer
+## auto-commit on arrival; they queue in front of the player awaiting an
+## explicit keep/discard decision. Only real-input players triage
+## (see is_bot_controlled() / loot.gd's _on_body_entered) -- the playtest
+## bot auto-collects same as before, so balance-signal batches stay
+## meaningful without needing to simulate triage decisions.
+const QUEUE_ACTIVE_OFFSET: Vector2 = Vector2(0.0, -34.0)
+const QUEUE_STACK_OFFSET: Vector2 = Vector2(0.0, -13.0)
+const QUEUE_STACK_SCALE: float = 0.7
+
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
 @export var base_max_hp: float = 60.0
@@ -61,6 +71,10 @@ var _space_was_pressed: bool = false
 var _bot_active: bool = false
 var _bot_direction: Vector2 = Vector2.ZERO
 var _bot_dash_requested: bool = false
+var _pending_gem: Loot = null
+var _gem_queue: Array[Loot] = []
+var _keep_was_pressed: bool = false
+var _discard_was_pressed: bool = false
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
@@ -90,8 +104,18 @@ func _ready() -> void:
 	_pickup_area.area_entered.connect(_on_pickup_area_entered)
 
 
+## Bots still gate magnetizing on backpack capacity (matches the old
+## full-auto pickup exactly, so playtest balance signal doesn't shift).
+## Real players don't -- Gleam is now "how far away a gem starts being
+## eligible to queue," not "how much gets vacuumed in"; whether it fits
+## is resolved later, at the keep decision, not at magnet-start.
 func _on_pickup_area_entered(area: Area2D) -> void:
-	if area is Loot and can_collect_loot(area.type_id):
+	if area is not Loot:
+		return
+	if _bot_active:
+		if can_collect_loot(area.type_id):
+			area.start_magnet(self)
+	else:
 		area.start_magnet(self)
 
 
@@ -130,6 +154,9 @@ func _physics_process(delta: float) -> void:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
 	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
 
+	_check_triage_input()
+	_reposition_queue()
+
 
 func _check_dash_input() -> void:
 	var want_dash: bool = (
@@ -156,6 +183,10 @@ func bot_set_input(direction: Vector2, want_dash: bool) -> void:
 	_bot_dash_requested = want_dash
 
 
+func is_bot_controlled() -> bool:
+	return _bot_active
+
+
 func collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
 	var stack_size: int = LootTypes.get_effective_stack_size(type_id)
@@ -169,6 +200,60 @@ func collect_loot(type_id: StringName) -> bool:
 	loot_changed.emit(backpack)
 	loot_collected.emit(type_id)
 	return true
+
+
+## Called by loot.gd once a magnetized gem physically reaches the player
+## (real-input players only -- bots skip the queue entirely and collect
+## directly, see loot.gd's _on_body_entered). Becomes the active/front
+## gem immediately if nothing's already pending, otherwise waits behind
+## it -- no cap, deliberately: a neglected queue backing up under
+## pressure is the intended tension, not something to design away.
+func enqueue_loot(loot: Loot) -> void:
+	if _pending_gem == null:
+		_pending_gem = loot
+		loot.enter_queue()
+	else:
+		_gem_queue.append(loot)
+		loot.enter_queue()
+	_reposition_queue()
+
+
+func _check_triage_input() -> void:
+	if _bot_active or _pending_gem == null:
+		return
+	var want_keep := Input.is_physical_key_pressed(KEY_E)
+	var want_discard := Input.is_physical_key_pressed(KEY_Q)
+	if want_keep and not _keep_was_pressed:
+		_pending_gem.collect(self)
+		_advance_queue()
+	elif want_discard and not _discard_was_pressed:
+		_pending_gem.resolve_discard()
+		_advance_queue()
+	_keep_was_pressed = want_keep
+	_discard_was_pressed = want_discard
+
+
+## Promotes the next queued gem (if any) to active. Left null if the
+## queue's empty -- collect()/resolve_discard() on the old pending gem
+## already freed it (eventually, via its own pop/fade tween), so there's
+## nothing to clean up here beyond the reference itself.
+func _advance_queue() -> void:
+	_pending_gem = _gem_queue.pop_front() if not _gem_queue.is_empty() else null
+	_reposition_queue()
+
+
+## Re-anchors every queued gem to the player each frame -- called from
+## _physics_process so the whole queue follows while the player moves,
+## not just on enqueue. The active gem sits just above the player; each
+## gem behind it stacks further up and renders smaller, so a backed-up
+## queue reads as visibly mounting pressure rather than a hidden counter.
+func _reposition_queue() -> void:
+	if _pending_gem != null:
+		_pending_gem.position = position + QUEUE_ACTIVE_OFFSET
+		_pending_gem.scale = Vector2.ONE
+	for i in _gem_queue.size():
+		_gem_queue[i].position = position + QUEUE_ACTIVE_OFFSET + QUEUE_STACK_OFFSET * float(i + 1)
+		_gem_queue[i].scale = Vector2.ONE * QUEUE_STACK_SCALE
 
 
 ## Removes up to `count` items of `type_id` -- returns how many were

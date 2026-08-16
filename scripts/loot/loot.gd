@@ -37,6 +37,8 @@ const AFFIX_COLOR: Color = Color(1.0, 0.85, 0.3)
 ## this is what makes upgrading the magnet stat visibly pull loot in faster.
 @export var pull_speed_per_range: float = 4.0
 
+const DISCARD_FADE_DURATION: float = 0.22
+
 var type_id: StringName = &"common"
 
 var _time: float = randf() * TAU
@@ -45,6 +47,12 @@ var _pull_speed: float = 0.0
 var _color: Color = Color.WHITE
 var _is_affixed: bool = false
 var _pulse_scale_amount: float = PULSE_SCALE_AMOUNT
+## Set once this gem reaches a real-input player and enters their triage
+## queue (see player.gd's enqueue_loot()) -- Player then drives position
+## directly each frame, so magnet-chasing has to stop or the two would
+## fight over it. Bob/pulse keep running -- a queued gem stays visibly
+## "alive," not frozen dead, while it waits.
+var _is_queued: bool = false
 
 @onready var _sprite: Node2D = $Gem
 
@@ -69,7 +77,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
-	if _magnet_target != null:
+	if _magnet_target != null and not _is_queued:
 		position = position.move_toward(_magnet_target.position, _pull_speed * delta)
 	_sprite.position.y = sin(_time * BOB_SPEED) * BOB_AMOUNT
 	var pulse: float = SPRITE_SCALE + sin(_time * PULSE_SPEED) * _pulse_scale_amount
@@ -101,9 +109,25 @@ func collect(player: Player) -> void:
 		_play_collect_pop()
 
 
+## Bots skip the queue entirely and collect immediately, same as the old
+## full-auto pickup -- see player.gd's is_bot_controlled() docstring for
+## why. Real players hand off to the triage queue instead of committing.
 func _on_body_entered(body: Node2D) -> void:
-	if body is Player:
+	if body is not Player:
+		return
+	if body.is_bot_controlled():
 		collect(body)
+	else:
+		body.enqueue_loot(self)
+
+
+## Marks this gem as queued and stops its own position updates -- Player
+## takes over from here (see its _reposition_queue()). Also stops
+## monitoring: once queued it sits pinned right next to the player every
+## frame, which would otherwise keep re-firing _on_body_entered.
+func enter_queue() -> void:
+	_is_queued = true
+	set_deferred("monitoring", false)
 
 
 func _spawn_spark() -> void:
@@ -144,6 +168,21 @@ func _play_collect_pop() -> void:
 		. set_ease(Tween.EASE_OUT)
 	)
 	tween.tween_property(_sprite, "modulate:a", 0.0, COLLECT_POP_DURATION)
+	tween.chain().tween_callback(queue_free)
+
+
+## Manual Triage's discard path (player.gd's _check_triage_input()) --
+## gone for good, no banking, no backpack change. Shrink-and-fade rather
+## than Keep's grow-and-fade, so the two read as opposite outcomes, not
+## the same pop with a different sound.
+func resolve_discard() -> void:
+	set_deferred("monitoring", false)
+	AudioManager.play("discard")
+	set_process(false)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "scale", _sprite.scale * 0.4, DISCARD_FADE_DURATION)
+	tween.tween_property(_sprite, "modulate:a", 0.0, DISCARD_FADE_DURATION)
 	tween.chain().tween_callback(queue_free)
 
 

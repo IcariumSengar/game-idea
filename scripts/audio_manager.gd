@@ -20,6 +20,7 @@ func _ready() -> void:
 	_streams["player_hit"] = _make_tone(140.0, 0.09, 0.45, "square")
 	_streams["player_death"] = _make_sweep(420.0, 70.0, 0.55, 0.5)
 	_streams["pickup"] = _make_tone(880.0, 0.05, 0.25, "sine")
+	_streams["discard"] = _make_sweep(500.0, 200.0, 0.1, 0.25)
 	_streams["purchase"] = _make_chime([660.0, 990.0], 0.08, 0.3)
 	_streams["dash"] = _make_sweep(320.0, 720.0, 0.1, 0.28)
 	_streams["click"] = _make_tone(520.0, 0.03, 0.2, "sine")

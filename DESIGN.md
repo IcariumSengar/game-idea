@@ -736,7 +736,14 @@ scale.
   discard, and the existing threshold-triggered Discard upgrade. Not a
   blocker, just flagged so they don't read as the same thing.
 
-**Not built** — see TODO.md.
+**Status:** Implemented (`player.gd`'s `enqueue_loot()`/`_advance_queue()`/
+`_check_triage_input()`, `loot.gd`'s `enter_queue()`/`resolve_discard()`).
+Keep = **E**, Discard = **Q** (dedicated keys, chosen over mouse click to
+keep both hands on the keyboard through a run). Bots (the playtest
+harness) skip the queue entirely and collect exactly as before, so
+balance-signal batches stay meaningful without simulating triage
+decisions -- see the decision log for the full writeup, including what's
+still open (queued-gem visual treatment, combo rebalancing).
 
 ### Gem Pickup Visual
 
@@ -1755,3 +1762,47 @@ Short dated entries when a design decision is made and worth remembering
   playtest batch (12 runs, reaching Phase 2/3): avg loot value rose from
   ~99 to ~147 versus the prior comparable batch, consistent with the
   rarer/higher-value drops landing more often, zero errors.
+- 2026-08-16 — Active Pickup: Manual Triage implemented, the doc's own
+  "core pivot, not a small item." Input scheme (the one thing the spec
+  left open) resolved directly with the player: dedicated keys, **E** to
+  keep, **Q** to discard, over mouse-click -- keeps both hands on the
+  keyboard through a run rather than switching to the mouse for a
+  split-second decision made mid-dodge.
+  Architecture: `Loot._on_body_entered()` now branches on
+  `Player.is_bot_controlled()` -- real players hand off to
+  `Player.enqueue_loot()` instead of committing immediately; the
+  playtest bot collects exactly as before (skips the queue entirely),
+  so balance-signal batches stay meaningful without simulating triage
+  decisions. The active (front) gem sits pinned just above the player,
+  repositioned every physics frame so it follows movement; queued gems
+  behind it stack further up and render at 70% scale -- the "queued/
+  pending gem visual treatment" the spec flagged as undesigned, resolved
+  as reusing the existing pip/pulse look rather than inventing a new
+  one, just smaller and offset. Keep reuses the existing `collect()`
+  pop/spark/text unchanged, just triggered from the key press instead of
+  magnet-arrival, per the spec's own note that the visual language
+  should stay and just re-anchor. Discard is new: a shrink-and-fade
+  (opposite of Keep's grow-and-fade, so the two read as distinct
+  outcomes) plus a new descending-sweep "discard" cue in
+  `audio_manager.gd`, no backpack change, no banking.
+  Gleam's role changed as specified: `_on_pickup_area_entered()` no
+  longer gates magnetizing on backpack capacity for real players (only
+  bots still do, to hold their behavior fixed) -- capacity is resolved
+  later, at the Keep decision itself, via the same `collect_loot()`
+  every other path already uses (which already handled the full-
+  backpack case: Keep silently does nothing if it fails, gem stays
+  queued -- no new failure-state code needed).
+  Explicitly not addressed here, both already flagged as open in the
+  spec: rebalancing Full Set/Streak's trigger tuning for curated (vs.
+  RNG) backpacks, and the Ratio combo (only makes sense once curation is
+  real, tracked separately). Also out of scope per direct instruction:
+  any meta-progression/economy rebalancing -- arena play only this pass.
+  Verified via the unit-test runner (9 new cases directly exercising
+  enqueue/advance/resolve -- headless has no way to simulate real E/Q
+  key presses, so `_check_triage_input()`'s input-polling itself is
+  unverified here, only the queue mechanics it calls into; 204 total
+  passing) and playtest batches confirming the bot-bypass path is
+  unaffected (fresh-save and heavily-seeded numbers both in line with
+  pre-change baselines). Not verified: real keyboard input, or how the
+  stacked-gem visual actually reads in motion -- needs a human via
+  `playdev`.
