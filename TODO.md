@@ -33,10 +33,15 @@ this file should stay short enough to skim.
 
 ### Magic Spells (v9/v10) follow-up
 
-- [ ] Verify feel in a full playtest: with all unlocked spells now firing
-      together, check they don't step on each other visually/audibly once
-      the player has two or three going at once -- individual spells were
-      verified live, full multi-spell combat wasn't
+- [x] Verify *functional* correctness with all 3 spells firing together:
+      10-run playtest batches (moderate and heavy stat seeding) show zero
+      runtime errors with Arcane/Inferno/Frost all active and casting on
+      independent cooldowns simultaneously -- confirms no signal
+      conflicts or performance blowup.
+- [ ] Verify *visual/audio* feel (whether 3 simultaneous cast effects
+      read as clutter or chaos) -- genuinely can't check this headless,
+      no way to see frames or hear audio output from the playtest
+      harness. Needs actual human eyes/ears.
 - [x] Real spell visuals/SFX -- Inferno Blade (flame-burst) and Frost Nova
       (ice-ring, sized to its radius stat) both have dedicated procedural
       visuals now; Arcane Bolt's projectile already had one from the
@@ -63,9 +68,14 @@ this file should stay short enough to skim.
 - [ ] Verify progression: early runs (Phase 1 only) feel accessible,
       reaching Phase 3 feels like milestone -- needs real playtesting.
       Playtest harness data so far: a heavily-seeded bot reaches Phase 3
-      consistently (~44-52s avg survival) but a fresh/lightly-seeded one
-      never does -- consistent with "milestone," not yet confirmed as
-      *feeling* like one to an actual player.
+      consistently (~44-52s avg survival); a moderately-seeded one (all 3
+      spells + a handful of stat levels, standing in for "several runs
+      in") lands solidly in Phase 2 (~30s avg, max 37.6s across 10 runs)
+      without reaching it; a fresh/zero-upgrade one never does --
+      consistent with "milestone," not yet confirmed as *feeling* like
+      one to an actual player (the bot doesn't reposition/plan the way a
+      human would, so this reads real difficulty but isn't the full
+      picture).
 - [x] Tier 4 Boss -- unique, spawns once at 55+ sec, hybrid pursuit +
       3-shot projectile spread, guaranteed Mythic+ drop
 - [x] Enemy variants within tiers -- Fast/Tanky Minion, same loot table,
