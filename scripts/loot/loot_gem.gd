@@ -1,16 +1,18 @@
 extends Node2D
 
-## Procedurally-drawn gem visual for loot at rest. Small and simple by
-## design (DESIGN.md/TODO.md's "pips, not gems" rework -- the original
-## faceted crystal read as cluttered/too big the moment several piled up
-## mid-fight), but kept as an actual faceted shape rather than a plain
+## Procedurally-drawn gem visual for loot at rest. Simplified from the
+## original faceted crystal (DESIGN.md/TODO.md's "pips, not gems" rework
+## -- the original read as cluttered/too big the moment several piled up
+## mid-fight) but kept as an actual faceted shape rather than a plain
 ## dot, per live-play feedback that a flat circle lost the game's magic-
 ## gem aesthetic. No glow ring, no outline stroke -- just two shaded
-## facets and a bright cap, small enough to stay quiet on the ground.
+## facets and a bright cap. Sized to be trackable/followable at a glance
+## without cluttering the screen -- went too far small on the first pass
+## after the crystal-detail cut, sized back up on live-play feedback.
 ## Tinted by rarity via modulate (set by loot.gd).
 
-const GEM_HEIGHT: float = 5.0
-const GEM_WIDTH: float = 3.4
+const GEM_HEIGHT: float = 12.0
+const GEM_WIDTH: float = 8.2
 
 
 func _draw() -> void:

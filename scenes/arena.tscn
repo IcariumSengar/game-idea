@@ -61,6 +61,7 @@ wait_time = 1.5
 autostart = true
 
 [node name="HUD" type="CanvasLayer" parent="."]
+process_mode = 3
 script = ExtResource("4_hud")
 
 [node name="Vignette" type="Control" parent="HUD"]
@@ -278,6 +279,71 @@ theme_override_font_sizes/font_size = 16
 text = "Restart Run"
 script = ExtResource("15_link")
 
+[node name="PausePanel" type="PanelContainer" parent="HUD"]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -110.0
+offset_right = 140.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gameover")
+
+[node name="PauseMargin" type="MarginContainer" parent="HUD/PausePanel"]
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 20
+
+[node name="PauseVBox" type="VBoxContainer" parent="HUD/PausePanel/PauseMargin"]
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="PauseLabel" type="Label" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_constants/outline_size = 3
+theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="PauseDivider" type="ColorRect" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+custom_minimum_size = Vector2(0, 2)
+color = Color(0.92, 0.82, 0.4, 0.85)
+
+[node name="PauseSpacer" type="Control" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+custom_minimum_size = Vector2(0, 4)
+
+[node name="ResumeButton" type="Button" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 20
+text = "Resume"
+script = ExtResource("15_link")
+
+[node name="QuitToMenuButton" type="Button" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 34)
+theme_override_font_sizes/font_size = 16
+text = "Quit to Menu"
+script = ExtResource("15_link")
+
+[node name="QuitGameButton" type="Button" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 14
+text = "Quit Game"
+script = ExtResource("15_link")
+
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/RestartButton" to="HUD" method="_on_restart_button_pressed"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]
+[connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/ResumeButton" to="HUD" method="_on_resume_button_pressed"]
+[connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/QuitToMenuButton" to="HUD" method="_on_quit_to_menu_button_pressed"]
+[connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/QuitGameButton" to="HUD" method="_on_quit_game_button_pressed"]

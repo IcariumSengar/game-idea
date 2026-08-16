@@ -24,6 +24,7 @@ var _stardust_update_timer: float = 0.0
 @onready var _game_over_panel: PanelContainer = $GameOverPanel
 @onready var _game_over_circle: Control = $GameOverCircle
 @onready var _summary_body: RichTextLabel = %SummaryBody
+@onready var _pause_panel: PanelContainer = $PausePanel
 
 
 func _ready() -> void:
@@ -47,6 +48,20 @@ func _process(delta: float) -> void:
 		_stardust_update_timer = 0.0
 		var stardust: float = _arena.get_run_time() * MetaProgression.BACKPACK_CURRENCY_PER_SECOND
 		_stardust_value.text = "%.1f" % stardust
+
+
+## Escape toggles the pause menu. HUD is process_mode ALWAYS specifically
+## so this keeps firing after get_tree().paused is set -- otherwise
+## there'd be no way to detect the second press that resumes. Ignored
+## while the death screen is already up (already paused for a different
+## reason -- don't stack a second overlay on top of it).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and not _game_over_panel.visible:
+		if get_tree().paused:
+			_resume()
+		else:
+			_pause_panel.show()
+			get_tree().paused = true
 
 
 func _on_hp_changed(current: float, max_hp: float) -> void:
@@ -176,3 +191,28 @@ func _on_continue_button_pressed() -> void:
 func _on_restart_button_pressed() -> void:
 	get_tree().paused = false
 	SceneTransition.goto_scene("res://scenes/arena.tscn")
+
+
+func _resume() -> void:
+	_pause_panel.hide()
+	get_tree().paused = false
+
+
+func _on_resume_button_pressed() -> void:
+	_resume()
+
+
+## Abandons the run -- no death, no run-end currency award (same as
+## alt-F4ing mid-run), just banks whatever's already been saved from
+## previous runs and backs out.
+func _on_quit_to_menu_button_pressed() -> void:
+	SaveManager.save()
+	CloudSync.sync_now()
+	get_tree().paused = false
+	SceneTransition.goto_scene("res://scenes/ui/main_menu.tscn")
+
+
+func _on_quit_game_button_pressed() -> void:
+	SaveManager.save()
+	CloudSync.sync_now()
+	get_tree().quit()

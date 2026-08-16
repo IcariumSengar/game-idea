@@ -1568,3 +1568,18 @@ Short dated entries when a design decision is made and worth remembering
   frequent Streak triggers (10 runs, 5-20 kills each) and a heavily-
   seeded one reaching Phase 3 with fill% high enough to plausibly trigger
   Full Set (15 runs, up to 69 kills), both zero errors.
+- 2026-08-16 — Third live-play pass on the gem visual: the previous
+  resize went too far the other way -- `loot_gem.gd`'s facets sized back
+  up (roughly 2.4x linear) and `loot.gd`'s `SPRITE_SCALE` with them
+  (1.3 -> 1.6), aiming for "trackable/followable at a glance without
+  cluttering the screen" rather than a specific number. Also added an
+  Escape-triggered pause menu mid-run (Resume / Quit to Menu / Quit
+  Game) -- there was previously no way to exit a run except dying or
+  killing the process. Quitting mid-run abandons it like alt-F4 would
+  (no death, no run-end currency award) rather than banking partial
+  progress, which wasn't asked for and would be a real economy decision.
+  `HUD`'s CanvasLayer is now `process_mode` ALWAYS so the Escape toggle
+  keeps working after `get_tree().paused` is set (needed to detect the
+  second press that resumes) -- mirrors the existing GameOverPanel's
+  per-node ALWAYS pattern, just applied one level up since the whole
+  pause flow, not just one panel, needs to survive the pause.
