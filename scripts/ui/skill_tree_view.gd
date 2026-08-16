@@ -33,11 +33,6 @@ const STAT_DESCRIPTIONS: Dictionary = {
 	&"move_speed": "Swift feet carry you through the void.",
 	&"pickup_range": "Widens your arcane pull, drawing loot in from farther away.",
 	&"backpack_capacity": "Stitches an extra pocket into your satchel.",
-	&"compactor_common": "Grows your Commons Hoard, raising its max stack.",
-	&"compactor_uncommon": "Grows your Uncommon Stash, raising its max stack.",
-	&"compactor_rare": "Grows your Rare Vault, raising its max stack.",
-	&"compactor_epic": "Grows your Epic Trove, raising its max stack.",
-	&"compactor_mythic": "Grows your Mythic Hoard, raising its max stack.",
 	&"purge": "Automatically discards your lowest-rarity loot once your hoard nears its limit.",
 }
 
@@ -136,12 +131,10 @@ func set_tree_data(
 
 func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 	var parent_of: Dictionary = {
-		MetaProgression.STAT_COMPACTOR_COMMON: MetaProgression.STAT_BACKPACK_CAPACITY,
-		MetaProgression.STAT_COMPACTOR_UNCOMMON: MetaProgression.STAT_COMPACTOR_COMMON,
-		MetaProgression.STAT_COMPACTOR_RARE: MetaProgression.STAT_COMPACTOR_UNCOMMON,
-		MetaProgression.STAT_COMPACTOR_EPIC: MetaProgression.STAT_COMPACTOR_RARE,
-		MetaProgression.STAT_COMPACTOR_MYTHIC: MetaProgression.STAT_COMPACTOR_EPIC,
-		MetaProgression.STAT_PURGE: MetaProgression.STAT_COMPACTOR_RARE,
+		# Was chained off Compacting's Rare Vault node before its removal
+		# (DESIGN.md 2026-08-16) -- Backpack Tree is now just two nodes,
+		# Bearing then Discard.
+		MetaProgression.STAT_PURGE: MetaProgression.STAT_BACKPACK_CAPACITY,
 		MetaProgression.STAT_INFERNO_FURY: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_INFERNO_ARC_WIDTH: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_INFERNO_BURN_DAMAGE: MetaProgression.STAT_SPELL_UNLOCK,
@@ -486,7 +479,7 @@ func _draw_stat_icon(stat_id: StringName, center: Vector2, s: float, color: Colo
 		MetaProgression.STAT_SPELL_UNLOCK:
 			_draw_sparkle_icon(center, s, color)
 		_:
-			_draw_gem_icon(stat_id, center, s, color)
+			_draw_gem_icon(center, s, color)
 
 
 func _draw_sword_icon(center: Vector2, s: float, color: Color) -> void:
@@ -561,9 +554,13 @@ func _draw_sparkle_icon(center: Vector2, s: float, color: Color) -> void:
 	)
 
 
-func _draw_gem_icon(stat_id: StringName, center: Vector2, s: float, color: Color) -> void:
-	var tier_color := _get_compactor_tier_color(stat_id)
-	var gem_color: Color = tier_color if tier_color != Color.TRANSPARENT else color
+## Default fallback icon for any stat not special-cased in
+## _draw_stat_icon() -- mainly the per-spell upgrade stats. Used to also
+## look up a rarity-tinted color for Compacting's five nodes; now always
+## just uses the passed-in color like every other icon function, since
+## Compacting's removal (DESIGN.md 2026-08-16) took the one caller that
+## needed a different color with it.
+func _draw_gem_icon(center: Vector2, s: float, color: Color) -> void:
 	var gem := PackedVector2Array(
 		[
 			center + Vector2(0.0, -s),
@@ -572,24 +569,5 @@ func _draw_gem_icon(stat_id: StringName, center: Vector2, s: float, color: Color
 			center + Vector2(-s * 0.8, 0.0)
 		]
 	)
-	draw_colored_polygon(gem, gem_color)
-	draw_polyline(gem + PackedVector2Array([gem[0]]), gem_color.darkened(0.35), 1.5, true)
-
-
-func _get_compactor_tier_color(stat_id: StringName) -> Color:
-	var tier_id: StringName = StringName()
-	match stat_id:
-		MetaProgression.STAT_COMPACTOR_COMMON:
-			tier_id = &"common"
-		MetaProgression.STAT_COMPACTOR_UNCOMMON:
-			tier_id = &"uncommon"
-		MetaProgression.STAT_COMPACTOR_RARE:
-			tier_id = &"rare"
-		MetaProgression.STAT_COMPACTOR_EPIC:
-			tier_id = &"epic"
-		MetaProgression.STAT_COMPACTOR_MYTHIC:
-			tier_id = &"mythic"
-		_:
-			return Color.TRANSPARENT
-	var def := LootTypes.get_type(tier_id)
-	return def.color if def != null else Color.TRANSPARENT
+	draw_colored_polygon(gem, color)
+	draw_polyline(gem + PackedVector2Array([gem[0]]), color.darkened(0.35), 1.5, true)

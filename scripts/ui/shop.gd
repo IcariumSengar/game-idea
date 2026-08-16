@@ -180,11 +180,10 @@ func _bounce_label(label: Label) -> void:
 ## make sense.
 func _gate_requirements() -> Dictionary:
 	return {
-		MetaProgression.STAT_COMPACTOR_UNCOMMON: [MetaProgression.STAT_COMPACTOR_COMMON, 1],
-		MetaProgression.STAT_COMPACTOR_RARE: [MetaProgression.STAT_COMPACTOR_UNCOMMON, 1],
-		MetaProgression.STAT_COMPACTOR_EPIC: [MetaProgression.STAT_COMPACTOR_RARE, 1],
-		MetaProgression.STAT_COMPACTOR_MYTHIC: [MetaProgression.STAT_COMPACTOR_EPIC, 1],
-		MetaProgression.STAT_PURGE: [MetaProgression.STAT_COMPACTOR_RARE, 1],
+		# Was gated behind Compacting's Rare Vault node before its removal
+		# (DESIGN.md 2026-08-16) -- re-pointed to Bearing's first level so
+		# Backpack Tree keeps some gating structure instead of going flat.
+		MetaProgression.STAT_PURGE: [MetaProgression.STAT_BACKPACK_CAPACITY, 1],
 		MetaProgression.STAT_INFERNO_FURY: [MetaProgression.STAT_SPELL_UNLOCK, 1],
 		MetaProgression.STAT_INFERNO_ARC_WIDTH: [MetaProgression.STAT_SPELL_UNLOCK, 1],
 		MetaProgression.STAT_INFERNO_BURN_DAMAGE: [MetaProgression.STAT_SPELL_UNLOCK, 1],

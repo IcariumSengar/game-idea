@@ -61,34 +61,18 @@ func pick_random_weighted(weights: Dictionary) -> LootTypeDef:
 	return last_def
 
 
+## Fixed per-tier constant since Compacting's removal (DESIGN.md
+## 2026-08-16, "Compacting removed entirely") -- every tier's stack size
+## is now permanently whatever's registered above, not an upgradeable
+## lever. Kept as its own function (not just reading def.stack_size at
+## call sites directly) since it's still the one place callers should
+## ask "how many of this tier fit in a slot," even though the answer no
+## longer varies.
 func get_effective_stack_size(type_id: StringName) -> int:
 	var def := get_type(type_id)
 	if def == null:
 		return 1
-	if type_id == &"legendary":
-		return 1
-	var compactor_stat := _get_compactor_stat_for_tier(type_id)
-	if compactor_stat == StringName():
-		return def.stack_size
-	var compactor_level := MetaProgression.get_level(compactor_stat)
-	if compactor_level == 0:
-		return def.stack_size
-	return roundi(MetaProgression.get_stat(compactor_stat))
-
-
-func _get_compactor_stat_for_tier(type_id: StringName) -> StringName:
-	match type_id:
-		&"common":
-			return MetaProgression.STAT_COMPACTOR_COMMON
-		&"uncommon":
-			return MetaProgression.STAT_COMPACTOR_UNCOMMON
-		&"rare":
-			return MetaProgression.STAT_COMPACTOR_RARE
-		&"epic":
-			return MetaProgression.STAT_COMPACTOR_EPIC
-		&"mythic":
-			return MetaProgression.STAT_COMPACTOR_MYTHIC
-	return StringName()
+	return def.stack_size
 
 
 func _register(

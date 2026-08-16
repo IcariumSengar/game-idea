@@ -1932,3 +1932,31 @@ Short dated entries when a design decision is made and worth remembering
   batch exercising both combos' discovery-marking calls with zero
   errors. Not verified: how the screen actually reads/scrolls in a real
   window -- needs a human via `playdev`.
+- 2026-08-16 — Compacting removal implemented, matching this doc's
+  already-updated "Discard upgrade" section and decision-log entry.
+  Deleted the five Compactor stat defs (`meta_progression.gd`) and every
+  reference to them: `loot_registry.gd`'s `get_effective_stack_size()`
+  now just returns each tier's fixed registry value (no lookup, no
+  special-cased Legendary branch needed anymore either -- it falls out
+  of the same generic logic); `shop.gd`/`skill_tree_view.gd`'s gate/
+  tree-parent/tooltip tables lost their five Compactor entries, with
+  Discard re-pointed to gate behind Bearing's first level as specced;
+  `skill_tree_view.gd`'s rarity-tinted gem-icon special case (only ever
+  used by Compacting's five nodes) removed along with them -- the gem
+  icon just uses its passed-in color now, like every other icon.
+  Balance re-verification (flagged, not resolved, per the item's own
+  scope -- meta-progression/economy tuning is explicitly not this
+  session's focus): playtested at three Bearing progression points
+  (fresh save/5 slots, moderate/8 slots, maxed/15 slots). Fill %
+  scales inversely with capacity as expected (higher Bearing level ->
+  lower fill % for the same loot volume) and nothing crashed or read as
+  obviously broken, but whether Bearing's cost curve *paces* correctly
+  now that it's the only capacity lever left is a real open question
+  this data doesn't answer on its own -- flagged for whoever picks up
+  the economy pass, not decided here. Verified via boot checks
+  (including `shop.tscn` directly, given how much of the skill tree this
+  touched), the unit-test runner (192 passing -- the drop from 209 is
+  expected: 20 fewer assertions from 5 removed stat defs in the generic
+  per-stat tests, +3 from `_test_loot_effective_stack_size` now covering
+  all six tiers instead of two), and three playtest batches with zero
+  errors.

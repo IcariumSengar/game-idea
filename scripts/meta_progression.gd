@@ -16,11 +16,6 @@ const STAT_BACKPACK_CAPACITY: StringName = &"backpack_capacity"
 const STAT_PICKUP_RANGE: StringName = &"pickup_range"
 const STAT_DAMAGE: StringName = &"damage"
 const STAT_MOVE_SPEED: StringName = &"move_speed"
-const STAT_COMPACTOR_COMMON: StringName = &"compactor_common"
-const STAT_COMPACTOR_UNCOMMON: StringName = &"compactor_uncommon"
-const STAT_COMPACTOR_RARE: StringName = &"compactor_rare"
-const STAT_COMPACTOR_EPIC: StringName = &"compactor_epic"
-const STAT_COMPACTOR_MYTHIC: StringName = &"compactor_mythic"
 const STAT_PURGE: StringName = &"purge"
 const STAT_SPELL_UNLOCK: StringName = &"spell_unlock"
 const STAT_ARCANE_HASTE: StringName = &"arcane_haste"
@@ -91,37 +86,6 @@ func _ready() -> void:
 	_register_stat(STAT_DAMAGE, "Spellpower", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)
 	_register_stat(
 		STAT_MOVE_SPEED, "Swiftness", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
-	)
-	_register_stat(
-		STAT_COMPACTOR_COMMON,
-		"Commons Hoard",
-		10.0,
-		10.0,
-		12,
-		1.12,
-		8,
-		0,
-		StatDef.Currency.BACKPACK
-	)
-	_register_stat(
-		STAT_COMPACTOR_UNCOMMON,
-		"Uncommon Stash",
-		8.0,
-		5.0,
-		18,
-		1.14,
-		6,
-		0,
-		StatDef.Currency.BACKPACK
-	)
-	_register_stat(
-		STAT_COMPACTOR_RARE, "Rare Vault", 5.0, 3.0, 28, 1.16, 5, 0, StatDef.Currency.BACKPACK
-	)
-	_register_stat(
-		STAT_COMPACTOR_EPIC, "Epic Trove", 3.0, 2.0, 42, 1.18, 4, 0, StatDef.Currency.BACKPACK
-	)
-	_register_stat(
-		STAT_COMPACTOR_MYTHIC, "Mythic Hoard", 2.0, 1.0, 75, 1.20, 3, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PURGE, "Discard", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	# Cap raised 5->7 for v11's five new spells (L3-L7) on top of Inferno/Frost

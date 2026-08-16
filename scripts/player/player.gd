@@ -69,7 +69,7 @@ var max_hp: float
 var backpack: Dictionary = {}
 ## Extra currency from affixed loot (see loot.gd) -- tracked separately
 ## from the backpack since affixes are a one-time value bonus on pickup,
-## not a persistent property of a stack slot the way Compacting/rarity are.
+## not a persistent property of a stack slot the way stack size/rarity are.
 var bonus_loot_value: int = 0
 
 var _effective_speed: float = 0.0
@@ -348,10 +348,11 @@ func _needs_new_slot(count: int, stack_size: int) -> bool:
 
 
 ## Total occupied slots: one slot per stack instance of a tier, capped by
-## that tier's Compacting-modified stack size -- a tier spans multiple
+## that tier's fixed stack size (Compacting, previously a lever on this,
+## was removed entirely -- DESIGN.md 2026-08-16) -- a tier spans multiple
 ## slots once its current stack is full, instead of the old "one slot per
 ## distinct tier touched" (which silently hard-capped fill % at the 6
-## rarity tiers regardless of Bearing/Compacting level).
+## rarity tiers regardless of Bearing level).
 func _slots_used() -> int:
 	var total := 0
 	for type_id: StringName in backpack:

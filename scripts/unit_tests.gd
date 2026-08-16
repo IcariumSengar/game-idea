@@ -159,31 +159,15 @@ func _test_loot_weighted_pick() -> void:
 		)
 
 
+## Compacting was removed entirely (DESIGN.md 2026-08-16) -- every
+## tier's effective stack size is now a fixed constant, always equal to
+## its own registry value, with no stat/level to bump it anymore.
 func _test_loot_effective_stack_size() -> void:
-	var original_common := MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_COMMON)
-	var original_legendary_level := MetaProgression.get_level(MetaProgression.STAT_COMPACTOR_MYTHIC)
-
-	MetaProgression.debug_set_level(MetaProgression.STAT_COMPACTOR_COMMON, 0)
-	var common_def := LootTypes.get_type(&"common")
-	_assert(
-		LootTypes.get_effective_stack_size(&"common") == common_def.stack_size,
-		"common stack size matches registry default at compactor level 0"
-	)
-
-	MetaProgression.debug_set_level(MetaProgression.STAT_COMPACTOR_COMMON, 3)
-	var expected := roundi(MetaProgression.get_stat(MetaProgression.STAT_COMPACTOR_COMMON))
-	_assert(
-		LootTypes.get_effective_stack_size(&"common") == expected,
-		"common stack size follows Compactor level once leveled"
-	)
-
-	_assert(
-		LootTypes.get_effective_stack_size(&"legendary") == 1,
-		"legendary stack size is always 1, no compactor tier"
-	)
-
-	MetaProgression.debug_set_level(MetaProgression.STAT_COMPACTOR_COMMON, original_common)
-	MetaProgression.debug_set_level(MetaProgression.STAT_COMPACTOR_MYTHIC, original_legendary_level)
+	for def: LootTypeDef in LootTypes.get_types():
+		_assert(
+			LootTypes.get_effective_stack_size(def.id) == def.stack_size,
+			"%s's effective stack size always matches its fixed registry value" % def.id
+		)
 
 
 ## Verifies player.gd's backpack-fill speed/size lerp (Tweak 4: HP no
@@ -252,8 +236,8 @@ func _test_backpack_fill_effects() -> void:
 ## Verifies the slot-based fill % fix (DESIGN.md's Tweak 3): a tier
 ## should consume more than one slot once its stack fills, instead of
 ## fill % being capped at "distinct tiers touched." Uses legendary since
-## its effective stack size is always 1 (no Compactor tier for it),
-## making the slot math deterministic regardless of Compactor levels.
+## its effective stack size is always 1, making the slot math
+## deterministic regardless of anything else.
 func _test_backpack_slots_used() -> void:
 	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
 	add_child(player)
