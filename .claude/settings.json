@@ -2,8 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(tasklist)",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(cd \"c:\\\\Users\\\\mattf\\\\OneDrive\\\\Documents\\\\game-idea\\\\game-idea\" && sed -i 's/_find_def\\(/get_stat_def\\(/g' scripts/meta_progression.gd && grep -n \"get_stat_def\\\\|_find_def\" scripts/meta_progression.gd)",
+      "Bash(git check-ignore *)",
+      "Bash(rm .godot/global_script_class_cache.cfg)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "c:\\Users\\mattf\\OneDrive\\Documents\\game-idea\\game-idea\\scripts"
+    ]
   }
 }

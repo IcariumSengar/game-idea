@@ -2,331 +2,151 @@
 
 ## Status
 
-**Adopted 2026-08-15.** The stat and Compacting-tier renames from the
-Summary Recommendations table below are implemented in
-`scripts/meta_progression.gd` and `scripts/skill_tree_view.gd`: Damage →
-Spellpower, Move Speed → Swiftness, Magnet Range → Gleam, Backpack
-Capacity → Bearing, Purge → Discard, and the five Compacting tiers →
-Commons Hoard / Uncommon Stash / Rare Vault / Epic Trove / Mythic Hoard.
-One deviation from this doc: Backpack Currency shipped as **Stardust**
-(v5 naming pass, tied to the game's cosmic aesthetic) rather than the
-"Endurance" suggested here. See DESIGN.md's decisions log for both
-naming passes.
-
-## Overview
-
-This spec defines the voice, tone, and naming conventions for all in-game text: menus, stats, skills, UI copy, etc. Goal: consistent personality that reinforces the core loop (hoarding loot, surviving, getting stronger).
-
----
-
-## Core Tone Options
-
-### Option A: Mystical & Determined
-- **Voice:** Arcane, but grounded. The magic user is competent and focused.
-- **Vibe:** "I know what I'm doing. The magic is mine to command."
-- **Examples:** "Gather more power," "Your reserves deepen," "The spell strengthens"
-- **Best for:** Fantasy-forward, player feels in control
-
-### Option B: Dark & Desperate
-- **Voice:** Gritty survival. Hoarding is a matter of necessity.
-- **Vibe:** "Collect or perish. Every moment of survival buys power."
-- **Examples:** "Desperation breeds strength," "You've weathered the storm," "Hunger for more"
-- **Best for:** Roguelike intensity, player feels tested
-
-### Option C: Minimalist & Clean
-- **Voice:** Direct, no-frills. Just the facts.
-- **Vibe:** "Here's what you earned. Here's what you can buy."
-- **Examples:** "Spell Power +2," "10 common items collected," "Next upgrade cost: 75"
-- **Best for:** Clarity-first, player focuses on numbers
-
-### Option D: Playful & Greedy
-- **Voice:** Wink-nudge tone. Hoarding is fun, accumulation is the goal.
-- **Vibe:** "More is always better. Collect everything."
-- **Examples:** "Bag getting plump," "Greed fuels your power," "One more thing..."
-- **Best for:** Lighter feel, player enjoys the hoarding loop
-
----
-
-## Recommendation: Blend A + B
-
-**Primary tone:** Mystical & Determined (Option A)
-**Secondary tone:** Dark & Desperate (Option B)
-
-This gives personality without veering into comedy, reinforces both the magic and survival themes, and suits the meta-progression loop (survive → gather → empower → repeat).
-
----
-
-## Naming Conventions
-
-### Currency Names
-
-**Current:** "Player Currency" / "Backpack Currency" (placeholder)
-
-**Option A (Mystical):**
-- Player Currency → **"Essence"** (loot distilled into pure power)
-- Backpack Currency → **"Endurance"** (earned through survival)
-
-**Option B (Dark):**
-- Player Currency → **"Spoils"** (what you took from enemies)
-- Backpack Currency → **"Grit"** (you survived this long)
-
-**Option C (Minimal):**
-- Keep as-is or use short codes: "Loot" / "Time"
-
-**Recommendation:** Go with Option A (Essence / Endurance)
-- Mystical flavor reinforces magic theme
-- Suggests accumulation and earning (not just generic "gold")
-- "Essence" feels like condensed power, "Endurance" like earned durability
-
-### Stat Names
-
-**Current:** Damage, Move Speed, Magnet Range, Backpack Capacity
-
-**Mystical Layer:**
-- Damage → **"Spellpower"** (already used)
-- Move Speed → **"Swiftness"** or **"Mobility"** (more fantasy)
-- Magnet Range → **"Gleam"** or **"Radius"** (attraction distance; "gleam" sounds mystical)
-- Backpack Capacity → **"Bearing"** or **"Capacity"** (how much you can bear/carry)
-
-**Example upgrade tree:**
-```
-Spellpower       (primary damage scale)
-Swiftness        (dodge speed)
-Gleam            (loot attraction range)
-Bearing          (slot capacity)
-```
-
-**Compacting (per tier):**
-- Current: "Compactor: Common"
-- Option: **"Commons Hoard"**, **"Uncommon Stash"**, **"Rares Vault"**
-  - More evocative than "Compactor"
-  - Reinforces hoarding theme
-  - "Hoard/Stash/Vault" escalates with rarity
-
-**Purge:**
-- Current: "Purge"
-- Option: **"Discard"** or **"Jettison"** (clearer) or **"Unbind"** (more mystical)
-
-**Recommendation:**
-- Spellpower (keep as-is)
-- Swiftness (more fantasy than Speed)
-- Gleam (loot attraction; mystical)
-- Bearing (capacity; implies carrying weight)
-- Per-tier Compacting: Commons Hoard → Uncommon Stash → Rare Vault → Epic Trove → Mythic Hoard (or "Pinnacle Hoard")
-- Purge → **"Discard"** (clear and neutral)
-
-### Spell Names
-
-**Current:** Arcane Bolt, Inferno Blade, Frost Nova
-
-**These are good.** Keep as-is. They're clear, evocative, and match the magic user fantasy.
-
-**Optional upgrades within trees:**
-- Arcane Bolt
-  - Haste → **"Quicken"**
-  - Projectile Speed → **"Velocity"** or **"Swiftness"**
-
-- Inferno Blade
-  - Fury → **"Ferocity"** or **"Rage"**
-  - Arc Width → **"Arc"** or **"Sweep"**
-  - Burn Damage → **"Pyre"** or **"Scorch"**
-
-- Frost Nova
-  - Frequency → **"Cadence"** or **"Pulse Rate"**
-  - Radius → **"Radius"** (keep simple)
-  - Slow Strength → **"Glaciate"** or **"Freeze Depth"**
-
-### Enemy Names
-
-**Current:** Minion, Bruiser, Elite
-
-**Mystical alternatives:**
-- Minion → **"Thrall"** (summoned/enchanted creature)
-- Bruiser → **"Colossus"** or **"Brute"** (keep Bruiser, it works)
-- Elite → **"Sorcerer"** or **"Caster"** (reinforces magic theme)
-
-**Recommendation:** Keep current names. They're clear and not placeholder-y.
-
----
-
-## UI Copy (Menu & Screens)
-
-### Main Menu
-
-**Current placeholder:** "Start Game" / "Load Game" / "Settings"
-
-**Mystical tone:**
-```
-╔═══════════════════════╗
-║  HOARD SURVIVORS      ║
-╠═══════════════════════╣
-║  [ Begin Ascent ]     ║  (start new run)
-║  [ Restore Path ]     ║  (load game)
-║  [ Attunement ]       ║  (settings)
-║  [ Grimoire ]         ║  (help/guide)
-╚═══════════════════════╝
-```
-
-**Recommendation:** Use clearer names, but with slight flavor.
-```
-[ New Game ]
-[ Continue ]
-[ Settings ]
-[ Guide ]
-```
-
-Or slight mystical flavor:
-```
-[ Begin the Hunt ]
-[ Resume ]
-[ Attune ]
-[ Grimoire ]
-```
-
-### Shop Screen
-
-**Current:** "Shop" or flat list of upgrades
-
-**Mystical frame:**
-```
-═══════════════════════════════════
-  ARSENAL OF THE ARCANE
-═══════════════════════════════════
-```
-
-or
-
-```
-═══════════════════════════════════
-  THE SHOP
-═══════════════════════════════════
-(simple, direct)
-```
-
-### Death Summary
-
-**Current:** "Run Summary"
-
-**Mystical flavor:**
-```
-═══════════════════════════════════
-  YOUR ASCENT
-═══════════════════════════════════
-You survived 01:47 and reached Phase 2.
-[rewards breakdown]
-
-Highest previous attempt: 01:34
-```
-
-or stay simple:
-```
-═══════════════════════════════════
-  RUN SUMMARY
-═══════════════════════════════════
-```
-
-### Run Victory / Continue
-
-**Current:** "Continue to Shop"
-
-**Options:**
-- "Continue to Shop" (clear, keep)
-- "Proceed to Armory" (flavor)
-- "Return to Haven" (flavor)
-
-**Recommendation:** Keep "Continue to Shop" for clarity. No unnecessary flavor here.
-
----
-
-## Upgrade Purchase UI
-
-**When hovering a skill node:**
-
-Current flavor:
-```
-DAMAGE
-Level: 5 / 20
-Cost: 75 Essence
-Effect: +2 Spellpower
-Current: 30 → 32
-"Increases spell power across all spells."
-```
-
-Slightly more flavor:
-```
-SPELLPOWER
-Level: 5 / 20
-Cost: 75 Essence
-Effect: +2 spell potency
-Current: 30 → 32
-"Your spells strike with greater force."
-```
-
-or minimize:
-```
-SPELLPOWER
-Level 5/20 | Cost: 75 Essence
-+2 potency (30 → 32)
-Increases spell power across all spells.
-```
-
-**Recommendation:** Middle ground. Keep flavor light, prioritize clarity.
-
----
-
-## Flavor Text (Fluff)
-
-**Small text descriptions on upgrades/items:**
-
-**Example: Spellpower upgrade**
-- Minimal: "Increases spell damage"
-- With flavor: "Your spells crackle with arcane power"
-- Dark flavor: "The more you cast, the stronger you become. Desperation breeds might."
-
-**Example: Swiftness upgrade**
-- Minimal: "Increases movement speed"
-- With flavor: "Swift feet carry you through the storm"
-- Dark flavor: "Slow runners perish. Move, or fall."
-
-**Recommendation:** Add one-line flavor text to upgrades, keeping it brief and supporting the tone.
-
----
-
-## Summary Recommendations
-
-| Element | Recommendation | Tone |
-|---------|---|---|
-| Essence | Player Currency name | Mystical |
-| Endurance | Backpack Currency name | Mystical |
-| Spellpower | Damage stat (keep) | Mystical |
-| Swiftness | Speed stat | Mystical |
-| Gleam | Magnet Range stat | Mystical |
-| Bearing | Capacity stat | Mystical |
-| Commons Hoard / Uncommon Stash / Rare Vault / Epic Trove / Mythic Hoard | Compacting tier names | Mystical + Thematic |
-| Discard | Purge upgrade name | Neutral |
-| Keep spell names | Arcane Bolt, Inferno Blade, Frost Nova | Already good |
-| Simple UI labels | "New Game", "Continue", "Settings" | Clear |
-| Light flavor text | One-liners on upgrades | Mystical + brief |
-| Death summary | "Run Summary" (simple) | Direct |
-
----
-
-## Open Questions
-
-1. Should flavor text be mandatory (every upgrade) or minimal (just key ones)?
-2. Should enemy names get mystical names, or keep current (Minion, Bruiser, Elite)?
-3. Should menu labels have flavor ("Begin Ascent" vs "New Game"), or stay clear?
-4. Should loot rarity names change? (Common → Fragment? Uncommon → Essence?)
-5. Should there be a "Lore" or "Grimoire" accessible in-game explaining the world?
-
----
-
-## Implementation Path
-
-1. Decide overall tone: Mystical (recommended) or something else
-2. Rename currencies: "Essence" / "Endurance"
-3. Rename stats: "Spellpower" / "Swiftness" / "Gleam" / "Bearing"
-4. Rename Compacting tiers: "Commons Hoard" → "Mythic Hoard"
-5. Rename Purge: "Discard"
-6. Add one-line flavor text to 3–5 key upgrades (test the vibe)
-7. Keep menu labels simple and clear (no experimental names here)
+**Living spec, audited against shipped text 2026-08-16.** Earlier versions
+of this doc were an options brainstorm written before most of the game
+existed; several of its own recommendations were superseded by what
+actually shipped (it suggested "Endurance" for the backpack currency, the
+game shipped "Stardust" -- see DESIGN.md's decision log for that and the
+other naming-pass entries). This rewrite replaces the brainstorm with a
+definitive spec grounded in a line-by-line audit of every player-facing
+string in the game as of `v0.1.1`, and resolves the old draft's "Open
+Questions" instead of leaving them open indefinitely.
+
+## Tone
+
+Mystical & Determined + Dark & Desperate -- confirmed by what's shipped,
+though Dark & Desperate carries more weight than the original draft gave
+it credit for. The title itself is "HOARD SURVIVORS," tagline "Hoard what
+you can. Survive what you must." -- squarely desperate-survival, not just
+seasoning on a mystical base. Treat the two as equal partners going
+forward, not primary/secondary.
+
+## The real problem: two unlabeled registers, applied inconsistently
+
+Auditing every screen turns up two genuinely different kinds of text
+living side by side with no rule for which is which:
+
+- **Frame text** -- titles, one-time narrative beats, proper nouns
+  (screen titles, the death screen's emotional line, "Sanctum,"
+  "Embark"). Read rarely, at a mood-setting moment. Worth the flavor
+  investment.
+- **Function text** -- buttons, numeric readouts, list rows, settings.
+  Read constantly, scanned for information under time pressure (mid-run
+  HUD, a save-slot list, a cost tooltip). Flavor here is friction, not
+  charm.
+
+Most shipped text already sorts cleanly into one bucket or the other
+(Settings is entirely Function, "Lost to the Void" is entirely Frame) --
+the inconsistency isn't that the game can't tell them apart, it's that
+the split was never written down as a rule, so it drifted in a few
+spots: two places put Frame and Function text right next to each other
+doing the same job twice, and one same-action button ended up with
+different casing on different screens. That's the actual "blurry line" --
+not the tone itself, which is fine.
+
+## Screen-by-screen audit
+
+| Screen | Element | Current text | Register | Verdict |
+|---|---|---|---|---|
+| Main Menu | Title | HOARD SURVIVORS | Frame | Keep |
+| Main Menu | Subtitle | "Hoard what you can. Survive what you must." | Frame | Keep |
+| Main Menu | Buttons | PLAY / LOAD GAME / SETTINGS / QUIT | Function | Keep |
+| Save Slot Selector | Title | LOAD GAME | Function | Keep |
+| Save Slot Selector | Row buttons | Start / Load / Overwrite / Delete | Function | Keep |
+| Run Prep (outer hub) | Title | EMBARK? | Frame | Keep |
+| Run Prep | Progress panel | "Your Hoard" + stat/currency list | Frame label, Function content | Keep |
+| Run Prep | Ability section | BACKPACK ABILITY, Condense / Clear | Function | Keep |
+| Run Prep | CTAs | START RUN / ENTER SANCTUM / ← BACK | Function (CTA) | Keep casing convention |
+| Sanctum (shop) | Title | SANCTUM | Frame | Keep |
+| Sanctum | Currency | Essence: N / Stardust: N | Function | Keep |
+| Sanctum | Tabs | PLAYER / BACKPACK (+ SPELLS, Tweak 1) | Function | Keep -- matches Tweak 1's plain-naming call |
+| Sanctum | CTA | "Start Run" | Function (CTA) | **Fix -- casing mismatch, see below** |
+| Arena HUD | Live stats | Time / Essence / Stardust / HP / Loot | Function | Keep |
+| Arena HUD | Rate hint | "(+0.05/sec)" | Function | Keep -- deliberate transparency per DESIGN.md |
+| Arena HUD | Meta-stats placeholder | "Speed: 250 Pickup Range: 60 Capacity: 20" (scene default, overwritten at runtime) | Function | **Fix -- stale pre-rename names, see below** |
+| Death screen | Static header | RUN SUMMARY | Function | **Fix -- redundant with the line below, see below** |
+| Death screen | Body opening line | "Lost to the Void" | Frame | Keep |
+| Death screen | Body data | Time/Phase/Rewards/Loot/Stats | Function | Keep |
+| Death screen | Buttons | Return to Sanctum / Restart Run | Function (CTA) | Keep |
+| Settings | Everything | SETTINGS, Master Volume, Fullscreen | Function | Keep -- deliberately unflavored |
+| Enemies | Minion/Bruiser/Elite/Boss | -- | Function | Keep -- already decided, not revisiting |
+| Rarity tiers | Common...Legendary | -- | Function | Keep -- see "Closed questions" below |
+
+## The fixes
+
+1. **Death screen's double header.** `arena.tscn`'s `GameOverLabel` ("RUN
+   SUMMARY," plain) sits directly above `SummaryBody`'s dynamically-built
+   first line ("Lost to the Void," flavored) -- two titles, two
+   registers, same panel, same moment. Delete the static "RUN SUMMARY"
+   label; let "Lost to the Void" carry the panel's title role at that
+   size/weight instead (`hud.gd`'s `_build_summary_bbcode()` already
+   generates it, no new copy needed). One header, one voice.
+2. **START RUN casing mismatch.** `run_prep.tscn`'s Start Run button is
+   ALL-CAPS ("START RUN"); `shop.tscn`'s is Title Case ("Start Run") --
+   same action, two screens, two casings. ALL-CAPS is the established
+   convention for primary CTAs elsewhere (PLAY, ENTER SANCTUM, SANCTUM,
+   HOARD SURVIVORS) -- standardize `shop.tscn`'s button to "START RUN".
+3. **Stale HUD placeholder.** `arena.tscn`'s `MetaStatsLabel` scene-
+   default text still reads "Speed: 250 Pickup Range: 60 Capacity: 20" --
+   the pre-v5-naming-pass stat names. `hud.gd`'s `_ready()` overwrites it
+   with the correct "Swiftness / Gleam / Bearing" wording before the
+   player ever sees a frame, so this is invisible in play, but it's
+   misleading to anyone reading the scene file. Update the placeholder to
+   match.
+4. **Dead scene leaking flavor-free text.** `scenes/main.tscn` (not the
+   project's main scene -- that's `main_menu.tscn` per `project.godot`'s
+   `run/main_scene`) has a hardcoded `"game-idea v1"` label and is
+   unreferenced by any script or scene -- an unused leftover from the
+   initial project scaffold. Delete it, or if there's a reason to keep
+   it, at minimum drop the hardcoded placeholder. Note: `CLAUDE.md` and
+   `README.md` both still describe it as current (the `main.tscn ↔
+   main.gd` naming example, and README's scene table calling it the
+   "Entry scene") -- worth a follow-up doc correction once the scene
+   itself is resolved; outside this doc's scope.
+
+None of these touch cost curves, stat IDs, or gameplay -- pure copy/scene-
+default fixes, same spirit as Tweak 1.
+
+## Essence and Stardust aren't actually clashing
+
+Worth calling out since it looks like a mismatch on paper: Essence (loot,
+arcane, "power distilled from what you took") and Stardust (survival
+time, cosmic) read like two different aesthetic registers sitting next to
+each other in a currency list. But every non-arena screen (`main_menu`,
+`save_slot_selector`, `run_prep`, `shop`, `settings_menu`) already shares
+the same `night_sky_background.gd` backdrop -- the entire meta-game
+outside a run plays out under a literal night sky. That's an existing,
+pervasive visual throughline that already reconciles the two: Essence is
+what you *take*, Stardust is what the *sky grants you* for enduring
+under it. Nothing to rename here -- if anything, it's worth reinforcing
+with a small connective flavor line somewhere cheap (e.g. a hover
+tooltip on the Stardust readout) rather than treated as a problem. Not
+required for this tweak; flagged as a nice-to-have.
+
+## Closed questions (resolving the old draft's "Open Questions")
+
+- **Flavor text on every upgrade node?** No -- stays light-touch/
+  optional, not mandatory. Writing 30+ node descriptions is a content
+  task, not a text-consistency fix; out of scope here.
+- **Enemy names mystical?** No -- Minion/Bruiser/Elite/Boss stay.
+  Already decided once (see DESIGN.md); not revisiting without new
+  reason.
+- **Menu labels -- flavor or clear?** Answered by what shipped: titles/
+  CTAs get flavor (HOARD SURVIVORS, PLAY, SANCTUM, EMBARK), Settings and
+  list rows stay plain. That's the Frame/Function split above, made
+  explicit.
+- **Rename loot rarities (Common → Fragment, etc.)?** No -- Common/
+  Uncommon/Rare/Epic/Mythic/Legendary is a load-bearing genre convention
+  players parse instantly; reskinning it trades clarity for cuteness
+  with little payoff. Function-register despite being "loot."
+- **In-game Lore/Grimoire screen?** Real idea, but it's new content, not
+  a text fix -- left for a future tweak if wanted, not part of this one.
+
+## What this doc is not touching
+
+DESIGN.md's own prose still calls this screen "the shop" throughout
+(section headings, currency descriptions) even though the shipped screen
+is titled "Sanctum" to the player -- that's design-doc terminology drift,
+not a player-facing text bug, and fixing it means editing a lot of
+existing DESIGN.md prose rather than game text. Flagged to the user
+separately rather than folded into this spec.

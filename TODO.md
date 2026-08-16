@@ -38,6 +38,22 @@ in-flight one. To keep that true and avoid blurry scope between changes:
         renaming Player Tree/Backpack Tree's existing header text
         beyond the tab label itself; anything in Backpack Tree; balance
         numbers anywhere.
+- [ ] **Tweak 2 — Player-facing text overhaul.** Fix the specific tone/
+      casing inconsistencies found in a full text audit -- see
+      [TEXT_FLAVOR.md](TEXT_FLAVOR.md) for the complete spec and
+      rationale. Start only once Tweak 1 has landed and been verified.
+      - **In scope:** delete the death screen's redundant "RUN SUMMARY"
+        static header (let "Lost to the Void" carry the title);
+        standardize the Sanctum's "Start Run" button to ALL-CAPS "START
+        RUN" to match run_prep's; fix `arena.tscn`'s stale "Speed/Pickup
+        Range/Capacity" placeholder text to the current Swiftness/Gleam/
+        Bearing names; resolve the unused `main.tscn`'s hardcoded
+        "game-idea v1" (delete the scene once confirmed dead, or at
+        minimum drop the hardcoded string).
+      - **Out of scope:** any currency/stat/spell/enemy/rarity renames
+        (none were called for -- see TEXT_FLAVOR.md's "Closed
+        questions"); flavor text on skill-tree nodes; DESIGN.md's own
+        internal "shop" terminology; anything from Tweak 1.
 
 ## Process (from the 2026-08-16 engineering-practices pass)
 

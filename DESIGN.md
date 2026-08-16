@@ -89,8 +89,12 @@ What's actually built and playable today (see `scripts/`, as of v11):
   (formerly Purge) both built and gated as described below. A pre-run
   Backpack Ability choice (Condense vs. Clear, see below) passively
   processes backpack items during a run on top of that.
-- Shop is the two-tree skill-tree layout (Player Tree / Backpack Tree)
-  with gating and hover tooltips, not a flat button list.
+- Shop is currently a two-tree skill-tree layout (Player Tree / Backpack
+  Tree) with gating and hover tooltips, not a flat button list; the 8
+  spells' unlock/upgrade stats live inside Player Tree today, with a
+  separate read-only sidebar just showing lock state. A three-tree
+  rework (Player / Spells / Backpack, see "Shop structure: skill tree"
+  below) is a decided but not-yet-implemented follow-up — see TODO.md.
 - Death → full run summary screen (time/phase, rewards, loot breakdown,
   run stats, previous best) → shop → restart with upgrades carried over.
 - Persistence: 4 save slots with metadata (last played, playtime,
@@ -293,7 +297,9 @@ Player is a **magic user**. Weapons are **spells**, casting-based combat with di
 
 ### Spell System Structure
 
-**Spell Unlock node** (gated root in Player Tree):
+**Spell Unlock node** (gated root of the Spell Tree — split out from
+Player Tree in the shop's three-tree rework, see "Shop structure: skill
+tree" below):
 - Base cost: 25, ×1.20/lvl, cap 7 (raised from 5 for v11's five new spells)
 - L1: Unlock Inferno Blade
 - L2: Unlock Frost Nova
@@ -494,8 +500,14 @@ currency") — real names TBD once the theme is more settled.
 
 ### Shop structure: skill tree
 
-The shop is two skill trees, one per currency, shown side by side —
-reinforcing the two-currency split visually as well as economically.
+The shop is three skill trees across three tabs — **Player**, **Spells**,
+**Backpack** — full-width one at a time rather than side by side (the
+Spell Tree alone has 18 nodes; showing multiple trees at once doesn't
+fit). Player and Spells both spend Essence; Backpack spends Stardust —
+tab names are plain/content-based on purpose, not currency-literal, so
+two tabs sharing a currency doesn't read as a naming conflict; the
+always-visible Essence/Stardust totals on screen carry the currency
+identity instead.
 
 - **Backpack Tree** is a real chain: Bearing sits at the root (always
   purchasable). Compactor nodes unlock in rarity order — Commons Hoard →
@@ -503,25 +515,57 @@ reinforcing the two-currency split visually as well as economically.
   until the previous tier's compactor has at least one level bought.
   Discard unlocks the same way, as a capstone gated behind the Rare
   Vault's first level — reusing the same "previous node bought once"
-  gate as everything else rather than a separate threshold rule. This
-  resolves the earlier open question about Compacting's purchase order:
-  it's a hard gate now, enforced by the tree, not just a cost-driven
-  nudge.
-- **Player Tree** is flatter: Spellpower, Swiftness, and Gleam branch
-  independently off a shared root with no cross-gating between them,
-  since nothing in the design requires one before another.
+  gate as everything else rather than a separate threshold rule. Alchemy
+  sits ungated alongside Bearing. This resolves the earlier open
+  question about Compacting's purchase order: it's a hard gate now,
+  enforced by the tree, not just a cost-driven nudge.
+- **Player Tree** is flat: just Spellpower, Swiftness, and Gleam, no
+  cross-gating between them, since nothing in the design requires one
+  before another. (Spell Unlock and all per-spell upgrade stats have
+  moved out to the Spell Tree below — Player Tree used to carry all of
+  that too, which is what made it feel cluttered.)
+- **Spell Tree** (new, split out of Player Tree): Spell Unlock is the
+  gated trunk (unchanged ladder — L1 Inferno Blade through L7 Summon
+  Familiar). Each level's node branches into that spell's own upgrade
+  stats, reusing the exact same "previous node bought once" gate pattern
+  as Backpack Tree's Compactor chain, just applied to spells instead of
+  rarity tiers. Arcane Bolt's two upgrades (Haste, Velocity) branch
+  directly off the trunk's root, ungated, since Arcane itself needs no
+  unlock. Replaces the old static sidebar that just showed spell
+  lock-state with no interaction — every spell upgrade is now a real,
+  purchasable tree node like everything else in the shop.
 - Each node keeps its existing leveled/capped cost curve (see tables
-  above and below) — a node isn't one-shot, it has an internal level
-  track up to its cap, bought incrementally at the geometric cost per
-  level. The tree adds gating and visual structure on top of the
-  existing economy, not a new cost model.
+  above and below) — this rework is a regrouping and a UI change, not a
+  balance change. No stat IDs, costs, or gates move; only which tab a
+  node lives in and how it's laid out.
+
+**Why Spells shares Essence with Player rather than getting its own
+currency:** it keeps the existing "which track am I feeding this run"
+tension (loot-heavy vs. survival-heavy) to two currencies, not three, but
+adds a real second-order choice inside Essence itself — level up what you
+already have (Player Tree) vs. unlock a new spell (Spell Tree) — without
+inventing a new resource to earn or balance. Spell Unlock's full ladder
+costs ~323 Essence total vs. Spellpower's ~1,500 to max, so early Essence
+naturally leans toward cheap unlocks plus a few Player Tree levels first,
+matching "early runs are Arcane-only, spells arrive as milestones"
+already established above.
+
+Three trees now read as three distinct fantasies rather than three
+buckets of the same kind of node: Player Tree is flexible baseline power
+(spend anywhere, no wrong order), Spell Tree is a deliberate milestone
+stairway (each trunk level is the single biggest per-run swing in how a
+run *feels* — a new spell joining the fight permanently), Backpack Tree
+is survival infrastructure (rarity-gated, prestige-capped). That variety
+is the actual point of the rework, not just decluttering — it's what
+sells "getting stronger" across dozens of short runs instead of one long
+flat stat list.
 
 Left open for later: mutually exclusive branches / specializations (e.g.
 a fork trading Damage for AoE, or another build-defining choice) would be
 a real scope addition — new stat types, and some tension with "everything
 is eventually maxable" since an exclusive pick means a run commits to a
-build rather than a straight completion path. Not doing this now; the
-current tree has no exclusive choices, just gating and layout — the door
+build rather than a straight completion path. Not doing this now; none of
+the three trees have exclusive choices, just gating and layout — the door
 is intentionally left open to add them later.
 
 ### Player-stat upgrade curve
@@ -1196,3 +1240,44 @@ Short dated entries when a design decision is made and worth remembering
   like `active_backpack_ability`, only numeric stat levels) -- zero
   runtime errors either way, and Condense's runs showed visibly higher
   loot values as expected from the value-density mechanic.
+- 2026-08-16 — Skill-tree rework decided: spells get their own dedicated
+  tree/tab (Spell Tree) instead of living inside Player Tree plus a
+  static read-only sidebar. Player Tree drops from 21 nodes to 3
+  (Spellpower/Swiftness/Gleam only); the 18 spell nodes (Spell Unlock
+  trunk + all per-spell upgrades) move to the new tree, trunk-and-branch
+  shaped exactly like the existing gate logic already required (each
+  spell's upgrades were already locked behind that spell's Spell Unlock
+  level -- this just makes that structure visible and interactive
+  instead of hidden inside a flat list). Spell Tree spends Essence, same
+  as Player Tree -- deliberately not a new currency, since it preserves
+  the two-currency risk tension while adding a real "spend on what I
+  have vs. unlock something new" choice inside Essence itself. Tab names
+  decided plain (Player / Spells / Backpack) over a more mystical set
+  (Vessel/Grimoire/Hoard was considered and rejected), and Spell Unlock
+  itself stays unrenamed -- both picked directly by the player this
+  session rather than guessed at. No cost curves, stat IDs, or gates
+  change -- pure regrouping plus a new tab, not a balance pass. See
+  TODO.md for the implementation item; this is a design decision only,
+  not yet built.
+- 2026-08-16 — Audited every player-facing string in the game against
+  TEXT_FLAVOR.md's tone (Mystical + Dark blend) and found the real
+  inconsistency wasn't tone choice but an undocumented split between
+  "Frame" text (titles/one-time narrative beats, worth flavor) and
+  "Function" text (buttons/readouts/settings, read constantly, stays
+  plain) -- most existing text already sorted cleanly into one or the
+  other, it just was never written down as a rule, which let a few spots
+  drift: the death screen shows a plain "RUN SUMMARY" header directly
+  above the flavored "Lost to the Void" line (two titles, two registers,
+  same panel), and the "Start Run" button is ALL-CAPS on one screen
+  (run_prep) but Title Case on another (Sanctum) for the identical
+  action. TEXT_FLAVOR.md rewritten as a definitive current-state spec
+  (superseding its old options-brainstorm format) with the full audit,
+  the specific fixes, and all of its previously-open questions resolved
+  (no mandatory flavor text, enemy names stay plain, rarity tier names
+  stay plain, a Grimoire/lore screen is a future idea not this pass).
+  Also found: Essence (arcane) and Stardust (cosmic) read like mismatched
+  registers in isolation, but every non-arena screen already shares the
+  same night-sky background, which already reconciles them -- flagged as
+  a nice-to-have connective line, not a problem to fix. See TODO.md's
+  Tweak 2 for the implementation item; this is a design decision only,
+  not yet built.
