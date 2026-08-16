@@ -627,14 +627,21 @@ keeping engagement high through a long progression series. By design,
 players should have access to Compacting upgrades in their first 5 runs,
 but won't afford a 2nd Bearing slot until run 15–20+.
 
-**Fill %** = slots used ÷ total slots — a slot counts as "used" the
-moment it holds one or more of an item, regardless of how full its stack
-is. So one Common and a maxed-out 192-stack of Commons both count as
-exactly one used slot; only the *number of occupied slots* drives
-fullness, not how densely packed they are. This is what feeds the
-existing HP-shrink formula (`max_hp = base_max_hp × lerp(1.0,
-MIN_HP_FRACTION, fill%)` in `scripts/player.gd`) — the formula itself
-doesn't change, only what `fill%` is computed from.
+**Fill %** = slots used ÷ capacity, where **one slot is one stack
+instance of a tier** (capped at that tier's Compacting-modified stack
+size) — a tier can occupy more than one slot once its current stack is
+full, matching what the six-tier value table already implies. (Currently
+shipped: `backpack` is a dictionary keyed only by tier, so "slots used"
+is really "distinct tiers touched," hard-capped at 6 regardless of
+Bearing level — fill % maxes out within the first few kills of any run
+and then stays maxed no matter how much more is collected, and
+Compacting/Bearing above level 6 currently have zero effect on survival
+risk. This is a real drift from intent, not a documented design choice —
+see the decision log and TODO.md's Tweak 3.) The fix keeps the existing
+HP-shrink formula (`max_hp = base_max_hp × lerp(1.0, MIN_HP_FRACTION,
+fill%)` in `scripts/player.gd`) — only what counts as a slot changes,
+restoring fill % as a running measure of how much is actually being
+carried instead of a one-time flag for which rarities have been seen.
 
 ### Rarity tiers
 
@@ -816,6 +823,40 @@ benefits from upgrading the one it's using.
 `spell_caster.gd`'s per-timer pattern). Both abilities ship as a real
 choice -- not just one of them -- since "a choice" was the point of the
 sketch this section replaced.
+
+### Gem Combos
+
+A purely in-run tactical layer, separate from every other backpack
+system: no currency, no meta-progression, no persistence — resets to
+nothing at the start of every run, so it's equally available whether
+it's a player's 1st run or 500th.
+
+**Full Set:** holding one of each of the six rarity tiers simultaneously
+(order-agnostic, not strict succession) triggers a one-time-per-run AOE
+clear of every enemy on screen, reusing Meteor Strike's telegraph-then-
+impact visual rather than new art. Order-agnostic was a deliberate
+choice over a strict-sequence requirement — combat timing is too chaotic
+for a hard order to read as skill rather than bad luck.
+
+No new pickup mechanic needed: which enemy tier a player prioritizes
+killing already determines what drops, via the existing per-tier loot
+weighting (Minion → Common-heavy, Bruiser → Uncommon, Elite → Rare+,
+Boss → guaranteed Mythic+) — so "strategically chasing the missing gem"
+is already a real, existing lever. Consistent with the core "the
+player's only input is movement/positioning" pillar — this is a
+positioning/target-priority payoff, not a manual-cast ability.
+
+Deliberately depends on the Fill % fix above landing first: today,
+"holding one of each tier" already secretly means "bag is 100% full," so
+rewarding that exact state right now would read as risk and payoff on
+the same ambiguous signal. Once fill % tracks real volume instead of
+tier-diversity, completing a set becomes its own clean, separate
+milestone.
+
+A second pattern was considered — "Streak" (3 pickups of the same tier
+in a row triggering a small tier-flavored buff) — but deliberately left
+out of this pass; ship Full Set first and see how it plays before adding
+a second combo shape.
 
 ### Backpack UI
 
@@ -1281,3 +1322,59 @@ Short dated entries when a design decision is made and worth remembering
   a nice-to-have connective line, not a problem to fix. See TODO.md's
   Tweak 2 for the implementation item; this is a design decision only,
   not yet built.
+- 2026-08-16 — Backpack audit: found fill % has silently drifted from its
+  intent. `backpack` is a dictionary keyed by rarity tier only, so
+  `backpack.size()` (what drives fill %) is really "how many of the six
+  tiers have been touched," hard-capped at 6 regardless of Bearing level
+  -- Compacting and Bearing above level 6 currently have zero effect on
+  survival risk, and fill % maxes out within the first few kills of any
+  run (Common alone is 50% drop weight) then stays maxed for the rest of
+  the run no matter how much more is collected. Not a documented design
+  choice, a real implementation gap between the "Minecraft-style grid
+  that visibly fills as you hoard" UI intent and what the number
+  actually tracks. Fix decided: a slot becomes one stack instance of a
+  tier (capped by that tier's Compacting stack size) instead of one
+  dictionary key per tier -- a tier can span multiple slots once a stack
+  fills, restoring fill % as a continuous measure of volume carried.
+  Same HP/speed-shrink formula, only what counts as a slot changes. This
+  also reconnects Compacting/Bearing/Discard/Condense-Clear to the risk
+  mechanic they're nominally part of, none of which currently move fill
+  % at all above 6 tiers held.
+  Alongside the fix, added Gem Combos: a new, purely in-run layer with no
+  currency/meta-progression tied to it (resets every run, available from
+  run 1) -- holding one of each of the six rarity tiers simultaneously
+  (order-agnostic, not strict succession, since combat timing is too
+  chaotic for a hard-order requirement to read as skill rather than bad
+  luck) triggers a one-time "Full Set" AOE clear, reusing Meteor
+  Strike's telegraph/impact visual rather than new art. The strategic
+  lever needed no new pickup mechanic: per-tier enemy loot weighting
+  (Minion -> Common-heavy, Elite -> Rare+, Boss -> guaranteed Mythic+)
+  already means which enemies a player prioritizes killing determines
+  which gems they're chasing -- consistent with the core "only input is
+  movement/positioning" pillar. Deliberately sequenced after the fill %
+  fix: today, "holding one of each tier" already secretly means "bag is
+  100% full," so rewarding that exact state right now would read as risk
+  and payoff on the same ambiguous signal; once fill % tracks real
+  volume instead, completing a set becomes its own clean, separate
+  milestone. A second combo idea (3-of-a-tier "Streak," a small tier-
+  flavored buff) noted but deliberately left out of this pass -- ship
+  the one pattern first. See TODO.md's Tweak 3 for the implementation
+  item; this is a design decision only, not yet built.
+- 2026-08-16 — Sketched a bigger replacement for the backpack-fill risk
+  signal, driven by a playability problem rather than a balance one: the
+  HUD's top-left backpack panel is hard to track mid-action in a
+  fast-paced run, so the risk signal moves onto the player itself where
+  it's unmissable. The player's own sprite grows with fill %, and the
+  actual `CollisionShape2D` hitbox scales alongside it -- a fuller bag
+  means a bigger, easier-to-hit target, not just a visual cue. HP-shrink-
+  on-fill (`MIN_HP_FRACTION` in `player.gd`) is removed entirely, since
+  the size/hitbox growth takes over as the risk lever it was providing;
+  speed-shrink-on-fill (`MIN_SPEED_FRACTION`) is unchanged, so the two
+  live risk levers become size/hitbox + speed instead of HP + speed.
+  Deliberately sequenced after Tweak 3's fill % fix: fill % is currently
+  hard-capped at 6 distinct tiers touched and doesn't respond to
+  Compacting/Bearing above that, so building size scaling on the current
+  broken formula would inherit the same bug rather than fixing it once.
+  Whether the HUD backpack panel gets removed/simplified once the
+  on-player signal exists is left open, not decided here. Queued as
+  TODO.md's Tweak 4; not built.

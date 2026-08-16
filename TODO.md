@@ -54,6 +54,57 @@ in-flight one. To keep that true and avoid blurry scope between changes:
         (none were called for -- see TEXT_FLAVOR.md's "Closed
         questions"); flavor text on skill-tree nodes; DESIGN.md's own
         internal "shop" terminology; anything from Tweak 1.
+- [ ] **Tweak 3 — Backpack rework: fix fill % + add Gem Combos.** The
+      core "hoard vs. survive" tension has drifted from its original
+      intent -- see DESIGN.md's decision log (2026-08-16, backpack
+      audit) for the full diagnosis. Start only once Tweak 2 has landed
+      and been verified.
+      - **In scope:**
+        - Fix fill % to be driven by real slot count (one slot = one
+          stack instance of a tier, capped by that tier's Compacting
+          stack size; a tier can span multiple slots once a stack is
+          full) instead of the current "distinct tiers touched" count
+          (hard-capped at 6, decoupled from Compacting/Bearing above
+          level 6). Same HP/speed-shrink formula in `player.gd`, only
+          what counts as a slot changes.
+        - Add the Gem Combo system: holding one of each of the six
+          rarity tiers simultaneously (order-agnostic) triggers a
+          one-time-per-run "Full Set" AOE clear of enemies on screen,
+          reusing Meteor Strike's telegraph/impact visual. Purely
+          in-run, no currency, no meta-progression, available from run
+          1 -- resets to nothing at the start of every run.
+        - Re-tune Compacting's per-tier stack-size numbers via the
+          playtest harness once fill % actually responds to them (they
+          were tuned assuming zero effect on survival risk, which is no
+          longer true).
+      - **Out of scope:** the separate Stardust-income question raised
+        during design (whether backpack currency should relate to how
+        much was hoarded, not just time survived) -- flagged but not
+        decided, left for its own future tweak; the "Streak" combo idea
+        (3-of-a-tier buff) -- possible v2 addition once Full Set is
+        proven, not required for this pass; any change to the rarity
+        value table or loot→currency conversion.
+- [ ] **Tweak 4 — Player size/hitbox as the fill-risk signal.** Replaces
+      HP-shrink-on-fill with visible, mechanical size growth on the
+      player itself -- see DESIGN.md's decision log (2026-08-16) for the
+      full rationale. Start only once Tweak 3 has landed and been
+      verified (needs its corrected fill % first, or size scaling
+      inherits the same hard-capped-at-6-tiers bug).
+      - **In scope:** remove HP-shrink-on-fill entirely
+        (`MIN_HP_FRACTION` / `_update_hp_from_backpack()`'s `max_hp`
+        lerp in `player.gd`) -- max_hp stops responding to backpack fill;
+        scale the player sprite up with fill % as the primary "how full
+        am I" signal, since the top-left HUD panel is hard to track
+        mid-action; scale the player's actual `CollisionShape2D` radius
+        alongside the sprite, so a fuller bag is a mechanically bigger,
+        easier-to-hit target, not just a visual cue; keep the existing
+        speed-shrink-on-fill (`MIN_SPEED_FRACTION`) formula unchanged.
+      - **Out of scope:** any change to the speed-shrink curve/floor;
+        gems rendered as separate stacked/orbiting sprites (sprite-scale
+        only for this pass, not a gem-stacking visual); removing or
+        resizing the HUD backpack panel (left open -- still shown,
+        deprioritized as the primary signal, not yet decided whether it
+        goes away); anything from Tweak 3's scope.
 
 ## Process (from the 2026-08-16 engineering-practices pass)
 
