@@ -6,6 +6,7 @@ const BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
+var _active_tab: StringName = &"player"
 
 @onready var _player_currency_label: Label = $ShopPanel/Margin/VBox/PlayerCurrencyLabel
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
@@ -13,6 +14,10 @@ var _last_backpack_currency: int = -1
 @onready var _player_tree: SkillTreeView = %PlayerTreeView
 @onready var _backpack_header: Label = %BackpackHeader
 @onready var _player_header: Label = %PlayerHeader
+@onready var _player_tab: TabButton = %PlayerTabButton
+@onready var _backpack_tab: TabButton = %BackpackTabButton
+@onready var _player_scroll: ScrollContainer = %PlayerScroll
+@onready var _backpack_scroll: ScrollContainer = %BackpackScroll
 @onready var _spell_status_labels: Dictionary = {
 	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltStatusLabel,
 	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeStatusLabel,
@@ -38,9 +43,25 @@ var _last_backpack_currency: int = -1
 func _ready() -> void:
 	MetaProgression.currency_changed.connect(_on_currency_changed)
 	MetaProgression.stat_changed.connect(_on_stat_changed)
+	_player_tab.pressed.connect(_set_active_tab.bind(&"player"))
+	_backpack_tab.pressed.connect(_set_active_tab.bind(&"backpack"))
 	_update_trees()
 	_refresh_currency()
 	_update_spell_status()
+	_set_active_tab(_active_tab)
+
+
+## Only one tree is visible at a time -- both used to sit side by side, but
+## with the Player tree now spanning 17 stats across 8 spells (v11), showing
+## both trees at once got too cluttered. Each tab gets the full panel width
+## instead of half.
+func _set_active_tab(tab: StringName) -> void:
+	_active_tab = tab
+	var player_active: bool = tab == &"player"
+	_player_scroll.visible = player_active
+	_backpack_scroll.visible = not player_active
+	_player_tab.set_active(player_active)
+	_backpack_tab.set_active(not player_active)
 
 
 func _update_trees() -> void:
