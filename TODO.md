@@ -4,6 +4,20 @@ Lightweight backlog. Not every idea needs to live here — just things worth
 not forgetting between sessions. Check items off or delete them once done;
 this file should stay short enough to skim.
 
+## Process (from the 2026-08-16 engineering-practices pass)
+
+- [ ] Add a lightweight headless unit-test runner for pure logic (cost
+      curves, drop weights, stat formulas) — same self-contained,
+      no-external-framework style as `playtest_harness.gd`. See CLAUDE.md's
+      Testing section. First candidates: `MetaProgression` cost/level
+      math, `LootTypes.pick_random_weighted`, the backpack fill-ratio
+      HP/speed lerp in `player.gd`.
+- [ ] Cut the next MINOR version tag once the incoming stable build
+      (Backpack Ability, v11 spells, Boss, shop tabs, Settings menu) is
+      confirmed clean — several content additions have landed on `main`
+      since `v0.1.0` without a tag, which makes rollback less granular
+      than VERSIONING.md intends.
+
 ## Now
 
 - [x] All DESIGN.md features implemented and tested

@@ -8,14 +8,22 @@ worked on — check it before making structural or workflow decisions.
 Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 
 - Regular commits land straight on `main` (see "Workflow" below).
-- A git tag (`v1`, `v2`, ...) is only cut at a real milestone — something
-  stable you'd want to roll back to — not on every commit or every push.
+- Semantic versioning (`vMAJOR.MINOR.PATCH`) as of `v0.1.0` — MAJOR stays
+  `0` until the game is a complete, shippable 1.0; MINOR is new
+  player-facing content (a spell, enemy tier, mechanic); PATCH is fixes,
+  balance tweaks, and polish. The old flat `v1`–`v8` milestone tags
+  predate this scheme and are left as-is in history, not renamed.
+- A tag is only cut at a real milestone — something stable you'd want to
+  roll back to — not on every commit or every push. Cut one at the end of
+  each content addition once it's playtested clean, rather than letting
+  several land on `main` untagged in a row — that's what keeps rollback
+  granular instead of theoretical.
 - `VERSION` and [CHANGELOG.md](CHANGELOG.md) are updated together with each
   tag and mirror what the tag records.
 
 ## Workflow
 
-- `main` is the stable trunk — `vN` tags are always cut here. Parallel
+- `main` is the stable trunk — version tags are always cut here. Parallel
   workstreams (e.g. separate chats working on different concerns at the
   same time) each get their own git worktree/branch via Claude Code's
   worktree feature, and merge into `main` at deliberate checkpoints, not
@@ -60,6 +68,16 @@ Full workflow lives in [VERSIONING.md](VERSIONING.md); the short version:
 - Format with `gdformat` and check with `gdlint` (gdtoolkit) before
   committing — both are installed; run `gdformat scripts/*.gd` and
   `gdlint scripts/*.gd` (or point at whatever paths changed).
+- Watch for duplicated lookups: if two or more scripts hand-roll the same
+  "find this def/entry by id" loop, that logic belongs as a real method on
+  the autoload that owns the data, not copy-pasted at each call site.
+- Soft size ceiling, not a hard rule: a script pushing past ~400-500 lines,
+  or a function past ~60, is a prompt to look for an extractable
+  responsibility — check before reflexively adding more to it.
+- Autoloads own data and logic (`MetaProgression`, `LootTypes`); scenes/
+  nodes own presentation (`SkillTreeView`, `HUD`). Keep that direction
+  one-way — presentation reads from autoloads, autoloads never reach into
+  a specific scene's nodes.
 
 ## Project structure
 
@@ -107,23 +125,79 @@ and don't clutter the repo.
 
 ## Testing
 
-No automated test framework yet — the project is too early-stage to warrant
-one. Before that changes, verify changes by running the game and checking
-the specific behavior touched. Revisit this once there's real gameplay
-logic worth regression-testing (e.g. via GUT or gdUnit4).
+The project has real gameplay logic now (8 spells, 4 enemy tiers, a
+two-currency upgrade economy) — past the point where "just run it and
+check" is enough on its own. Three tiers, matched to what's actually being
+verified; don't reach for a bigger one than the change needs:
 
-For balance work specifically, there's a headless auto-playtest harness
-(`scripts/playtest_harness.gd` + `scripts/playtest_bot_ai.gd`): a reactive
-bot plays full runs back to back with no window and no manual input, and
-prints a per-run + aggregate survival/economy report. Sandboxed to its own
-save slot (`MetaProgression.PLAYTEST_SLOT`) — never touches real save data.
+- **Balance/gameplay behavior** (enemy stats, drop rates, cost curves,
+  anything about how a full run plays out) — the headless auto-playtest
+  harness (`scripts/playtest_harness.gd` + `scripts/playtest_bot_ai.gd`).
+  A reactive bot plays full runs back to back with no window and no
+  manual input, sandboxed to its own save slot
+  (`MetaProgression.PLAYTEST_SLOT` — never touches real save data), and
+  prints a per-run + aggregate survival/economy report.
 
-```
-Godot.exe --headless --path . -- --playtest [--playtest-runs=N] \
-    [--playtest-seed=stat_id:level,...]
-```
+  ```
+  Godot.exe --headless --path . -- --playtest [--playtest-runs=N] \
+      [--playtest-seed=stat_id:level,...]
+  ```
 
-`--playtest-seed` pre-sets stat levels for the sandboxed run (e.g.
-`spell_unlock:2` to test with all spells unlocked) so a batch can target
-whatever progression point is under test without grinding a real save —
-see the memory note on pre-seeding progression for playtests.
+  `--playtest-seed` pre-sets stat levels for the sandboxed run (e.g.
+  `spell_unlock:2` to test with all spells unlocked) so a batch can target
+  whatever progression point is under test without grinding a real save.
+
+- **Pure logic** (cost curves, drop-weight math, stat formulas — anything
+  that doesn't need the scene tree) — fast, direct assertions, not a full
+  playtest run standing in for what a five-line check should catch. If a
+  lightweight headless assertion runner doesn't exist yet when you read
+  this, building one (same self-contained, no-plugin style as the
+  playtest harness — not GUT/gdUnit4, to keep the project dependency-free)
+  is a standing first item for the next batch of work.
+
+- **Visual/UI/feel** — the one tier neither of the above can check. Needs
+  an actual windowed launch. Check `tools/` (and `TESTING.md`, if present)
+  for existing window-capture/interaction scripts before hand-rolling a
+  new one — capturing a GPU-rendered window without stealing focus,
+  correctly under this environment's DPI scaling, has already been solved
+  here once; re-deriving it from scratch burns real turns for no reason.
+
+## AI session discipline
+
+This project is iterated on almost entirely through AI coding sessions,
+often several in parallel (see Workflow above). Token budget is a real,
+capped constraint here, not a nicety — these rules exist to keep sessions
+cheap and the feedback loop tight.
+
+- **Match verification effort to the change**, using the Testing tiers
+  above literally: a pure-logic change gets a headless check, a balance
+  change gets a playtest harness batch, and only a visual/UI change earns
+  a full windowed launch plus screenshot. Don't launch the game to confirm
+  a one-line formula fix.
+- **Batch, then verify — not verify-per-edit.** "Make a change, run the
+  game, repeat" (Workflow above) means per coherent unit of work, not per
+  line touched. Group related edits before checking any of them.
+- **Read narrow, not wide.** Grep for the section or symbol you need
+  instead of reading a whole file; use offset/limit on large ones.
+  DESIGN.md in particular is 1000+ lines and growing — grep for the
+  relevant heading rather than re-reading it end to end, unless you're
+  doing a genuine full-doc audit.
+- **Keep DESIGN.md's decision-log entries factual and short.** That log is
+  read by every future session touching related work — a bloated entry is
+  a tax paid repeatedly, not once. State what changed, why, and any real
+  gotcha; skip the play-by-play.
+- **Archive DESIGN.md before it grows unbounded.** Once it's pushing
+  1500+ lines, move dated log entries older than the last couple of
+  shipped MINOR versions into a `DESIGN_HISTORY.md`, keeping DESIGN.md
+  itself focused on current decisions. Git already preserves full history;
+  the file doesn't need to.
+- **Don't spawn a subagent for a targeted lookup.** A well-scoped Grep or
+  a couple of Read calls is cheaper than a fresh agent re-deriving context
+  from zero. Reserve subagents/Explore for genuinely broad, multi-file
+  investigations.
+- **Check for existing tooling before building your own.** Before
+  hand-rolling a window-capture script or any other dev tool, check
+  `tools/` and this file for one that already exists.
+- **On picking up a task, orient from git before re-reading files.**
+  `git log --oneline -20` and `git status` first; read files only for the
+  specific area you're about to touch, not speculatively.

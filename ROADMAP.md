@@ -42,6 +42,7 @@ verification items, etc.) and [DESIGN.md](DESIGN.md) for design details.
 - **[DESIGN.md](DESIGN.md)** — Complete design spec (all decisions, mechanics, numbers, UI system)
 - **[TODO.md](TODO.md)** — Implementation checklists per version
 - **[CLAUDE.md](CLAUDE.md)** — Engineering practices
+- **[TESTING.md](TESTING.md)** — Full testing framework: headless auto-playtest harness and non-intrusive screenshot/UI testing tooling
 - **[VERSIONING.md](VERSIONING.md)** — Git workflow
 - **[CHANGELOG.md](CHANGELOG.md)** — Release notes
 - **[GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)** — Shipping guide (CI/CD)
