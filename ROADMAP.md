@@ -11,6 +11,11 @@ this release** — see [VERSIONING.md](VERSIONING.md). The old whole-number
 tags below (`v1`–`v8`) are kept as history, not renamed; `v0.1.0` is the
 first tag under the new scheme, not a continuation of that numbering.
 
+- **v0.1.1 (released) — the current stable baseline:** stabilization
+  pass on top of v0.1.0 (shop UI reorganized into tabs, non-intrusive
+  screenshot/UI-testing tooling, TESTING.md, expanded CLAUDE.md). No
+  new gameplay content — this is the intended rollback point before a
+  planned period of larger system overhauls and new mechanics/graphics.
 - **v0.1.0 (released):** Full Magic Spells system (8 spells, Spell
   Unlock L1–L7), Tier 4 Boss + Minion variants, distinct enemy sprites,
   Backpack Ability (Condense/Clear), loot affixes, a real Settings

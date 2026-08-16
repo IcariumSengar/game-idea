@@ -2,6 +2,35 @@
 
 All notable fixed versions of this project are documented here.
 
+## v0.1.1 - 2026-08-16
+
+Stabilization pass: no new gameplay content, all polish/tooling/docs.
+This is the intended "ultra stable" handoff point before a planned
+period of larger system overhauls and new mechanics/graphics — v0.1.0
+stays as the first semver tag exactly as released; this patch is
+everything that landed cleanly on top of it.
+
+- Shop reorganized into Player/Backpack tabs instead of side-by-side
+  trees — with the Player tree now spanning 17 stats across 8 spells
+  (v11), showing both at once had gotten too cluttered. No stat/economy
+  changes, presentation only.
+- New non-focus-stealing visual testing tooling (`tools/screenshot.ps1`,
+  `click_foreground.ps1`, `click_at.ps1`) — captures/interacts with the
+  running game window without stealing focus from other work, replacing
+  the ad-hoc approach that prompted that exact complaint earlier in
+  development. Used to verify the shop tab UI end-to-end.
+- New [TESTING.md](TESTING.md): full reference for both the headless
+  playtest harness and the new screenshot tooling, including gotchas
+  found along the way (worth reading before touching either again).
+- CLAUDE.md expanded with engineering standards accumulated over the
+  v0.1.0 development arc: a three-tier testing framework, an "AI
+  session discipline" section on token-budget-conscious habits, and
+  several GDScript/architecture conventions.
+- Verified via a full stabilization pass: format/lint across every
+  script, headless boot checks (including direct runtime instantiation
+  checks of non-main scenes), and multiple playtest harness batches
+  with every current system active — zero errors.
+
 ## v0.1.0 - 2026-08-16
 
 First release under semantic versioning (see VERSIONING.md) — earlier

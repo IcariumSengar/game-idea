@@ -12,11 +12,13 @@ this file should stay short enough to skim.
       Testing section. First candidates: `MetaProgression` cost/level
       math, `LootTypes.pick_random_weighted`, the backpack fill-ratio
       HP/speed lerp in `player.gd`.
-- [ ] Cut the next MINOR version tag once the incoming stable build
-      (Backpack Ability, v11 spells, Boss, shop tabs, Settings menu) is
-      confirmed clean — several content additions have landed on `main`
-      since `v0.1.0` without a tag, which makes rollback less granular
-      than VERSIONING.md intends.
+- [x] Cut the next version tag once the incoming stable build is
+      confirmed clean — done as `v0.1.1` (PATCH, not MINOR: Backpack
+      Ability/v11 spells/Boss/Settings were already in `v0.1.0`'s tag;
+      the only things added after it were the shop-tab reorg and
+      tooling/docs, no new content, so PATCH per VERSIONING.md's own
+      definitions). This is the intended stable rollback point before
+      the next round of bigger overhauls.
 
 ## Now
 
