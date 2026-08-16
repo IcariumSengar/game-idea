@@ -29,6 +29,7 @@ SceneTransition="*res://scripts/scene_transition.gd"
 AudioManager="*res://scripts/audio_manager.gd"
 Settings="*res://scripts/settings.gd"
 PlaytestHarness="*res://scripts/playtest_harness.gd"
+UnitTests="*res://scripts/unit_tests.gd"
 
 [display]
 

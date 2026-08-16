@@ -4,14 +4,54 @@ Lightweight backlog. Not every idea needs to live here — just things worth
 not forgetting between sessions. Check items off or delete them once done;
 this file should stay short enough to skim.
 
+## Staged major tweaks
+
+A run of several big, structural changes is starting — the skill-tree
+rework below is the first. `v0.1.1` was deliberately cut as the stable
+rollback point right before this phase (see the Process item below), so
+each tweak should build on a known-good baseline, not on top of an
+in-flight one. To keep that true and avoid blurry scope between changes:
+
+- **One tweak in flight at a time.** Don't start the next tweak's work
+  until the current one is finished, playtest-verified, and landed.
+- **Each tweak gets an explicit In scope / Out of scope line** below —
+  implementation should stick to it rather than opportunistically
+  touching adjacent systems while in there.
+- **Milestone-sized tweaks get their own version tag** per
+  [VERSIONING.md](VERSIONING.md) rather than landing bundled with the
+  next tweak's commits — that's what keeps rollback granular if one of
+  these turns out wrong.
+- Further tweaks in this set get added here in the same format as
+  they're scoped, one at a time — this list isn't meant to be
+  pre-filled with placeholders for tweaks that aren't designed yet.
+
+- [ ] **Tweak 1 — Shop skill-tree rework.** Split spells out of Player
+      Tree into their own Spell Tree tab (three tabs total: Player /
+      Spells / Backpack), replacing the static read-only spell-lock
+      sidebar with a real interactive tree. See DESIGN.md's "Shop
+      structure: skill tree" section for the full target spec.
+      - **In scope:** the new Spell Tree tab and its trunk/branch
+        layout, moving the 18 spell stat defs' tree membership,
+        removing the old sidebar, the three tab labels (Player /
+        Spells / Backpack).
+      - **Out of scope:** any stat ID, cost curve, or gate value change;
+        renaming Player Tree/Backpack Tree's existing header text
+        beyond the tab label itself; anything in Backpack Tree; balance
+        numbers anywhere.
+
 ## Process (from the 2026-08-16 engineering-practices pass)
 
-- [ ] Add a lightweight headless unit-test runner for pure logic (cost
-      curves, drop weights, stat formulas) — same self-contained,
-      no-external-framework style as `playtest_harness.gd`. See CLAUDE.md's
-      Testing section. First candidates: `MetaProgression` cost/level
-      math, `LootTypes.pick_random_weighted`, the backpack fill-ratio
-      HP/speed lerp in `player.gd`.
+- [x] Add a lightweight headless unit-test runner for pure logic (cost
+      curves, drop weights, stat formulas) — `scripts/unit_tests.gd`
+      (autoload `UnitTests`), same self-contained, no-external-framework
+      style as `playtest_harness.gd`. See TESTING.md's "Headless
+      pure-logic unit tests" section. Covers `MetaProgression` cost/level
+      math (generically, against each `StatDef`'s own fields, not
+      hardcoded numbers), `buy_upgrade`/level-cap behavior,
+      `LootTypes.pick_random_weighted`/`get_effective_stack_size`, and the
+      backpack fill-ratio HP/speed lerp in `player.gd` (driven through the
+      real `collect_loot`/`consume_loot` API). `Godot.exe --headless
+      --path . -- --unit-test`; 191 assertions, all passing.
 - [x] Cut the next version tag once the incoming stable build is
       confirmed clean — done as `v0.1.1` (PATCH, not MINOR: Backpack
       Ability/v11 spells/Boss/Settings were already in `v0.1.0`'s tag;

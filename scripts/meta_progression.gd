@@ -247,7 +247,8 @@ func _ready() -> void:
 	_register_stat(
 		STAT_BACKPACK_ABILITY_SPEED, "Alchemy", 1.0, 0.1, 30, 1.20, 6, 2, StatDef.Currency.BACKPACK
 	)
-	_playtest_mode = "--playtest" in OS.get_cmdline_user_args()
+	var user_args := OS.get_cmdline_user_args()
+	_playtest_mode = "--playtest" in user_args or "--unit-test" in user_args
 	if _playtest_mode:
 		current_slot = PLAYTEST_SLOT
 	_initialize_slots()

@@ -1,13 +1,14 @@
 # Testing
 
-No unit-test framework yet (see CLAUDE.md's Testing section for why and
-when to revisit that). What this project *does* have, built up over the
-course of development, is two complementary tools for verifying changes
-without a human sitting at the keyboard for every check: a headless
-auto-playtest harness for gameplay/balance, and a non-intrusive screenshot
-tool for UI/visuals. This doc is the full reference for both.
+No external unit-test framework (see CLAUDE.md's Testing section for why
+-- deliberately dependency-free). What this project *does* have, built up
+over the course of development, is three complementary tools for
+verifying changes without a human sitting at the keyboard for every
+check: a headless pure-logic unit-test runner, a headless auto-playtest
+harness for gameplay/balance, and a non-intrusive screenshot tool for
+UI/visuals. This doc is the full reference for all three.
 
-**Baseline, before either of these:** `gdformat`/`gdlint` on whatever
+**Baseline, before any of these:** `gdformat`/`gdlint` on whatever
 scripts changed, and a plain headless boot check:
 
 ```
@@ -23,7 +24,53 @@ scene loads correctly" below for that.
 
 ---
 
-## 1. Headless auto-playtest harness
+## 1. Headless pure-logic unit tests
+
+Self-contained assertion runner (no GUT/gdUnit4) for formulas that don't
+need the scene tree at all -- cost curves, stat lerps, drop-weight math.
+Catches a broken formula in seconds instead of relying on a full playtest
+batch to surface it indirectly.
+
+### Running it
+
+```
+Godot.exe --headless --path . -- --unit-test
+```
+
+Prints PASS/FAIL per case and a final tally, exits non-zero if anything
+failed -- scriptable in CI as well as ad hoc.
+
+### What it covers
+
+- `MetaProgression`'s cost curve (`get_cost`) and stat curve (`get_stat`)
+  against each registered `StatDef`'s own fields, not hardcoded balance
+  numbers -- stays valid across balance passes instead of needing updates
+  every time a number gets retuned.
+- `is_maxed()` / level-cap behavior, and `buy_upgrade()`'s funding checks,
+  currency-pool routing, and refusal once maxed.
+- `LootTypes.pick_random_weighted()` (empty-weights fallback, single-tier
+  and restricted-tier rolls) and `get_effective_stack_size()` (Compactor
+  scaling, Legendary's permanent stack-size-1 exemption).
+- `player.gd`'s backpack-fill HP/speed lerp, driven through the real
+  `collect_loot()`/`consume_loot()` public API on an isolated `Player`
+  instance rather than reaching into the private lerp directly.
+
+### Save isolation
+
+Same sandboxing as the playtest harness: `meta_progression.gd`'s
+`_playtest_mode` triggers on `--unit-test` too, so `current_slot` becomes
+`PLAYTEST_SLOT` and `save()` no-ops. Never reads or writes the player's
+real save files. Safe to run anytime without asking.
+
+### Files
+
+- `scripts/unit_tests.gd` (autoload `UnitTests`) -- all test cases live
+  here as one script; add a new `_test_*()` function and call it from
+  `_ready()` rather than reaching for a framework.
+
+---
+
+## 2. Headless auto-playtest harness
 
 A reactive bot plays full runs back to back with no window and no manual
 input, then prints a per-run and aggregate survival/economy report.
@@ -114,7 +161,7 @@ breaks at runtime" bugs that pure static analysis misses.
 
 ---
 
-## 2. Visual/screenshot testing
+## 3. Visual/screenshot testing
 
 For anything the playtest harness structurally can't answer: does the
 UI actually look right, is text clipped, does a layout change render as

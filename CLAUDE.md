@@ -148,12 +148,18 @@ verified; don't reach for a bigger one than the change needs:
   whatever progression point is under test without grinding a real save.
 
 - **Pure logic** (cost curves, drop-weight math, stat formulas — anything
-  that doesn't need the scene tree) — fast, direct assertions, not a full
-  playtest run standing in for what a five-line check should catch. If a
-  lightweight headless assertion runner doesn't exist yet when you read
-  this, building one (same self-contained, no-plugin style as the
-  playtest harness — not GUT/gdUnit4, to keep the project dependency-free)
-  is a standing first item for the next batch of work.
+  that doesn't need the scene tree) — the headless unit-test runner
+  (`scripts/unit_tests.gd`), same self-contained style as the playtest
+  harness (no GUT/gdUnit4). Fast, direct assertions instead of a full
+  playtest run standing in for what a five-line check should catch.
+
+  ```
+  Godot.exe --headless --path . -- --unit-test
+  ```
+
+  Exits non-zero on any failure. Add a case here whenever a new pure-math
+  formula ships (a cost curve, a stat lerp) rather than only trusting the
+  playtest harness to catch it indirectly.
 
 - **Visual/UI/feel** — the one tier neither of the above can check. Needs
   an actual windowed launch. Check `tools/` (and `TESTING.md`, if present)
