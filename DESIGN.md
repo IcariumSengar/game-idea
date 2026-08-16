@@ -86,7 +86,9 @@ What's actually built and playable today (see `scripts/`, as of v11):
   and a hard level cap, including Bearing (base cost 100, ×1.25/lvl,
   cap 10 as of the v6 balance pass).
 - Per-tier Compacting (Commons Hoard through Mythic Hoard) and Discard
-  (formerly Purge) both built and gated as described below.
+  (formerly Purge) both built and gated as described below. A pre-run
+  Backpack Ability choice (Condense vs. Clear, see below) passively
+  processes backpack items during a run on top of that.
 - Shop is the two-tree skill-tree layout (Player Tree / Backpack Tree)
   with gating and hover tooltips, not a flat button list.
 - Death → full run summary screen (time/phase, rewards, loot breakdown,
@@ -96,9 +98,9 @@ What's actually built and playable today (see `scripts/`, as of v11):
   progress. Cloud-sync infrastructure exists but the server side is still
   a placeholder — see [TODO.md](TODO.md).
 
-Not yet built: real spell/enemy sprite art (all still procedural
-placeholder shapes) and Inferno Blade's knockback — see [TODO.md](TODO.md)
-for open follow-ups.
+Not yet built: real spell/enemy sprite art (spells and Player are still
+procedural/placeholder; enemies now have real DungeonTilesetII sprites) —
+see [TODO.md](TODO.md) for open follow-ups.
 
 ## Enemy Types & Loot Tiers
 
@@ -734,6 +736,43 @@ one). Always discards the single lowest-rarity item over the threshold;
 which tiers it's willing to sacrifice isn't a separate axis for now, just
 the threshold.
 
+### Backpack Ability: Condense vs. Clear
+
+A pre-run choice (picked in `run_prep.tscn`, persisted per save slot),
+mutually exclusive -- a run only ever uses one. Both passively process
+backpack items over time while a run is live, each rarity tier on its own
+interval (rarer = slower): Common 3s, Uncommon 6s, Rare 12s, Epic 24s,
+Mythic 48s. Legendary never processes -- same reasoning as its existing
+Compacting exemption, it stays the one tier you can only get by looting it.
+
+- **Condense** (value density): every 2× the tier's interval, consumes 2
+  items of tier N and produces 1 of tier N+1 (chain stops at Mythic).
+  Value climbs each conversion -- Common→Uncommon 2×1→1×3 (+50%),
+  Uncommon→Rare 2×3→1×10 (+67%), Rare→Epic 2×10→1×40 (+100%),
+  Epic→Mythic 2×40→1×150 (+87.5%) -- but since each tier is its own
+  backpack slot, producing a new tier can *open* a slot without freeing
+  the source one, so Condense can net *increase* occupied slots. Only
+  pays off with Bearing headroom to spare.
+- **Clear** (space): every interval, consumes 1 item of tier N and banks
+  its base value/item immediately as currency -- no merge, item's just
+  gone. Once a tier's count hits 0 its slot frees, which is what actually
+  eases fill%.
+
+That split creates a natural pick that shifts with progression without
+extra rules to force it: Clear is the early-game choice (low Bearing,
+need the room), Condense the late-game one (capacity to spare, chasing
+value density).
+
+**Upgrade:** Alchemy (Backpack Tree, ungated) -- a shared speed multiplier
+on whichever ability is active that run, 1.0 base, +0.1/lvl, cap 6 (1.6×
+speed at cap). One lever rather than two ladders, since a run only ever
+benefits from upgrading the one it's using.
+
+**Status:** Implemented (`backpack_ability.gd`, a Player child mirroring
+`spell_caster.gd`'s per-timer pattern). Both abilities ship as a real
+choice -- not just one of them -- since "a choice" was the point of the
+sketch this section replaced.
+
 ### Backpack UI
 
 The backpack should be visible on-screen as a real slot grid
@@ -1111,3 +1150,49 @@ Short dated entries when a design decision is made and worth remembering
   batches (moderate and heavy seeding, plus a minimal-seed run to
   exercise the "no target found" guards) -- zero runtime errors with
   all 8 spells active and casting concurrently.
+- 2026-08-16 — Sketched a pre-run Backpack Ability choice: Condense vs.
+  Clear, both passively processing backpack items over time at a shared
+  per-tier interval (rarer tiers process slower — Common 3s, Uncommon
+  6s, Rare 12s, Epic 24s, Mythic 48s, Legendary never). Condense
+  consumes 2 items of tier N every 2×interval and produces 1 item of
+  tier N+1 (chain stops at Mythic — Mythic never condenses into
+  Legendary, same reasoning as Legendary's existing Compacting
+  exemption: it stays the one tier you can only get by looting it).
+  Value climbs each conversion (Common→Uncommon 2×1→1×3, +50%;
+  Uncommon→Rare 2×3→1×10, +67%; Rare→Epic 2×10→1×40, +100%; Epic→Mythic
+  2×40→1×150, +87.5%) but since each tier is its own backpack slot
+  (`type_id` == rarity in `loot_registry.gd`), producing a new tier
+  keeps/opens that slot without freeing the source one — Condense can
+  net *increase* occupied slots, so it only pays off with Bearing
+  headroom to spare. Clear instead consumes 1 item of tier N every
+  interval and banks its base value/item immediately as currency, no
+  merge, item just gone — once a tier's count hits 0 its slot frees,
+  which is what actually eases fill%. That split creates a natural pick
+  that shifts with progression: Clear is the early-game choice (low
+  Bearing, need the room), Condense the late-game one (capacity to
+  spare, chasing value density) — without needing extra rules to force
+  it. A single new Backpack Tree meta stat (name TBD, not "Compacting"/
+  "Compactor" — already taken) would cut the interval for whichever
+  ability is active that run, geometric cost/capped levels matching the
+  existing framework (e.g. base −8%/lvl, cap 6, ~1.6× speed at cap) —
+  one shared lever rather than two ladders, since a run only ever uses
+  one ability. Not built — numbers are illustrative, not yet decided
+  which ability (if either) ships first.
+- 2026-08-16 — Backpack Ability implemented: both Condense and Clear
+  shipped as a real pre-run choice (not just one of them -- "a choice"
+  was the point of the sketch above), picked in `run_prep.tscn` and
+  persisted per save slot. `backpack_ability.gd` mirrors
+  `spell_caster.gd`'s per-timer pattern (one independent cooldown per
+  rarity tier) rather than introducing a new pattern. The "single new
+  Backpack Tree meta stat" got a name -- Alchemy -- and its curve
+  resolved to a clean +0.1/lvl speed multiplier (1.0 base, cap 6) rather
+  than the sketch's −8%/lvl interval reduction, since that lands on the
+  exact same "~1.6× speed at cap" target more simply. Condense's produce
+  step reuses `Player.collect_loot()` directly (so it inherits stack
+  caps and Purge behavior for free, same as any other pickup); a new
+  `Player.consume_loot()` handles the removal side for both abilities.
+  Verified via the playtest harness with each ability temporarily forced
+  active in turn (the harness has no seed hook for a StringName field
+  like `active_backpack_ability`, only numeric stat levels) -- zero
+  runtime errors either way, and Condense's runs showed visibly higher
+  loot values as expected from the value-density mechanic.

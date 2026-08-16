@@ -36,6 +36,15 @@ const STAT_LIGHTNING_FREQUENCY: StringName = &"lightning_frequency"
 const STAT_TIME_WARP_FREQUENCY: StringName = &"time_warp_frequency"
 const STAT_TELEPORT_FREQUENCY: StringName = &"teleport_frequency"
 const STAT_FAMILIAR_DURATION: StringName = &"familiar_duration"
+const STAT_BACKPACK_ABILITY_SPEED: StringName = &"backpack_ability_speed"
+
+## Pre-run choice (see backpack_ability.gd): Condense merges 2 of a tier
+## into 1 of the next tier up (value density, needs Bearing headroom to
+## spare since it can net-increase occupied slots); Clear consumes 1 item
+## and banks its value as currency immediately, freeing the slot -- the
+## early-game pick when space is what's actually killing runs.
+const BACKPACK_ABILITY_CONDENSE: StringName = &"condense"
+const BACKPACK_ABILITY_CLEAR: StringName = &"clear"
 
 const SPELL_ARCANE_BOLT: StringName = &"arcane_bolt"
 const SPELL_INFERNO_BLADE: StringName = &"inferno_blade"
@@ -75,6 +84,7 @@ var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
 var current_slot: int = 0
+var active_backpack_ability: StringName = BACKPACK_ABILITY_CLEAR
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -229,6 +239,14 @@ func _ready() -> void:
 		0,
 		StatDef.Currency.PLAYER
 	)
+	# Speed multiplier on whichever Backpack Ability is active that run (see
+	# backpack_ability.gd) -- 1.0 base, +0.1/lvl, cap 6 -> 1.6x at cap,
+	# matching this doc's "~1.6x speed at cap" target. Ungated: it's a
+	# shared lever for a choice available from run 1, not part of the
+	# Compacting chain.
+	_register_stat(
+		STAT_BACKPACK_ABILITY_SPEED, "Alchemy", 1.0, 0.1, 30, 1.20, 6, 2, StatDef.Currency.BACKPACK
+	)
 	_playtest_mode = "--playtest" in OS.get_cmdline_user_args()
 	if _playtest_mode:
 		current_slot = PLAYTEST_SLOT
@@ -281,6 +299,10 @@ func update_best_run(seconds_survived: float) -> float:
 	if seconds_survived > best_run_time:
 		best_run_time = seconds_survived
 	return previous_best
+
+
+func set_backpack_ability(ability_id: StringName) -> void:
+	active_backpack_ability = ability_id
 
 
 func is_spell_unlocked(spell_id: StringName) -> bool:
@@ -374,6 +396,9 @@ func _load() -> void:
 	player_currency = data.get("player_currency", 0)
 	backpack_currency = data.get("backpack_currency", 0)
 	best_run_time = data.get("best_run_time", 0.0)
+	active_backpack_ability = StringName(
+		data.get("active_backpack_ability", BACKPACK_ABILITY_CLEAR)
+	)
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
@@ -389,6 +414,7 @@ func _reset_to_defaults() -> void:
 	player_currency = 0
 	backpack_currency = 0
 	best_run_time = 0.0
+	active_backpack_ability = BACKPACK_ABILITY_CLEAR
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 
@@ -408,6 +434,7 @@ func save() -> void:
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
+		"active_backpack_ability": String(active_backpack_ability),
 		"stat_levels": _stat_levels
 	}
 	var slot_file := _get_slot_save_path(current_slot)

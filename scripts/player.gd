@@ -153,6 +153,25 @@ func collect_loot(type_id: StringName) -> bool:
 	return true
 
 
+## Removes up to `count` items of `type_id` (e.g. Backpack Ability's
+## Condense/Clear processing, see backpack_ability.gd) -- returns how many
+## were actually removed, since a tier can hold fewer than requested.
+## Frees the slot entirely once its count hits zero, same as any other way
+## a stack empties.
+func consume_loot(type_id: StringName, count: int) -> int:
+	var available: int = backpack.get(type_id, 0)
+	var removed: int = mini(available, count)
+	if removed <= 0:
+		return 0
+	if removed >= available:
+		backpack.erase(type_id)
+	else:
+		backpack[type_id] = available - removed
+	_update_hp_from_backpack()
+	loot_changed.emit(backpack)
+	return removed
+
+
 func _try_purge() -> void:
 	var purge_level := MetaProgression.get_level(MetaProgression.STAT_PURGE)
 	if purge_level == 0:

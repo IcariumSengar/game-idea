@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/spell_caster.gd" id="2_spell_caster"]
 [ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/player_sprite_frames.tres" id="3_player_frames"]
+[ext_resource type="Script" path="res://scripts/backpack_ability.gd" id="4_backpack_ability"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 16.0
@@ -33,3 +34,6 @@ shape = SubResource("CircleShape2D_pickup")
 
 [node name="SpellCaster" type="Node" parent="."]
 script = ExtResource("2_spell_caster")
+
+[node name="BackpackAbility" type="Node" parent="."]
+script = ExtResource("4_backpack_ability")

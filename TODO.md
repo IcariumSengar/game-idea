@@ -17,6 +17,9 @@ this file should stay short enough to skim.
   - [x] 4-slot save system with metadata tracking and persistence
   - [x] Startup menu system (Main Menu → New Game / Load Game)
   - [x] Backpack currency rate aligned with DESIGN.md (0.05/sec, v6 balance)
+  - [x] Backpack Ability: pre-run Condense/Clear choice (`backpack_ability.gd`),
+        picked in `run_prep.tscn`, new Alchemy upgrade stat -- see
+        DESIGN.md's Backpack Ability section for the full spec
 
 ## In Progress / Lower Priority
 
