@@ -165,11 +165,10 @@ func collect_loot(type_id: StringName) -> bool:
 	return true
 
 
-## Removes up to `count` items of `type_id` (e.g. Backpack Ability's
-## Condense/Clear processing, see backpack_ability.gd) -- returns how many
-## were actually removed, since a tier can hold fewer than requested.
-## Frees the slot entirely once its count hits zero, same as any other way
-## a stack empties.
+## Removes up to `count` items of `type_id` -- returns how many were
+## actually removed, since a tier can hold fewer than requested. Frees
+## the slot entirely once its count hits zero, same as any other way a
+## stack empties.
 func consume_loot(type_id: StringName, count: int) -> int:
 	var available: int = backpack.get(type_id, 0)
 	var removed: int = mini(available, count)

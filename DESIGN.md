@@ -675,6 +675,20 @@ Drop weight, stack size, and value are three independent tuning knobs and
 don't have to move in lockstep — this table is a first-pass shape, not a
 locked formula.
 
+### Gem Pickup Visual
+
+Loot drops (`loot_gem.gd`) currently render as a fully-detailed faceted
+crystal at rest — same level of visual detail whether one enemy died or
+six did, which is why they read as cluttered once they pile up mid-fight.
+**Locked in:** simplify to a small, simple pip at rest — color-forward,
+no facets/glow-ring detail to parse in combat — and move the visual
+payoff to the pickup moment instead (the existing spark burst + "+N"
+floating text, made to actually pop) rather than the idle/resting state.
+Quiet on the ground, loud on collect. This is presentation only — the
+one-drop-per-kill mechanic, drop weights, and values are unchanged; if a
+real multi-drop-per-kill mechanic is wanted later, that's a separate
+balance decision, not this one. Not built — see TODO.md.
+
 ### Loot affixes
 
 Epic+ drops have a chance to roll "Blessed" -- 15% for Epic, 25% for
@@ -787,43 +801,6 @@ one). Always discards the single lowest-rarity item over the threshold;
 which tiers it's willing to sacrifice isn't a separate axis for now, just
 the threshold.
 
-### Backpack Ability: Condense vs. Clear
-
-A pre-run choice (picked in `run_prep.tscn`, persisted per save slot),
-mutually exclusive -- a run only ever uses one. Both passively process
-backpack items over time while a run is live, each rarity tier on its own
-interval (rarer = slower): Common 3s, Uncommon 6s, Rare 12s, Epic 24s,
-Mythic 48s. Legendary never processes -- same reasoning as its existing
-Compacting exemption, it stays the one tier you can only get by looting it.
-
-- **Condense** (value density): every 2× the tier's interval, consumes 2
-  items of tier N and produces 1 of tier N+1 (chain stops at Mythic).
-  Value climbs each conversion -- Common→Uncommon 2×1→1×3 (+50%),
-  Uncommon→Rare 2×3→1×10 (+67%), Rare→Epic 2×10→1×40 (+100%),
-  Epic→Mythic 2×40→1×150 (+87.5%) -- but since each tier is its own
-  backpack slot, producing a new tier can *open* a slot without freeing
-  the source one, so Condense can net *increase* occupied slots. Only
-  pays off with Bearing headroom to spare.
-- **Clear** (space): every interval, consumes 1 item of tier N and banks
-  its base value/item immediately as currency -- no merge, item's just
-  gone. Once a tier's count hits 0 its slot frees, which is what actually
-  eases fill%.
-
-That split creates a natural pick that shifts with progression without
-extra rules to force it: Clear is the early-game choice (low Bearing,
-need the room), Condense the late-game one (capacity to spare, chasing
-value density).
-
-**Upgrade:** Alchemy (Backpack Tree, ungated) -- a shared speed multiplier
-on whichever ability is active that run, 1.0 base, +0.1/lvl, cap 6 (1.6×
-speed at cap). One lever rather than two ladders, since a run only ever
-benefits from upgrading the one it's using.
-
-**Status:** Implemented (`backpack_ability.gd`, a Player child mirroring
-`spell_caster.gd`'s per-timer pattern). Both abilities ship as a real
-choice -- not just one of them -- since "a choice" was the point of the
-sketch this section replaced.
-
 ### Gem Combos
 
 A purely in-run tactical layer, separate from every other backpack
@@ -853,10 +830,24 @@ the same ambiguous signal. Once fill % tracks real volume instead of
 tier-diversity, completing a set becomes its own clean, separate
 milestone.
 
-A second pattern was considered — "Streak" (3 pickups of the same tier
-in a row triggering a small tier-flavored buff) — but deliberately left
-out of this pass; ship Full Set first and see how it plays before adding
-a second combo shape.
+Three more patterns were considered, each aimed at a different playstyle
+so they don't overlap with Full Set or each other, but deliberately left
+out of this pass — ship Full Set first and see how it plays before
+adding more combo shapes:
+
+- **Streak** — N consecutive pickups of the *same* tier, uninterrupted,
+  triggers a small tier-flavored buff. Rewards leaning into whatever a
+  run is naturally giving you.
+- **Rampage** — a volume/speed threshold (e.g. 8 pickups within 5
+  seconds, any tier) triggers a brief buff. Rewards aggressive
+  clearing/looting speed over precision.
+- **Ascension** — a *strict ascending* sequence, Common through
+  Legendary with no break, no repeats skipped. The hard-mode cousin of
+  Full Set: same "collect variety" family, but unforgiving if broken, so
+  it should pay out bigger or differently than Full Set rather than
+  being strictly better. Resolves the earlier open question of whether
+  set-completion should be order-strict or order-agnostic by having
+  both exist as different difficulty tiers instead of picking one.
 
 ### Backpack UI
 
@@ -1360,6 +1351,24 @@ Short dated entries when a design decision is made and worth remembering
   flavored buff) noted but deliberately left out of this pass -- ship
   the one pattern first. See TODO.md's Tweak 3 for the implementation
   item; this is a design decision only, not yet built.
+- 2026-08-16 — Dropped the numbered "Tweak N" staging scheme from
+  TODO.md in favor of a flat "General improvements" list -- multiple
+  parallel processes are iterating on different themes at once (this
+  chat on backpack/gems, another on player-size/hitbox), so forcing new
+  ideas into a specific numbered slot added friction without adding
+  clarity. Kept everything that scheme was actually protecting (explicit
+  In scope/Out of scope per item, real dependencies called out on the
+  item that has one, file-overlap flagged as a coordination note); just
+  dropped the numbering and the implied ordering. Also locked in the
+  Gem Pickup Visual rework (see that section above): loot drops simplify
+  to a small pip at rest instead of a fully-detailed crystal, with the
+  visual payoff concentrated into the pickup moment instead -- direct
+  response to gems reading as cluttered once several are on screen at
+  once. And expanded the Gem Combos follow-up list with two more
+  patterns (Rampage: volume/speed-based; Ascension: strict-order,
+  Full Set's hard-mode cousin) alongside the existing Streak idea, all
+  still deliberately deferred past Full Set. See TODO.md for the
+  implementation items; these are design decisions only, not yet built.
 - 2026-08-16 — Sketched a bigger replacement for the backpack-fill risk
   signal, driven by a playability problem rather than a balance one: the
   HUD's top-left backpack panel is hard to track mid-action in a
@@ -1435,3 +1444,26 @@ Short dated entries when a design decision is made and worth remembering
   short a batch, expected given how rare the trigger condition is by
   design. Compacting's per-tier re-tune (Tweak 3's third scope item) is
   still outstanding.
+- 2026-08-16 — Removed the Backpack Ability (Condense vs. Clear) system
+  entirely, on direct live-play feedback: gems were visibly vanishing
+  from the backpack shortly after pickup (Clear's default behavior,
+  auto-consuming one item per tier every few seconds), which directly
+  fights the new fill-as-risk mechanic (Tweak 4) -- if items disappear on
+  their own regardless of player choice, hoarding-vs-survival stops being
+  a real decision. The two mechanics were sound independently but became
+  incompatible once the backpack's role changed from "a number that
+  shrinks HP" to "a visible, chosen risk." Deleted `backpack_ability.gd`
+  outright (not just disabled) along with its `run_prep.tscn` pre-run
+  choice UI, the `Alchemy` upgrade stat, and `active_backpack_ability`'s
+  save-data field -- a half-removed feature (dead buttons, a orphaned
+  shop-tree stat) would've been worse than a clean cut. `player.gd`'s
+  `consume_loot()` stays -- it's a reasonable symmetric API to
+  `collect_loot()` independent of what used to call it, and unit-test
+  coverage of the backpack-fill-effects-on-removal path is worth keeping.
+  This section (previously "Backpack Ability: Condense vs. Clear") is
+  removed from the doc rather than left describing a feature that no
+  longer exists; git history has the full spec if it's ever revisited.
+  Verified via boot checks (`run_prep.tscn`, `shop.tscn`, `player.tscn`),
+  the unit-test runner (195 passing -- the 4-assertion drop from 199 is
+  expected, from one fewer stat def in the generic per-stat cost/cap
+  tests, not a regression), and a playtest batch.
