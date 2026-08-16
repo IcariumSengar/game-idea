@@ -1,8 +1,9 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
-      "Bash(tasklist)"
-    ]
+      "Bash(tasklist)",
+      "Bash(git status *)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }
