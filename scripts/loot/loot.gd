@@ -7,7 +7,13 @@ const BOB_AMOUNT: float = 3.0
 const PULSE_SPEED: float = 4.0
 const SPRITE_SCALE: float = 1.8
 const PULSE_SCALE_AMOUNT: float = 0.22
-const PICKUP_SPARK_AMOUNT: int = 8
+## Pickup-moment feedback, per the "pips, not gems" rework (DESIGN.md/
+## TODO.md): resting pips are deliberately quiet, so the payoff moves
+## here instead -- a bigger spark burst plus a quick pop-and-fade on the
+## sprite itself before it frees.
+const PICKUP_SPARK_AMOUNT: int = 14
+const COLLECT_POP_DURATION: float = 0.18
+const COLLECT_POP_SCALE: float = 2.4
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
 ## Loot affixes, per DESIGN.md's "higher tiers drop items with +modifiers"
@@ -88,7 +94,8 @@ func collect(player: Player) -> void:
 		_spawn_spark()
 		_spawn_value_text()
 		AudioManager.play("pickup")
-		queue_free()
+		set_deferred("monitoring", false)
+		_play_collect_pop()
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -101,8 +108,8 @@ func _spawn_spark() -> void:
 	spark.position = position
 	spark.color = _color
 	spark.amount = PICKUP_SPARK_AMOUNT
-	spark.scale_amount_min = 1.0
-	spark.scale_amount_max = 2.0
+	spark.scale_amount_min = 1.2
+	spark.scale_amount_max = 2.6
 	get_parent().add_child(spark)
 	spark.emitting = true
 
@@ -114,9 +121,27 @@ func _spawn_value_text() -> void:
 	text.position = position
 	get_parent().add_child(text)
 	if _is_affixed:
-		text.setup("+%d Blessed!" % (value + _affix_bonus_value()), AFFIX_COLOR, 17)
+		text.setup("+%d Blessed!" % (value + _affix_bonus_value()), AFFIX_COLOR, 20)
 	else:
-		text.setup("+%d" % value, _color, 15)
+		text.setup("+%d" % value, _color, 18)
+
+
+## Quick pop-and-fade on the sprite itself before the node frees -- the
+## resting pip is deliberately quiet, so this is where the pickup reads
+## as snappy instead. Movement (magnet pull/bob/pulse) stops immediately
+## so the pop plays in place rather than mid-slide.
+func _play_collect_pop() -> void:
+	set_process(false)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	(
+		tween
+		. tween_property(_sprite, "scale", Vector2.ONE * COLLECT_POP_SCALE, COLLECT_POP_DURATION)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.tween_property(_sprite, "modulate:a", 0.0, COLLECT_POP_DURATION)
+	tween.chain().tween_callback(queue_free)
 
 
 func _affix_bonus_value() -> int:

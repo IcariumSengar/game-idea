@@ -1467,3 +1467,21 @@ Short dated entries when a design decision is made and worth remembering
   the unit-test runner (195 passing -- the 4-assertion drop from 199 is
   expected, from one fewer stat def in the generic per-stat cost/cap
   tests, not a regression), and a playtest batch.
+- 2026-08-16 — "Pips, not gems" implemented (per TODO.md's General
+  Improvements item): `loot_gem.gd`'s resting-state faceted crystal
+  (dual glow rings, three shaded facet triangles, an outline) replaced
+  with two plain circles -- a solid pip plus a small offset highlight
+  for a hint of shine -- both still tinted by rarity via the existing
+  `modulate` pipeline, so no change needed anywhere that sets the color.
+  `loot.gd`'s pickup moment absorbed the payoff instead: spark burst
+  amount/scale increased, the "+N" floating text's font size bumped, and
+  a new quick pop-and-fade tween on the gem sprite (scale up with a
+  back-ease, fade to transparent, ~0.18s) plays before the node frees,
+  where previously it just vanished instantly on collect. Movement
+  (magnet pull/bob/pulse) stops the moment collection succeeds so the
+  pop plays in place rather than mid-slide. Presentation only, per the
+  item's explicit scope -- drop mechanics/weights/values untouched, and
+  gems visually stacking on the player is still the separate, unresolved
+  idea noted on the player size/hitbox item. Verified via boot check,
+  the unit-test runner (195 passing, unaffected), and a playtest batch
+  exercising pickups continuously across 10 runs with zero errors.
