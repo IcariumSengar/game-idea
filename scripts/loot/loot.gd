@@ -5,7 +5,10 @@ const SPAWN_GRACE: float = 0.15
 const BOB_SPEED: float = 3.0
 const BOB_AMOUNT: float = 3.0
 const PULSE_SPEED: float = 4.0
-const SPRITE_SCALE: float = 1.8
+## Shrunk 1.8 -> 1.3 alongside loot_gem.gd's smaller shape -- live-play
+## feedback was that gems still read as too big even after the first
+## "pips, not gems" pass.
+const SPRITE_SCALE: float = 1.3
 const PULSE_SCALE_AMOUNT: float = 0.22
 ## Pickup-moment feedback, per the "pips, not gems" rework (DESIGN.md/
 ## TODO.md): resting pips are deliberately quiet, so the payoff moves

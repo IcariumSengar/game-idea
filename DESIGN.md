@@ -849,6 +849,33 @@ adding more combo shapes:
   set-completion should be order-strict or order-agnostic by having
   both exist as different difficulty tiers instead of picking one.
 
+**Combo feedback -- locked in:** completing a combo should read as a
+tension-then-release beat, not a flat trigger. Vibe reference: *Hyperslice*
+(MrEliptik) -- a fast, aggressive arena roguelite whose core loop is
+itself a two-step prime-then-deliver chain (bump an enemy to stun it or
+strip its shield, *then* dash-slice to actually destroy it) and whose
+players specifically call out the game's juicy VFX/screen effects as a
+highlight. Not a source to clone assets or mechanics from -- a reference
+for *pacing*: build anticipation, then punch.
+
+Applied here as three concrete beats:
+- **Building tension:** as a combo nears completion (e.g. 5 of 6 tiers
+  held toward Full Set), the held tiers' pips read progressively
+  brighter/faster-pulsing rather than sitting static -- the player should
+  feel it coming before it lands.
+- **The triggering pickup reads as distinct:** the gem that actually
+  completes a combo gets its own brighter flash/trail on the way in,
+  separate from an ordinary pickup's pip-pop -- it's the "slice," not
+  just another "bump."
+- **The payoff is a hard punch, not a fade-in:** a brief hit-stop
+  (near-freeze for a few frames), a radial flash, and camera shake --
+  all scaled to the combo's size, so Full Set/Ascension hit harder than
+  Streak/Rampage. Reuses the same escalation logic already established
+  for gems generally (quiet at rest, loud on collect), just at combo
+  scale instead of single-pickup scale.
+
+Not built -- see TODO.md.
+
 ### Backpack UI
 
 The backpack should be visible on-screen as a real slot grid
@@ -1369,6 +1396,19 @@ Short dated entries when a design decision is made and worth remembering
   Full Set's hard-mode cousin) alongside the existing Streak idea, all
   still deliberately deferred past Full Set. See TODO.md for the
   implementation items; these are design decisions only, not yet built.
+- 2026-08-16 — Locked in combo-completion feedback, using *Hyperslice*
+  (MrEliptik) as a pacing reference, not a source to copy -- a fast
+  arena roguelite whose own core loop is a prime-then-deliver chain
+  (stun/strip-shield, then dash-slice to finish) and whose players
+  specifically praise its juicy VFX. Applied as three beats: held tiers'
+  pips read progressively brighter as a combo nears completion (build
+  anticipation), the triggering pickup gets its own distinct flash/trail
+  instead of an ordinary pip-pop (it's the "slice," not the "bump"), and
+  completion itself is a hard punch -- hit-stop, radial flash, camera
+  shake scaled to the combo's size -- rather than a flat trigger. Same
+  quiet-at-rest/loud-on-collect escalation already locked for individual
+  gem pickups, just applied at combo scale. See TODO.md's gem visual
+  item; not yet built.
 - 2026-08-16 — Sketched a bigger replacement for the backpack-fill risk
   signal, driven by a playability problem rather than a balance one: the
   HUD's top-left backpack panel is hard to track mid-action in a
@@ -1485,3 +1525,46 @@ Short dated entries when a design decision is made and worth remembering
   idea noted on the player size/hitbox item. Verified via boot check,
   the unit-test runner (195 passing, unaffected), and a playtest batch
   exercising pickups continuously across 10 runs with zero errors.
+- 2026-08-16 — Second live-play pass on the gem visual: the pip still
+  read as too big, and losing all facet detail lost the game's magic-gem
+  aesthetic entirely -- a plain dot doesn't feel like "gem magic." Kept
+  it small but gave it back an actual faceted-crystal silhouette (two
+  shaded triangles + a bright cap, no glow ring or outline this time) at
+  roughly a third the linear size of the original crystal; `loot.gd`'s
+  own `SPRITE_SCALE` also eased 1.8 -> 1.3 on top, since the shape alone
+  wasn't enough the first time. Also confirmed the loot-type/combo count
+  question raised this session: `LootTypes` registers exactly six rarity
+  tiers and Full Set's check reads `LootTypes.get_types()` generically
+  (not a hardcoded 6), so nothing was actually out of sync there.
+- 2026-08-16 — Combo-completion feedback and Streak implemented (the
+  Hyperslice-referenced "Combo feedback" note, and the previously-
+  deferred Streak pattern, both from TODO.md's gem visual item), with
+  Streak's exact trigger/payout decided live rather than purely per the
+  original "small tier-flavored buff" phrasing: 3 consecutive same-tier
+  pickups (`SpellCaster.STREAK_THRESHOLD`) triggers an instant AOE damage
+  burst at the player, radius 200, "tier-flavored" made concrete as
+  damage scaling with tier rarity (Common weakest, Legendary strongest)
+  rather than a flat number -- repeatable all run, unlike Full Set's
+  one-time clear. Needed a new `Player.loot_collected(type_id)` signal,
+  since the existing `loot_changed` only carries the resulting backpack
+  state, not which pickup caused it. `Arena` gained a generic
+  `trigger_shake(magnitude_scale, stop_duration)`, factored out of the
+  player-hit case, so combo punches reuse the same screen-shake/hit-stop
+  system rather than a new one -- Full Set's impact now triggers a 2x
+  shake (added at the actual impact moment, after the existing telegraph,
+  not at cast time -- the telegraph already builds tension, this is the
+  punch), Streak a 0.6x one. "The triggering pickup gets its own distinct
+  flash/trail" is approximated by Full Set's existing telegraph/impact FX
+  landing at the player's position at the moment of completion, rather
+  than building separate pre-pickup prediction wiring to flag one
+  specific gem in advance -- reads as distinct in practice without the
+  added complexity. Not built: the tension-building half of the combo-
+  feedback note (held tiers' pips reading progressively brighter/faster-
+  pulsing as Full Set nears completion) -- that's backpack-UI work
+  (`hud.gd`/`backpack_grid.gd`), not gem-drop work, and deserves its own
+  pass rather than a rushed version bolted on here. Rampage/Ascension
+  remain unbuilt too. Verified via the unit-test runner (195 passing,
+  unaffected) and playtest batches -- a moderate batch exercising
+  frequent Streak triggers (10 runs, 5-20 kills each) and a heavily-
+  seeded one reaching Phase 3 with fill% high enough to plausibly trigger
+  Full Set (15 runs, up to 69 kills), both zero errors.

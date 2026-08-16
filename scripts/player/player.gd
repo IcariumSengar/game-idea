@@ -5,6 +5,11 @@ signal died
 signal hit
 signal hp_changed(current: float, max_hp: float)
 signal loot_changed(backpack: Dictionary)
+## Fired once per successful collect_loot() with which tier was picked up
+## -- loot_changed only carries the resulting backpack state, not which
+## pickup caused it, so per-pickup combo tracking (Streak) needs this
+## separately.
+signal loot_collected(type_id: StringName)
 
 const RADIUS: float = 16.0
 const SPARK_COLOR: Color = Color.CYAN
@@ -162,6 +167,7 @@ func collect_loot(type_id: StringName) -> bool:
 	backpack[type_id] = count + 1
 	_update_fill_effects()
 	loot_changed.emit(backpack)
+	loot_collected.emit(type_id)
 	return true
 
 

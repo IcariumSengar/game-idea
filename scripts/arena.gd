@@ -80,14 +80,22 @@ func _process(delta: float) -> void:
 
 
 func _on_player_hit() -> void:
+	trigger_shake()
+
+
+## Generic screen-shake + hit-stop, scaled by magnitude_scale (1.0 matches
+## a normal player-hit). Used by combo-completion feedback (spell_caster.gd)
+## as well as the player-hit case above, so juice stays consistent in feel
+## rather than each caller inventing its own version.
+func trigger_shake(magnitude_scale: float = 1.0, stop_duration: float = HIT_STOP_DURATION) -> void:
 	# Screen shake/hit-stop are camera juice for a human viewer -- pointless
 	# for a headless bot and would fight the playtest harness's speedup
 	# (every hit resets Engine.time_scale to 1.0 for its duration).
 	if PlaytestHarness.active:
 		return
 	_shake_time_left = SHAKE_DURATION
-	_shake_magnitude = SHAKE_MAGNITUDE
-	_hit_stop(HIT_STOP_DURATION)
+	_shake_magnitude = SHAKE_MAGNITUDE * magnitude_scale
+	_hit_stop(stop_duration)
 
 
 ## Self-contained (doesn't rely on _process) so it still plays out fully

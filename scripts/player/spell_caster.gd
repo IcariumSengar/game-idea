@@ -63,12 +63,34 @@ const FAMILIAR_RESUMMON_COOLDOWN: float = 8.0
 ## read as a big impressive clear rather than to literally reach every
 ## corner of the arena.
 const FULL_SET_RADIUS: float = 700.0
+## Combo-completion feedback (DESIGN.md's "Combo feedback" note, Hyperslice-
+## referenced pacing): a hard punch on the payoff, scaled to the combo's
+## size, so Full Set hits harder than Streak.
+const FULL_SET_SHAKE_SCALE: float = 2.0
+const FULL_SET_HIT_STOP: float = 0.1
+
+## Gem Combos' "Streak" (DESIGN.md): N consecutive pickups of the *same*
+## tier, uninterrupted, triggers a small tier-flavored AOE burst -- unlike
+## Full Set, repeatable all run. "Tier-flavored" made concrete as damage
+## scaling with tier rarity (index into TIER_ORDER), so streaking a rarer
+## tier hits harder. Instant, no telegraph -- Full Set is the "build
+## tension" moment; Streak is the immediate reward for aggressive
+## same-tier looting.
+const TIER_ORDER: Array[StringName] = [
+	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
+]
+const STREAK_THRESHOLD: int = 3
+const STREAK_BASE_POWER: float = 12.0
+const STREAK_RADIUS: float = 200.0
+const STREAK_SHAKE_SCALE: float = 0.6
 
 var _owner_body: Player
 ## Enemy -> {ticks_left: int, tick_damage: float, timer: float}
 var _burning: Dictionary = {}
 var _active_familiar: Familiar = null
 var _full_set_used_this_run: bool = false
+var _streak_tier: StringName = StringName()
+var _streak_count: int = 0
 
 var _arcane_cooldown: float = 0.0
 var _inferno_cooldown: float = 0.0
@@ -83,6 +105,7 @@ var _familiar_cooldown: float = 0.0
 func _ready() -> void:
 	_owner_body = get_parent()
 	_owner_body.loot_changed.connect(_on_loot_changed)
+	_owner_body.loot_collected.connect(_on_loot_collected)
 	_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
 	_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
 	_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
@@ -387,13 +410,48 @@ func _cast_full_set_clear() -> void:
 ## every enemy in the group). Routed through take_damage() rather than a
 ## direct free() so it still triggers the normal death flow (loot drop,
 ## kill-count, death FX) -- a Full Set clear should feel like a reward,
-## not a wasted wave of kills.
+## not a wasted wave of kills. Shake/hit-stop lands here, on the actual
+## impact, not at cast time -- the telegraph already built the tension,
+## this is the punch.
 func _on_full_set_impact() -> void:
+	var arena := get_tree().current_scene as Arena
+	if arena != null:
+		arena.trigger_shake(FULL_SET_SHAKE_SCALE, FULL_SET_HIT_STOP)
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Enemy
 		if enemy == null:
 			continue
 		enemy.take_damage(enemy.hp)
+
+
+## Tracks consecutive same-tier pickups (resets to 1 the moment a
+## different tier is collected), triggering Streak once the threshold is
+## reached. Runs alongside Full Set's tracking rather than instead of it
+## -- both listen to Player independently, so picking up the 6th distinct
+## tier can complete a Full Set and count toward a Streak in the same
+## pickup with no interaction between the two.
+func _on_loot_collected(type_id: StringName) -> void:
+	if type_id == _streak_tier:
+		_streak_count += 1
+	else:
+		_streak_tier = type_id
+		_streak_count = 1
+	if _streak_count >= STREAK_THRESHOLD:
+		_streak_count = 0
+		_cast_streak_burst(type_id)
+
+
+func _cast_streak_burst(tier_id: StringName) -> void:
+	var tier_index: int = maxi(TIER_ORDER.find(tier_id), 0)
+	var damage: float = _scaled_power(STREAK_BASE_POWER) * float(tier_index + 1)
+	var def := LootTypes.get_type(tier_id)
+	var color: Color = def.color if def != null else Color.WHITE
+	_damage_in_radius(_owner_body.position, STREAK_RADIUS, damage)
+	_spawn_burst(_owner_body.position, color)
+	var arena := get_tree().current_scene as Arena
+	if arena != null:
+		arena.trigger_shake(STREAK_SHAKE_SCALE)
+	AudioManager.play("lightning_cast")
 
 
 func _apply_burn(enemy: Enemy, total_damage: float) -> void:
