@@ -1889,3 +1889,20 @@ Short dated entries when a design decision is made and worth remembering
   deliberately on hold now, not dropped -- direct instruction, so the
   mechanics side gets to fully settle before spending effort on
   presentation of mechanics that might still move.
+- 2026-08-16 — Compacting stack-size re-tune (the one outstanding piece
+  of the backpack-rework item): validated via the playtest harness
+  rather than changed blind, per the item's own instruction. A/B/C
+  comparison at fixed capacity (5) and matched combat stats, 10 runs
+  each: no Compacting averaged ~57% fill; Commons Hoard alone (maxed)
+  ~44%; the full ladder maxed ~34%. Two things confirmed by that spread:
+  Compacting has a real, felt effect now that fill % actually responds
+  to it (was zero effect before the fix), and it doesn't trivialize the
+  risk mechanic even fully maxed (34% is still a real, live number, not
+  near-zero) or after the ladder's first, cheapest purchase (Commons
+  Hoard alone only captures about half the total possible reduction --
+  Uncommon/Rare/Epic/Mythic Hoards still carry real, non-diminishing
+  weight, not just a common-first purchase and then nothing). Conclusion:
+  the existing per-tier numbers (see the Compacting upgrades table above)
+  hold up under the new mechanic as-is -- re-tuning via the harness
+  doesn't always mean changing numbers, sometimes it means confirming
+  the ones already there are fine. No values changed.
