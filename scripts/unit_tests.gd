@@ -32,6 +32,7 @@ func _ready() -> void:
 	_test_loot_effective_stack_size()
 	_test_backpack_fill_effects()
 	_test_backpack_slots_used()
+	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
 
@@ -273,3 +274,36 @@ func _test_backpack_slots_used() -> void:
 	)
 
 	player.queue_free()
+
+
+## Verifies Gem Combos' "Full Set" (DESIGN.md's Tweak 3): holding one of
+## each of the six rarity tiers simultaneously should trigger a one-time
+## AOE clear. The clear runs on MeteorStrikeFx's telegraph-then-impact
+## timing (spell_caster.gd), so this test has to actually wait for it
+## rather than asserting synchronously -- the one async case in this
+## suite, hence _ready() awaiting it specially.
+func _test_gem_combo_full_set() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 10
+	player.backpack.clear()
+
+	var enemy: Enemy = preload("res://scenes/enemy/enemy.tscn").instantiate()
+	enemy.position = Vector2(500.0, 500.0)
+	add_child(enemy)
+	# Enemy._ready() looks up the "player" group itself -- give both a
+	# frame to enter the tree and initialize before checking anything.
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	for def: LootTypeDef in LootTypes.get_types():
+		player.collect_loot(def.id)
+
+	# MeteorStrikeFx telegraphs for 0.5s before its impact signal fires
+	# (see meteor_strike_fx.gd) -- wait past that before checking the kill.
+	await get_tree().create_timer(0.7).timeout
+	_assert(not is_instance_valid(enemy), "Full Set clear kills every enemy on its impact")
+
+	player.queue_free()
+	if is_instance_valid(enemy):
+		enemy.queue_free()

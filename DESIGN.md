@@ -1403,3 +1403,35 @@ Short dated entries when a design decision is made and worth remembering
   100% within the first few kills, confirming the fix. Not yet checked
   visually/by a human -- headless can't confirm the sprite growth reads
   well or that the new hitbox size feels fair rather than cheap.
+- 2026-08-16 — Live-play feedback on Tweak 4: the size/speed penalty
+  ramped up too fast to let a run breathe. Root cause was mostly
+  unrelated to the size/speed formula itself -- starting Bearing capacity
+  was still 1 slot (a leftover v6 balance call, from back when the risk
+  signal was HP-shrink, not size), so fill % jumped straight to 100% on
+  the very first pickup instead of ramping over several. Fixed by raising
+  Bearing's base_value from 1 to 5 (`meta_progression.gd`) -- per-level
+  growth and cost curve unchanged, so the whole ladder just starts 4
+  higher (level 10 cap: 15 instead of 11). `MAX_SIZE_FRACTION` also eased
+  1.5 -> 1.3 on the same pass, a smaller adjustment on top of the bigger
+  capacity fix. Both changes are numbers-only; the underlying mechanics
+  from the prior two entries are unchanged.
+- 2026-08-16 — Gem Combos' "Full Set" implemented (the other unbuilt half
+  of Tweak 3, alongside the fill-%-fix already landed): holding one of
+  each of the six rarity tiers simultaneously triggers a one-time-per-run
+  AOE clear of every enemy currently alive, reusing `MeteorStrikeFx` for
+  the telegraph/impact visual per the sketch. Lives in `spell_caster.gd`
+  (not `player.gd`) -- it listens to `Player.loot_changed`, checks
+  whether every tier is present after each backpack change, and on
+  trigger spawns the FX and kills unconditionally (not radius-gated) on
+  its `impact` signal, so it reliably reads as "clear everyone," not "hit
+  whoever happened to be close." Killed enemies go through their normal
+  `take_damage()` death flow (loot drop, kill-count, death FX intact) --
+  a reward, not a wasted wave. Verified with a genuine end-to-end
+  integration test (the suite's first async case: gives a real Player
+  instance one of each tier, waits out the FX's real 0.5s telegraph
+  timing, confirms a real Enemy instance actually dies), plus a heavily-
+  seeded playtest batch reaching Phase 3 with zero errors -- though at
+  Legendary's 0.5% drop weight, a Full Set naturally didn't fire in that
+  short a batch, expected given how rare the trigger condition is by
+  design. Compacting's per-tier re-tune (Tweak 3's third scope item) is
+  still outstanding.

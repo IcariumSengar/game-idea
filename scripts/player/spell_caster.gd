@@ -57,10 +57,18 @@ const TELEPORT_ARENA_MARGIN: float = 20.0
 const TELEPORT_COLOR: Color = Color(0.6, 0.85, 1.0)
 const FAMILIAR_RESUMMON_COOLDOWN: float = 8.0
 
+## Gem Combos' "Full Set" (DESIGN.md, Tweak 3): not a levelled spell --
+## purely in-run, no currency/meta-progression, one-time per run. Visual
+## radius only (kill is unconditional, see _on_full_set_impact), sized to
+## read as a big impressive clear rather than to literally reach every
+## corner of the arena.
+const FULL_SET_RADIUS: float = 700.0
+
 var _owner_body: Player
 ## Enemy -> {ticks_left: int, tick_damage: float, timer: float}
 var _burning: Dictionary = {}
 var _active_familiar: Familiar = null
+var _full_set_used_this_run: bool = false
 
 var _arcane_cooldown: float = 0.0
 var _inferno_cooldown: float = 0.0
@@ -74,6 +82,7 @@ var _familiar_cooldown: float = 0.0
 
 func _ready() -> void:
 	_owner_body = get_parent()
+	_owner_body.loot_changed.connect(_on_loot_changed)
 	_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
 	_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
 	_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
@@ -347,6 +356,44 @@ func _cast_summon_familiar() -> void:
 	_owner_body.get_parent().add_child(familiar)
 	_active_familiar = familiar
 	AudioManager.play("familiar_summon")
+
+
+## Order-agnostic: fires the instant a backpack change leaves all six
+## rarity tiers held simultaneously, regardless of the order they were
+## collected in -- combat timing is too chaotic for a strict-sequence
+## requirement to read as skill rather than bad luck.
+func _on_loot_changed(backpack: Dictionary) -> void:
+	if _full_set_used_this_run:
+		return
+	for def: LootTypeDef in LootTypes.get_types():
+		if backpack.get(def.id, 0) <= 0:
+			return
+	_full_set_used_this_run = true
+	_cast_full_set_clear()
+
+
+func _cast_full_set_clear() -> void:
+	var fx: MeteorStrikeFx = METEOR_FX_SCENE.instantiate()
+	fx.position = _owner_body.position
+	fx.radius = FULL_SET_RADIUS
+	_owner_body.get_parent().add_child(fx)
+	fx.impact.connect(_on_full_set_impact)
+	AudioManager.play("meteor_cast")
+
+
+## Unconditional -- kills every enemy currently alive regardless of
+## distance from the impact point, matching DESIGN.md's "AOE clear of
+## every enemy on screen" (there's only one screen/arena here, so that's
+## every enemy in the group). Routed through take_damage() rather than a
+## direct free() so it still triggers the normal death flow (loot drop,
+## kill-count, death FX) -- a Full Set clear should feel like a reward,
+## not a wasted wave of kills.
+func _on_full_set_impact() -> void:
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null:
+			continue
+		enemy.take_damage(enemy.hp)
 
 
 func _apply_burn(enemy: Enemy, total_damage: float) -> void:

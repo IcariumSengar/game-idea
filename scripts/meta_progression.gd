@@ -82,7 +82,7 @@ var _stat_levels: Dictionary = {}
 
 func _ready() -> void:
 	_register_stat(
-		STAT_BACKPACK_CAPACITY, "Bearing", 1.0, 1.0, 100, 1.25, 10, 0, StatDef.Currency.BACKPACK
+		STAT_BACKPACK_CAPACITY, "Bearing", 5.0, 1.0, 100, 1.25, 10, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PICKUP_RANGE, "Gleam", 60.0, 8.0, 12, 1.15, 15, 0, StatDef.Currency.PLAYER)
 	_register_stat(STAT_DAMAGE, "Spellpower", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)

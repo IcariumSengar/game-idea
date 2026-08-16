@@ -15,9 +15,12 @@ const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 ## Backpack-fill penalty (Tweak 4, DESIGN.md 2026-08-16): a full bag no
 ## longer shrinks HP -- it grows the player's sprite and actual
 ## CollisionShape2D radius instead, making a fuller bag a mechanically
-## bigger, easier-to-hit target. Invented starting value (50% bigger at
-## 100% fill), not yet playtest-tuned.
-const MAX_SIZE_FRACTION: float = 1.5
+## bigger, easier-to-hit target. Eased from an initial 1.5 (50% bigger at
+## 100% fill) after live-play feedback that the penalty ramped up too
+## fast -- mostly a symptom of starting Bearing capacity still being 1
+## slot (fixed alongside, see meta_progression.gd), but the peak size was
+## softened too on the same pass.
+const MAX_SIZE_FRACTION: float = 1.3
 const MIN_SPEED_FRACTION: float = 0.8
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
