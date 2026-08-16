@@ -8,9 +8,27 @@ const TIER_ORDER: Array[StringName] = [
 	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
 ]
 
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
+## Enemy-tier unlocks, per DESIGN.md's Enemy Types table -- each new tier
+## also unlocks rarer loot (Bruiser can drop Epic, Elite Epic/Mythic,
+## Boss Mythic/Legendary), but that's otherwise invisible: a run that
+## never survives past Phase 1 has no way to know progression exists at
+## all. Announced the same way combo completions are (spell_caster.gd's
+## _spawn_combo_label), above the player.
+const PHASE_LABELS: Dictionary = {2: "BRUISERS!", 3: "ELITES!"}
+const PHASE_LABEL_COLORS: Dictionary = {
+	2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85)
+}
+const BOSS_LABEL: String = "BOSS!"
+const BOSS_LABEL_COLOR: Color = Color(0.95, 0.2, 0.25)
+const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
+const PHASE_LABEL_FONT_SIZE: int = 24
+
 var _backpack_capacity: int
 var _player: Player
 var _stardust_update_timer: float = 0.0
+var _last_phase: int = 1
+var _boss_announced: bool = false
 
 @onready var _arena: Arena = get_parent()
 @onready var _time_value: Label = %TimeValue
@@ -42,12 +60,31 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time_value.text = _format_time(_arena.get_run_time())
+	_check_phase_announcements()
 
 	_stardust_update_timer += delta
 	if _stardust_update_timer >= STARDUST_UPDATE_INTERVAL:
 		_stardust_update_timer = 0.0
 		var stardust: float = _arena.get_run_time() * MetaProgression.BACKPACK_CURRENCY_PER_SECOND
 		_stardust_value.text = "%.1f" % stardust
+
+
+func _check_phase_announcements() -> void:
+	var phase := _arena.get_phase()
+	if phase != _last_phase:
+		_last_phase = phase
+		if PHASE_LABELS.has(phase):
+			_spawn_phase_label(PHASE_LABELS[phase], PHASE_LABEL_COLORS[phase])
+	if not _boss_announced and _arena.get_run_time() >= Arena.BOSS_SPAWN_TIME:
+		_boss_announced = true
+		_spawn_phase_label(BOSS_LABEL, BOSS_LABEL_COLOR)
+
+
+func _spawn_phase_label(label: String, color: Color) -> void:
+	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
+	text.position = _player.position + PHASE_LABEL_OFFSET
+	_arena.add_child(text)
+	text.setup(label, color, PHASE_LABEL_FONT_SIZE)
 
 
 ## Escape toggles the pause menu. HUD is process_mode ALWAYS specifically

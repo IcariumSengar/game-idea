@@ -808,6 +808,23 @@ system: no currency, no meta-progression, no persistence — resets to
 nothing at the start of every run, so it's equally available whether
 it's a player's 1st run or 500th.
 
+**Quick-reference matrix** (balancing reference — check against the
+decision log / actual code for exact live numbers, which have already
+moved more than once during live-play tuning; re-sync this table if they
+move again without it being updated here):
+
+| Combo | Trigger | Effect | Repeatable? | Feedback | Status |
+|---|---|---|---|---|---|
+| **Full Set** | Hold 1 of each of the 6 rarity tiers simultaneously, order-agnostic | AOE clear — kills every enemy currently alive | One-time per run | 2x screen shake + "FULL SET!" callout (Meteor Strike orange) | ✅ Implemented |
+| **Streak** | 3 consecutive same-tier pickups, uninterrupted (`SpellCaster.STREAK_THRESHOLD`) | Instant AOE damage burst at the player, radius 200, scales with tier rarity | Repeatable, all run | 0.6x screen shake + "STREAK!" callout (tier's own color) | ✅ Implemented |
+| **Rampage** | Volume/speed threshold — illustrative only (~8 pickups within 5s, any tier), not locked | Brief buff rewarding aggressive clear speed — not yet specified | TBD | TBD | ❌ Considered, not built |
+| **Ascension** | Strict ascending order, Common → Legendary, no break — exact break condition undecided | Bigger/different payout than Full Set — not yet specified | TBD | TBD | ❌ Considered, not built |
+
+Also not yet built for either implemented combo: the "tension-building"
+half of combo feedback (held tiers' pips reading progressively brighter
+as Full Set nears completion) — that's separate backpack-UI work
+(`hud.gd`/`backpack_grid.gd`), flagged in the decision log, not done yet.
+
 **Full Set:** holding one of each of the six rarity tiers simultaneously
 (order-agnostic, not strict succession) triggers a one-time-per-run AOE
 clear of every enemy on screen, reusing Meteor Strike's telegraph-then-
@@ -823,12 +840,12 @@ is already a real, existing lever. Consistent with the core "the
 player's only input is movement/positioning" pillar — this is a
 positioning/target-priority payoff, not a manual-cast ability.
 
-Deliberately depends on the Fill % fix above landing first: today,
-"holding one of each tier" already secretly means "bag is 100% full," so
-rewarding that exact state right now would read as risk and payoff on
-the same ambiguous signal. Once fill % tracks real volume instead of
-tier-diversity, completing a set becomes its own clean, separate
-milestone.
+Deliberately sequenced after the Fill % fix above: before that fix,
+"holding one of each tier" secretly meant "bag is 100% full," so
+rewarding that exact state would have read as risk and payoff on the
+same ambiguous signal. Fill % now tracks real volume instead of
+tier-diversity (see the decision log), so completing a set reads as its
+own clean, separate milestone.
 
 Three more patterns were considered, each aimed at a different playstyle
 so they don't overlap with Full Set or each other, but deliberately left
@@ -874,7 +891,10 @@ Applied here as three concrete beats:
   for gems generally (quiet at rest, loud on collect), just at combo
   scale instead of single-pickup scale.
 
-Not built -- see TODO.md.
+**Status:** Full Set, Streak, and the shake/flash/callout feedback beats
+are implemented and verified (see the decision log below for how).
+Rampage and Ascension remain unbuilt, as does the pre-completion
+tension-building pip-brightening -- see the matrix above and TODO.md.
 
 ### Backpack UI
 
@@ -1592,3 +1612,24 @@ Short dated entries when a design decision is made and worth remembering
   compete with the burst/spark visuals at the same spot. Shared through
   one `_spawn_combo_label()` helper rather than each combo spawning its
   own copy.
+- 2026-08-16 — Player question, confirmed against the actual code: why
+  does it feel like only 3 loot types ever show up? Answer: it's not a
+  bug, it's enemy-gated by design and was never actually verified end to
+  end until now. Minion's own loot table caps at Rare (60/30/10% Common/
+  Uncommon/Rare, no Epic+ at all); Bruiser (Phase 2, 20s+) adds a 5%
+  Epic chance; Elite (Phase 3, 40s+) is where Epic (30%) and Mythic (5%)
+  become real; Boss (55s+, once) is Mythic/Legendary-exclusive (80/20%).
+  Phase 1 genuinely only has Minions, so any run that doesn't survive
+  past ~20s can only ever see Common/Uncommon/Rare -- exactly the
+  reported symptom. The gating itself needed no fix (it already *is* the
+  "unlock rarer loot as you go deeper" progression the player wanted),
+  but it was completely silent -- nothing on screen ever announces a
+  tougher enemy tier (and the rarer loot that comes with it) becoming
+  available. Added phase-transition callouts to close that gap: "BRUISERS!"
+  at Phase 2, "ELITES!" at Phase 3, "BOSS!" at 55s, reusing the same
+  above-the-player floating-text pattern as combo callouts (`hud.gd`'s
+  `_check_phase_announcements()`/`_spawn_phase_label()`, mirroring
+  `spell_caster.gd`'s combo-label helper). Verified via a normal
+  (unmodified-timing) playtest batch reaching Phase 2/3 repeatedly, and
+  a separate batch with `Arena.BOSS_SPAWN_TIME` temporarily lowered to
+  reliably exercise the boss-announcement path -- both zero errors.
