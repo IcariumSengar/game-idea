@@ -30,6 +30,7 @@ func _ready() -> void:
 	_test_meta_progression_buy_upgrade()
 	_test_loot_weighted_pick()
 	_test_loot_effective_stack_size()
+	_test_loot_slot_accounting()
 	_test_backpack_fill_effects()
 	_test_backpack_slots_used()
 	_test_manual_triage_queue()
@@ -81,9 +82,7 @@ func _test_meta_progression_level_cap() -> void:
 		_assert(MetaProgression.is_maxed(def.id), "%s is maxed at level_cap" % def.id)
 		if def.level_cap > 0:
 			MetaProgression.debug_set_level(def.id, def.level_cap - 1)
-			_assert(
-				not MetaProgression.is_maxed(def.id), "%s is not maxed one below cap" % def.id
-			)
+			_assert(not MetaProgression.is_maxed(def.id), "%s is not maxed one below cap" % def.id)
 		MetaProgression.debug_set_level(def.id, original_level)
 
 
@@ -170,6 +169,35 @@ func _test_loot_effective_stack_size() -> void:
 		)
 
 
+## Verifies the 2026-08-17 HUD/BackpackGrid fill-% bugfix: count_slots_used()
+## and slot_breakdown() must agree, and a tier spans multiple slots once its
+## own stack fills rather than one slot per distinct tier touched (the bug
+## both display sites had before this fix).
+func _test_loot_slot_accounting() -> void:
+	var backpack: Dictionary = {&"common": 22, &"legendary": 3}
+	_assert(
+		LootTypes.count_slots_used(backpack) == 6,
+		"22 common (stack 10 -> 3 slots) + 3 legendary (stack 1 -> 3 slots) = 6 slots total"
+	)
+	var breakdown: Array = LootTypes.slot_breakdown(backpack)
+	_assert(breakdown.size() == 6, "slot_breakdown returns one entry per real slot, not per tier")
+	var common_slot_counts: Array = []
+	var legendary_slot_counts: Array = []
+	for slot: Array in breakdown:
+		if slot[0] == &"common":
+			common_slot_counts.append(slot[1])
+		elif slot[0] == &"legendary":
+			legendary_slot_counts.append(slot[1])
+	_assert(
+		common_slot_counts == [10, 10, 2], "common's 22 items split into full/full/partial slots"
+	)
+	_assert(
+		legendary_slot_counts == [1, 1, 1],
+		"legendary's stack size of 1 keeps each item its own slot"
+	)
+	_assert(LootTypes.count_slots_used({}) == 0, "an empty backpack uses zero slots")
+
+
 ## Verifies player.gd's backpack-fill speed/size lerp (Tweak 4: HP no
 ## longer shrinks with fill -- size/hitbox grows instead) by driving a
 ## real, isolated Player instance through its actual public API
@@ -194,7 +222,9 @@ func _test_backpack_fill_effects() -> void:
 		"effective_speed at 25% fill matches lerp formula"
 	)
 	_assert(
-		_almost_eq((player._body_shape.shape as CircleShape2D).radius, base_shape_radius * expected_size),
+		_almost_eq(
+			(player._body_shape.shape as CircleShape2D).radius, base_shape_radius * expected_size
+		),
 		"hitbox radius at 25% fill matches size lerp formula"
 	)
 	_assert(
@@ -223,7 +253,8 @@ func _test_backpack_fill_effects() -> void:
 	player.consume_loot(&"__test_c", 1)
 	player.consume_loot(&"__test_d", 1)
 	_assert(
-		_almost_eq(player._effective_speed, base_speed), "effective_speed returns to baseline once empty"
+		_almost_eq(player._effective_speed, base_speed),
+		"effective_speed returns to baseline once empty"
 	)
 	_assert(
 		_almost_eq((player._body_shape.shape as CircleShape2D).radius, base_shape_radius),
@@ -248,9 +279,7 @@ func _test_backpack_slots_used() -> void:
 	_assert(player._slots_used() == 1, "one legendary item uses one slot")
 
 	player.collect_loot(&"legendary")
-	_assert(
-		player._slots_used() == 2, "a second legendary consumes a second slot (stack size 1)"
-	)
+	_assert(player._slots_used() == 2, "a second legendary consumes a second slot (stack size 1)")
 
 	player.collect_loot(&"legendary")
 	_assert(player._slots_used() == 3, "a third legendary fills capacity (3/3 slots)")
@@ -293,8 +322,12 @@ func _test_manual_triage_queue() -> void:
 
 	gem_a.collect(player)
 	player._advance_queue()
-	_assert(player.backpack.get(&"common", 0) == 1, "keeping the active gem adds it to the backpack")
-	_assert(player._pending_gem == gem_b, "the next queued gem becomes active once the front resolves")
+	_assert(
+		player.backpack.get(&"common", 0) == 1, "keeping the active gem adds it to the backpack"
+	)
+	_assert(
+		player._pending_gem == gem_b, "the next queued gem becomes active once the front resolves"
+	)
 	_assert(player._gem_queue.is_empty(), "queue empties out as gems advance")
 
 	gem_b.resolve_discard()

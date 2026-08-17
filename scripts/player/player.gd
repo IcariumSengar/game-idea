@@ -259,7 +259,10 @@ func _play_keep_gesture() -> void:
 	(
 		tween
 		. tween_property(
-			_sprite, "position:y", _base_sprite_position.y + KEEP_GESTURE_HOP, KEEP_GESTURE_DURATION * 0.4
+			_sprite,
+			"position:y",
+			_base_sprite_position.y + KEEP_GESTURE_HOP,
+			KEEP_GESTURE_DURATION * 0.4
 		)
 		. set_trans(Tween.TRANS_QUAD)
 		. set_ease(Tween.EASE_OUT)
@@ -272,13 +275,13 @@ func _play_keep_gesture() -> void:
 	)
 	(
 		tween
-		. tween_property(_sprite, "position:y", _base_sprite_position.y, KEEP_GESTURE_DURATION * 0.6)
+		. tween_property(
+			_sprite, "position:y", _base_sprite_position.y, KEEP_GESTURE_DURATION * 0.6
+		)
 		. set_delay(KEEP_GESTURE_DURATION * 0.4)
 	)
-	(
-		tween
-		. tween_property(_sprite, "rotation", 0.0, KEEP_GESTURE_DURATION * 0.6)
-		. set_delay(KEEP_GESTURE_DURATION * 0.4)
+	tween.tween_property(_sprite, "rotation", 0.0, KEEP_GESTURE_DURATION * 0.6).set_delay(
+		KEEP_GESTURE_DURATION * 0.4
 	)
 
 
@@ -352,13 +355,18 @@ func _needs_new_slot(count: int, stack_size: int) -> bool:
 ## was removed entirely -- DESIGN.md 2026-08-16) -- a tier spans multiple
 ## slots once its current stack is full, instead of the old "one slot per
 ## distinct tier touched" (which silently hard-capped fill % at the 6
-## rarity tiers regardless of Bearing level).
+## rarity tiers regardless of Bearing level). Delegates to LootTypes so
+## HUD/BackpackGrid can read the exact same number instead of re-deriving
+## it (DESIGN.md 2026-08-17 bugfix -- they were still reading the old
+## distinct-tier-count formula).
 func _slots_used() -> int:
-	var total := 0
-	for type_id: StringName in backpack:
-		var stack_size: int = LootTypes.get_effective_stack_size(type_id)
-		total += ceili(float(backpack[type_id]) / float(stack_size))
-	return total
+	return LootTypes.count_slots_used(backpack)
+
+
+## Public wrapper for HUD/UI callers -- _slots_used() stays private-by-
+## convention for internal use (fill ratio, purge threshold, etc.).
+func get_slots_used() -> int:
+	return _slots_used()
 
 
 func _try_purge() -> void:

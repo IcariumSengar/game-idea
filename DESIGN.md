@@ -1960,3 +1960,21 @@ Short dated entries when a design decision is made and worth remembering
   per-stat tests, +3 from `_test_loot_effective_stack_size` now covering
   all six tiers instead of two), and three playtest batches with zero
   errors.
+- 2026-08-17 — Bugfix: HUD loot readout and the backpack grid were still
+  reading the pre-Tweak-3 fill formula (one slot per distinct tier
+  touched, `backpack.size()`, hard-capped at 6) instead of the real
+  slot-count `player.gd`'s `_slots_used()` had already moved to. The risk
+  mechanic itself (size/hitbox growth, speed shrink) was always reading
+  the correct value -- only the two things a player actually looks at to
+  gauge fill % were wrong. Found while orienting for an unrelated
+  ideation pass, flagged in TODO.md before this session picked it up.
+  Fixed by moving the slot-accounting math (previously duplicated
+  ad hoc in `player.gd` and about to be duplicated a third time in
+  `backpack_grid.gd`) onto `LootTypes` as the shared source of truth:
+  `count_slots_used()` and `slot_breakdown()`. `player.gd::_slots_used()`
+  now delegates to it and gained a public `get_slots_used()` wrapper for
+  HUD; `backpack_grid.gd` now draws one rect per real occupied slot
+  (splitting a tier across multiple rects once its own stack fills)
+  instead of one rect per distinct tier. Verified via 5 new unit-test
+  cases (197 passing) covering the multi-slot split directly, plus a
+  playtest batch with zero errors and sane fill % readings.

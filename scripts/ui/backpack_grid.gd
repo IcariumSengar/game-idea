@@ -37,9 +37,9 @@ func update(backpack: Dictionary, capacity: int) -> void:
 	_capacity = capacity
 	_slot_ids.clear()
 	_slot_counts.clear()
-	for type_id: StringName in backpack:
-		_slot_ids.append(type_id)
-		_slot_counts.append(int(backpack[type_id]))
+	for slot: Array in LootTypes.slot_breakdown(backpack):
+		_slot_ids.append(slot[0])
+		_slot_counts.append(slot[1])
 	_show_ghost_slot = not MetaProgression.is_maxed(MetaProgression.STAT_BACKPACK_CAPACITY)
 	_update_min_size()
 	queue_redraw()

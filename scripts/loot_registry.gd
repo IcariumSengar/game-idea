@@ -75,6 +75,35 @@ func get_effective_stack_size(type_id: StringName) -> int:
 	return def.stack_size
 
 
+## Total occupied slots across a backpack dict: one slot per stack instance
+## of a tier (ceil-rounded against its stack size), not one slot per
+## distinct tier -- a tier spans multiple slots once its own stack fills.
+## Shared by Player (fill %/capacity) and BackpackGrid (the HUD readout) so
+## both always agree on the same number instead of each hand-rolling it.
+func count_slots_used(backpack: Dictionary) -> int:
+	var total := 0
+	for type_id: StringName in backpack:
+		var stack_size: int = get_effective_stack_size(type_id)
+		total += ceili(float(backpack[type_id]) / float(stack_size))
+	return total
+
+
+## Per-slot breakdown of a backpack dict, in the same slot count as
+## count_slots_used() -- each entry is [type_id, count_in_that_slot].
+## BackpackGrid draws one rect per real slot instead of one per distinct
+## tier, so it needs the split, not just the total.
+func slot_breakdown(backpack: Dictionary) -> Array:
+	var slots: Array = []
+	for type_id: StringName in backpack:
+		var stack_size: int = get_effective_stack_size(type_id)
+		var remaining: int = int(backpack[type_id])
+		while remaining > 0:
+			var slot_count: int = mini(remaining, stack_size)
+			slots.append([type_id, slot_count])
+			remaining -= slot_count
+	return slots
+
+
 func _register(
 	id: StringName,
 	display_name: String,

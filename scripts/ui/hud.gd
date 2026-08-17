@@ -16,9 +16,7 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.
 ## all. Announced the same way combo completions are (spell_caster.gd's
 ## _spawn_combo_label), above the player.
 const PHASE_LABELS: Dictionary = {2: "BRUISERS!", 3: "ELITES!"}
-const PHASE_LABEL_COLORS: Dictionary = {
-	2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85)
-}
+const PHASE_LABEL_COLORS: Dictionary = {2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85)}
 const BOSS_LABEL: String = "BOSS!"
 const BOSS_LABEL_COLOR: Color = Color(0.95, 0.2, 0.25)
 const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
@@ -109,7 +107,7 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 
 func _on_loot_changed(backpack: Dictionary) -> void:
 	_loot_grid.update(backpack, _backpack_capacity)
-	_loot_value.text = "%d/%d" % [backpack.size(), _backpack_capacity]
+	_loot_value.text = "%d/%d" % [_player.get_slots_used(), _backpack_capacity]
 	_essence_value.text = "%d" % _player.get_total_loot_value()
 
 
