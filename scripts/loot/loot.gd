@@ -29,6 +29,23 @@ const AFFIX_CHANCE_BY_TIER: Dictionary = {&"epic": 0.15, &"mythic": 0.25, &"lege
 const AFFIX_VALUE_MULTIPLIER: float = 0.5
 const AFFIX_PULSE_SCALE_AMOUNT: float = 0.4
 const AFFIX_COLOR: Color = Color(1.0, 0.85, 0.3)
+const DISCARD_FADE_DURATION: float = 0.22
+## Cast Off (DESIGN.md's Depth Pass Group A, 2026-08-17): Discard no longer
+## deletes the gem in place -- it throws it in the player's facing
+## direction, dealing tier-scaled damage/knockback on impact, no value
+## banked. Reuses Streak's tier-index multiplier table (spell_caster.gd's
+## TIER_ORDER) rather than inventing a second one -- see CAST_OFF_TIER_ORDER
+## below. Deliberately not Spellpower-scaled like the 8 spells are: this is
+## the gem itself hurting something on the way out, not a cast.
+const CAST_OFF_DISTANCE: float = 180.0
+const CAST_OFF_FLIGHT_DURATION: float = 0.22
+const CAST_OFF_IMPACT_RADIUS: float = 40.0
+const CAST_OFF_KNOCKBACK_STRENGTH: float = 150.0
+const CAST_OFF_BASE_DAMAGE: float = 10.0
+const CAST_OFF_SPIN_TURNS: float = 1.0
+const CAST_OFF_TIER_ORDER: Array[StringName] = [
+	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
+]
 
 ## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
 ## below to get the actual homing speed once magnetized.
@@ -36,8 +53,6 @@ const AFFIX_COLOR: Color = Color(1.0, 0.85, 0.3)
 ## Extra pull speed (px/s) added per point of the player's pickup_range —
 ## this is what makes upgrading the magnet stat visibly pull loot in faster.
 @export var pull_speed_per_range: float = 4.0
-
-const DISCARD_FADE_DURATION: float = 0.22
 
 var type_id: StringName = &"common"
 
@@ -98,15 +113,21 @@ func start_magnet(player: Player) -> void:
 	_pull_speed = pull_speed_base + player.pickup_range * pull_speed_per_range
 
 
-func collect(player: Player) -> void:
-	if player.collect_loot(type_id):
-		if _is_affixed:
-			player.add_bonus_loot_value(_affix_bonus_value())
-		_spawn_spark()
-		_spawn_value_text()
-		AudioManager.play("pickup")
-		set_deferred("monitoring", false)
-		_play_collect_pop()
+## Returns whether the pickup actually succeeded (the backpack had room) --
+## callers must not treat a failed collect as consumed (see player.gd's
+## _check_triage_input(), which leaves a denied gem queued rather than
+## advancing past it).
+func collect(player: Player) -> bool:
+	if not player.collect_loot(type_id):
+		return false
+	if _is_affixed:
+		player.add_bonus_loot_value(_affix_bonus_value())
+	_spawn_spark()
+	_spawn_value_text()
+	AudioManager.play("pickup")
+	set_deferred("monitoring", false)
+	_play_collect_pop()
+	return true
 
 
 ## Bots skip the queue entirely and collect immediately, same as the old
@@ -128,6 +149,7 @@ func _on_body_entered(body: Node2D) -> void:
 func enter_queue() -> void:
 	_is_queued = true
 	set_deferred("monitoring", false)
+	AudioManager.play_rarity_cue(type_id)
 
 
 func _spawn_spark() -> void:
@@ -171,19 +193,61 @@ func _play_collect_pop() -> void:
 	tween.chain().tween_callback(queue_free)
 
 
-## Manual Triage's discard path (player.gd's _check_triage_input()) --
-## gone for good, no banking, no backpack change. Shrink-and-fade rather
-## than Keep's grow-and-fade, so the two read as opposite outcomes, not
-## the same pop with a different sound.
-func resolve_discard() -> void:
+## Manual Triage's discard path (player.gd's _check_triage_input()) -- Cast
+## Off (DESIGN.md's Depth Pass Group A): gone for good, no value banked
+## exactly as before, but now it *does* something on the way out instead of
+## just fading in place -- thrown along the player's facing direction,
+## dealing tier-scaled damage/knockback to whatever it lands near.
+func resolve_discard(facing: Vector2, owner_position: Vector2) -> void:
 	set_deferred("monitoring", false)
 	AudioManager.play("discard")
 	set_process(false)
+	var impact_position: Vector2 = owner_position + facing * CAST_OFF_DISTANCE
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(_sprite, "scale", _sprite.scale * 0.4, DISCARD_FADE_DURATION)
-	tween.tween_property(_sprite, "modulate:a", 0.0, DISCARD_FADE_DURATION)
-	tween.chain().tween_callback(queue_free)
+	(
+		tween
+		. tween_property(self, "position", impact_position, CAST_OFF_FLIGHT_DURATION)
+		. set_trans(Tween.TRANS_QUAD)
+		. set_ease(Tween.EASE_IN)
+	)
+	tween.tween_property(
+		_sprite,
+		"rotation",
+		TAU * CAST_OFF_SPIN_TURNS * signf(facing.x if facing.x != 0.0 else 1.0),
+		CAST_OFF_FLIGHT_DURATION
+	)
+	tween.chain().tween_callback(_impact.bind(impact_position))
+
+
+## Landing moment: deals damage/knockback to anything within
+## CAST_OFF_IMPACT_RADIUS, same take_damage()/apply_knockback() path every
+## other damage source in the game already uses, then fades exactly like
+## the old in-place discard did.
+func _impact(impact_position: Vector2) -> void:
+	var damage := _cast_off_damage()
+	var hit_any := false
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Enemy
+		if enemy == null:
+			continue
+		if impact_position.distance_to(enemy.position) <= CAST_OFF_IMPACT_RADIUS:
+			hit_any = true
+			enemy.take_damage(damage)
+			enemy.apply_knockback(impact_position, CAST_OFF_KNOCKBACK_STRENGTH)
+	_spawn_spark()
+	if hit_any:
+		AudioManager.play("cast_off_impact")
+	var fade_tween := create_tween()
+	fade_tween.set_parallel(true)
+	fade_tween.tween_property(_sprite, "scale", _sprite.scale * 0.4, DISCARD_FADE_DURATION)
+	fade_tween.tween_property(_sprite, "modulate:a", 0.0, DISCARD_FADE_DURATION)
+	fade_tween.chain().tween_callback(queue_free)
+
+
+func _cast_off_damage() -> float:
+	var tier_index: int = maxi(CAST_OFF_TIER_ORDER.find(type_id), 0)
+	return CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
 
 
 func _affix_bonus_value() -> int:

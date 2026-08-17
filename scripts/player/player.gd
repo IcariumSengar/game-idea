@@ -41,6 +41,14 @@ const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 const QUEUE_ACTIVE_OFFSET: Vector2 = Vector2(0.0, -34.0)
 const QUEUE_STACK_OFFSET: Vector2 = Vector2(0.0, -13.0)
 const QUEUE_STACK_SCALE: float = 0.7
+## Depth Pass Group A "Queue pressure" (DESIGN.md 2026-08-17): a pending
+## (undecided) gem used to cost nothing to ignore -- pure decoration until
+## it resolved. Counting it toward fill % at partial weight makes a backed-
+## up queue visibly heavier right now, not just once resolved. Recomputed
+## fresh every time (see _update_fill_effects()) rather than tracked
+## incrementally, so resolving a gem (Keep -> full slot weight, Discard ->
+## zero) transitions cleanly with no separate bookkeeping to desync.
+const PENDING_SLOT_WEIGHT: float = 0.5
 ## Keep/discard gesture, on the same sprite. No "throw"/"interact" pose
 ## exists in the wizzard_m sheet (idle/run/hit are the only animations
 ## shipped in this asset pack) and there's no way to draw new frames --
@@ -231,6 +239,7 @@ func enqueue_loot(loot: Loot) -> void:
 		_gem_queue.append(loot)
 		loot.enter_queue()
 	_reposition_queue()
+	_update_fill_effects()
 
 
 func _check_triage_input() -> void:
@@ -239,11 +248,14 @@ func _check_triage_input() -> void:
 	var want_keep := Input.is_physical_key_pressed(KEY_K)
 	var want_discard := Input.is_physical_key_pressed(KEY_L)
 	if want_keep and not _keep_was_pressed:
-		_pending_gem.collect(self)
-		_play_keep_gesture()
-		_advance_queue()
+		# A full backpack can refuse the Keep (collect() returns false) --
+		# leave the gem queued rather than advancing past it, so it isn't
+		# silently orphaned (untracked, unfreed) the way it used to be.
+		if _pending_gem.collect(self):
+			_play_keep_gesture()
+			_advance_queue()
 	elif want_discard and not _discard_was_pressed:
-		_pending_gem.resolve_discard()
+		_pending_gem.resolve_discard(_facing, position)
 		_play_discard_gesture()
 		_advance_queue()
 	_keep_was_pressed = want_keep
@@ -305,6 +317,7 @@ func _play_discard_gesture() -> void:
 func _advance_queue() -> void:
 	_pending_gem = _gem_queue.pop_front() if not _gem_queue.is_empty() else null
 	_reposition_queue()
+	_update_fill_effects()
 
 
 ## Re-anchors every queued gem to the player each frame -- called from
@@ -407,11 +420,25 @@ func _find_lowest_rarity_type() -> StringName:
 	return StringName()
 
 
+## Number of gems currently pending a keep/discard decision (active + queued
+## behind it) -- weighted at less than a real slot in _update_fill_effects()
+## below, so a backed-up queue applies pressure without being penalized as
+## harshly as loot already committed to the backpack.
+func _pending_queue_size() -> int:
+	return (1 if _pending_gem != null else 0) + _gem_queue.size()
+
+
 ## Backpack fill no longer touches max_hp (Tweak 4) -- it scales speed
 ## down and the player's visual/physical size up instead. Renamed from
-## _update_hp_from_backpack to match what it actually drives now.
+## _update_hp_from_backpack to match what it actually drives now. Also
+## called on every queue change (enqueue/advance), not just on real
+## backpack changes, since Group A's queue pressure (DESIGN.md 2026-08-17)
+## means pending gems already weigh on fill % before they're resolved.
 func _update_fill_effects() -> void:
-	var fill_ratio := float(_slots_used()) / float(backpack_capacity)
+	var effective_slots: float = (
+		float(_slots_used()) + float(_pending_queue_size()) * PENDING_SLOT_WEIGHT
+	)
+	var fill_ratio: float = clampf(effective_slots / float(backpack_capacity), 0.0, 1.0)
 	_max_fill_ratio = max(_max_fill_ratio, fill_ratio)
 	_effective_speed = speed * lerp(1.0, MIN_SPEED_FRACTION, fill_ratio)
 	var size_scale: float = lerp(1.0, MAX_SIZE_FRACTION, fill_ratio)

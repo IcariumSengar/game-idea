@@ -34,6 +34,8 @@ func _ready() -> void:
 	_test_backpack_fill_effects()
 	_test_backpack_slots_used()
 	_test_manual_triage_queue()
+	_test_queue_pressure()
+	_test_collect_denied_when_full()
 	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
@@ -330,11 +332,90 @@ func _test_manual_triage_queue() -> void:
 	)
 	_assert(player._gem_queue.is_empty(), "queue empties out as gems advance")
 
-	gem_b.resolve_discard()
+	gem_b.resolve_discard(Vector2.UP, player.position)
 	player._advance_queue()
 	_assert(player.backpack.get(&"uncommon", 0) == 0, "discarding never adds to the backpack")
 	_assert(player._pending_gem == null, "queue is empty once everything's resolved")
 
+	player.queue_free()
+
+
+## Verifies Depth Pass Group A's "queue pressure" (DESIGN.md 2026-08-17):
+## pending (undecided) gems must weigh on fill % at PENDING_SLOT_WEIGHT
+## before they're resolved, and transition cleanly to full weight (Keep) or
+## zero (Discard) with no residual. Also verifies the collect() bool-return
+## contract a full backpack relies on (see player.gd's _check_triage_input()
+## -- a denied Keep must leave the gem queued, not silently orphan it).
+func _test_queue_pressure() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 4
+	player.backpack.clear()
+
+	var gem_a: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_a.type_id = &"common"
+	var gem_b: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_b.type_id = &"common"
+	add_child(gem_a)
+	add_child(gem_b)
+
+	player.enqueue_loot(gem_a)
+	var expected_size_one: float = lerpf(1.0, Player.MAX_SIZE_FRACTION, 0.5 / 4.0)
+	_assert(
+		_almost_eq(player._sprite.scale.x, player._base_sprite_scale.x * expected_size_one),
+		"one pending gem weighs PENDING_SLOT_WEIGHT (0.5) of a real slot"
+	)
+
+	player.enqueue_loot(gem_b)
+	var expected_size_two: float = lerpf(1.0, Player.MAX_SIZE_FRACTION, 1.0 / 4.0)
+	_assert(
+		_almost_eq(player._sprite.scale.x, player._base_sprite_scale.x * expected_size_two),
+		"two pending gems weigh a full real slot's worth (2 x 0.5)"
+	)
+
+	gem_a.collect(player)
+	player._advance_queue()
+	# gem_b was promoted from the queue to active pending -- 1 real slot
+	# (gem_a) + 1 still-pending gem (gem_b, 0.5 weight) = 1.5, matching the
+	# pre-resolve total exactly (the "clean transition" this test verifies).
+	var expected_size_resolved: float = lerpf(1.0, Player.MAX_SIZE_FRACTION, 1.5 / 4.0)
+	_assert(
+		_almost_eq(player._sprite.scale.x, player._base_sprite_scale.x * expected_size_resolved),
+		"keeping transitions cleanly: 1 real slot + 1 pending (0.5) matches the pre-resolve total"
+	)
+
+	gem_b.resolve_discard(Vector2.UP, player.position)
+	player._advance_queue()
+	var expected_size_empty: float = lerpf(1.0, Player.MAX_SIZE_FRACTION, 1.0 / 4.0)
+	_assert(
+		_almost_eq(player._sprite.scale.x, player._base_sprite_scale.x * expected_size_empty),
+		"discarding drops back to zero pending weight, leaving only the 1 kept real slot"
+	)
+
+	player.queue_free()
+
+
+## A full backpack must refuse collect() (returns false) rather than
+## silently dropping the gem -- the caller (player.gd's _check_triage_input)
+## relies on this to leave a denied gem queued instead of orphaning it.
+func _test_collect_denied_when_full() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 1
+	player.backpack.clear()
+	player.collect_loot(&"legendary")
+
+	var gem: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem.type_id = &"legendary"
+	add_child(gem)
+	player.enqueue_loot(gem)
+
+	_assert(not gem.collect(player), "collect() returns false once the backpack is full")
+	_assert(
+		player.backpack.get(&"legendary", 0) == 1, "a denied collect never touches the backpack"
+	)
+
+	gem.queue_free()
 	player.queue_free()
 
 

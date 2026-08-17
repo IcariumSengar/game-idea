@@ -2287,3 +2287,25 @@ Short dated entries when a design decision is made and worth remembering
   built, not an assertion; Pacts' selection UI shape (2-option toggle
   vs. a longer list) isn't decided. See TODO.md for the six
   implementation items; none of this is built yet.
+- 2026-08-17 — Depth Pass Group A (Triage Feel) implemented: Queue
+  pressure (pending gems now weigh `PENDING_SLOT_WEIGHT = 0.5` of a real
+  slot toward fill %, recomputed fresh on every queue change so
+  resolution transitions cleanly with no separate bookkeeping to desync);
+  Cast Off (Discard/L now throws the gem along the player's facing
+  direction instead of fading in place -- tier-scaled damage/knockback on
+  impact via the same `take_damage()`/`apply_knockback()` path every
+  other damage source uses, no value banked, deliberately not
+  Spellpower-scaled since this is the gem itself hurting something, not a
+  cast); Rarity Cues (a pitched arrival tone per tier, ascending with
+  rarity, on `Loot.enter_queue()`). Also fixed a real (if previously
+  rare) bug this work made load-bearing: a Keep press against a full
+  backpack used to silently orphan the gem node (untracked, unfreed,
+  frozen in place forever) since `_check_triage_input()` advanced the
+  queue unconditionally regardless of whether `collect()` actually
+  succeeded. `Loot.collect()` now returns bool; a denied Keep leaves the
+  gem queued instead. Verified via 5 new unit-test cases (203 passing)
+  covering the pending-weight formula and the denied-collect contract,
+  plus a playtest batch with zero errors -- the bot bypasses the triage
+  queue entirely by design, so Cast Off/queue-pressure/rarity-cues still
+  need a human `playdev` pass to verify feel, same caveat as the rest of
+  Manual Triage.

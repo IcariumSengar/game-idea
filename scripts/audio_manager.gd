@@ -7,6 +7,17 @@ extends Node
 
 const SAMPLE_RATE: int = 22050
 const POOL_SIZE: int = 8
+## Depth Pass Group A "Rarity Cues" (DESIGN.md 2026-08-17): a distinct
+## pitched arrival tone per tier, ascending with rarity, so a queued gem's
+## tier can be triaged by ear without looking away from the fight.
+const RARITY_CUE_FREQ: Dictionary = {
+	&"common": 440.0,
+	&"uncommon": 520.0,
+	&"rare": 620.0,
+	&"epic": 740.0,
+	&"mythic": 880.0,
+	&"legendary": 1040.0,
+}
 
 var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
@@ -21,6 +32,9 @@ func _ready() -> void:
 	_streams["player_death"] = _make_sweep(420.0, 70.0, 0.55, 0.5)
 	_streams["pickup"] = _make_tone(880.0, 0.05, 0.25, "sine")
 	_streams["discard"] = _make_sweep(500.0, 200.0, 0.1, 0.25)
+	_streams["cast_off_impact"] = _make_tone(180.0, 0.08, 0.35, "square", true)
+	for tier_id: StringName in RARITY_CUE_FREQ:
+		_streams["rarity_%s" % tier_id] = _make_tone(RARITY_CUE_FREQ[tier_id], 0.05, 0.2, "sine")
 	_streams["purchase"] = _make_chime([660.0, 990.0], 0.08, 0.3)
 	_streams["dash"] = _make_sweep(320.0, 720.0, 0.1, 0.28)
 	_streams["click"] = _make_tone(520.0, 0.03, 0.2, "sine")
@@ -51,6 +65,10 @@ func play(cue: String, volume_db: float = 0.0, pitch_variance: float = 0.08) -> 
 	player.volume_db = volume_db
 	player.pitch_scale = 1.0 + randf_range(-pitch_variance, pitch_variance)
 	player.play()
+
+
+func play_rarity_cue(tier_id: StringName) -> void:
+	play("rarity_%s" % tier_id, 0.0, 0.03)
 
 
 func _make_tone(
