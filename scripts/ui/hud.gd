@@ -106,7 +106,7 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 
 
 func _on_loot_changed(backpack: Dictionary) -> void:
-	_loot_grid.update(backpack, _backpack_capacity)
+	_loot_grid.update(backpack, _backpack_capacity, _player.get_ballast_slots())
 	_loot_value.text = "%d/%d" % [_player.get_slots_used(), _backpack_capacity]
 	_essence_value.text = "%d" % _player.get_total_loot_value()
 

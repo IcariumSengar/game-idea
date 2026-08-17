@@ -6,6 +6,7 @@ const MINION_FAST_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_
 const MINION_TANKY_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_tanky.tscn")
 const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy/enemy_bruiser.tscn")
 const ELITE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_elite.tscn")
+const MAGPIE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_magpie.tscn")
 const BOSS_SCENE: PackedScene = preload("res://scenes/enemy/enemy_boss.tscn")
 const LOOT_SCENE: PackedScene = preload("res://scenes/loot/loot.tscn")
 ## Tier 4: unique, one per run, spawned directly at this mark rather than
@@ -21,6 +22,14 @@ const BOSS_SPAWN_TIME: float = 55.0
 ## speed/HP tradeoff for visual and tactical variety within the tier. Splits
 ## the existing per-phase Minion weight rather than changing the documented
 ## Minion-vs-Bruiser-vs-Elite ratios themselves.
+## Magpie (Depth Pass Group C's "Loot Has Consequences," DESIGN.md
+## 2026-08-17) is added on top rather than carved out of the existing
+## per-tier ratios above -- it's a new axis (reacts to loot), not a
+## replacement for an existing tier's role, and _pick_enemy_scene()'s
+## weights don't need to sum to anything in particular. Absent from Phase
+## 1 on purpose: there's barely any loot on the ground yet for it to
+## react to, and Phase 1 is meant to stay gentle/accessible.
+const MAGPIE_PHASE_WEIGHT: Array[float] = [0.0, 0.0, 0.12, 0.18]
 const PHASE_SPAWN_WEIGHTS: Array[Dictionary] = [
 	{},
 	{MINION_SCENE: 0.7, MINION_FAST_SCENE: 0.15, MINION_TANKY_SCENE: 0.15},
@@ -38,6 +47,21 @@ const PHASE_SPAWN_WEIGHTS: Array[Dictionary] = [
 		ELITE_SCENE: 0.25,
 	},
 ]
+## Scatter (Depth Pass Group C): rarity scales how far a drop skitters from
+## its kill site -- Common lands ~in place, Legendary skitters toward the
+## edge, per DESIGN.md's "80-150px" call for the top tier. Direction is
+## radially outward from the arena center (continuing the same line the
+## kill already happened on), so chasing rare loot costs a worse position
+## rather than a random one.
+const SCATTER_RANGE_BY_TIER: Dictionary = {
+	&"common": Vector2.ZERO,
+	&"uncommon": Vector2(10.0, 25.0),
+	&"rare": Vector2(25.0, 50.0),
+	&"epic": Vector2(45.0, 80.0),
+	&"mythic": Vector2(65.0, 110.0),
+	&"legendary": Vector2(80.0, 150.0),
+}
+const SCATTER_ARENA_MARGIN: float = 20.0
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const SHAKE_DURATION: float = 0.15
 const SHAKE_MAGNITUDE: float = 8.0
@@ -171,7 +195,11 @@ func _spawn_boss(ramp: float) -> void:
 
 
 func _pick_enemy_scene() -> PackedScene:
-	var weights: Dictionary = PHASE_SPAWN_WEIGHTS[get_phase()]
+	var phase := get_phase()
+	var weights: Dictionary = PHASE_SPAWN_WEIGHTS[phase].duplicate()
+	var magpie_weight: float = MAGPIE_PHASE_WEIGHT[phase]
+	if magpie_weight > 0.0:
+		weights[MAGPIE_SCENE] = magpie_weight
 	var total: float = 0.0
 	for scene: PackedScene in weights:
 		total += float(weights[scene])
@@ -186,16 +214,47 @@ func _pick_enemy_scene() -> PackedScene:
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	_enemies_killed += 1
+	# Magpie (Depth Pass Group C) doesn't drop from the generic per-kill
+	# roll -- it drops what it stole (see EnemyMagpie's own _on_died()), or
+	# nothing at all if killed before it ever ate anything. That *is* its
+	# loot table, not an addition to it.
+	if enemy is EnemyMagpie:
+		return
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position
 	loot.type_id = LootTypes.pick_random_weighted(enemy.loot_weights).id
+	var scatter_offset: Vector2 = _scatter_offset(loot.type_id, enemy.position)
 	# Deferred: a killing blow can arrive from inside a physics signal
 	# callback (a projectile's body_entered) -- adding an Area2D+shape to
 	# the tree synchronously there fails against the physics server's
 	# active query flush. Rare enough with one projectile at a time that
 	# it likely went unnoticed in normal play; constant under the playtest
 	# harness's sped-up multi-kill AOE casts.
-	add_child.call_deferred(loot)
+	_spawn_loot.call_deferred(loot, scatter_offset)
+
+
+func _spawn_loot(loot: Loot, scatter_offset: Vector2) -> void:
+	add_child(loot)
+	if scatter_offset != Vector2.ZERO:
+		loot.launch_scatter(scatter_offset)
+
+
+## Radially outward from the arena center, scaled by SCATTER_RANGE_BY_TIER,
+## then clamped so a scattered drop never lands outside the play field.
+func _scatter_offset(type_id: StringName, from_position: Vector2) -> Vector2:
+	var range: Vector2 = SCATTER_RANGE_BY_TIER.get(type_id, Vector2.ZERO)
+	if range.y <= 0.0:
+		return Vector2.ZERO
+	var distance: float = randf_range(range.x, range.y)
+	var arena_center: Vector2 = ARENA_SIZE / 2.0
+	var direction: Vector2 = arena_center.direction_to(from_position)
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT.rotated(randf() * TAU)
+	var destination: Vector2 = (from_position + direction * distance).clamp(
+		Vector2(SCATTER_ARENA_MARGIN, SCATTER_ARENA_MARGIN),
+		ARENA_SIZE - Vector2(SCATTER_ARENA_MARGIN, SCATTER_ARENA_MARGIN)
+	)
+	return destination - from_position
 
 
 func _random_edge_position() -> Vector2:

@@ -90,6 +90,11 @@ var backpack: Dictionary = {}
 ## from the backpack since affixes are a one-time value bonus on pickup,
 ## not a persistent property of a stack slot the way stack size/rarity are.
 var bonus_loot_value: int = 0
+## Leaden's extra "ballast" weight (Depth Pass Group C, DESIGN.md
+## 2026-08-17) -- same reasoning as bonus_loot_value above: the backpack
+## only tracks a count per tier, not item instances, so a per-item weight
+## bump is banked as a running total rather than a persistent property.
+var bonus_ballast_slots: int = 0
 
 var _effective_speed: float = 0.0
 var _max_fill_ratio: float = 0.0
@@ -379,15 +384,25 @@ func _needs_new_slot(count: int, stack_size: int) -> bool:
 ## rarity tiers regardless of Bearing level). Delegates to LootTypes so
 ## HUD/BackpackGrid can read the exact same number instead of re-deriving
 ## it (DESIGN.md 2026-08-17 bugfix -- they were still reading the old
-## distinct-tier-count formula).
+## distinct-tier-count formula). Includes Leaden's ballast (Depth Pass
+## Group C) on top of the real tier-derived count.
 func _slots_used() -> int:
-	return LootTypes.count_slots_used(backpack)
+	return LootTypes.count_slots_used(backpack) + bonus_ballast_slots
 
 
 ## Public wrapper for HUD/UI callers -- _slots_used() stays private-by-
 ## convention for internal use (fill ratio, etc.).
 func get_slots_used() -> int:
 	return _slots_used()
+
+
+func add_ballast_slots(amount: int) -> void:
+	bonus_ballast_slots += amount
+	_update_fill_effects()
+
+
+func get_ballast_slots() -> int:
+	return bonus_ballast_slots
 
 
 ## Number of gems currently pending a keep/discard decision (active + queued

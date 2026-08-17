@@ -38,6 +38,7 @@ func _ready() -> void:
 	_test_collect_denied_when_full()
 	_test_cast_off_damage()
 	_test_gleam_pending_weight_reduction()
+	_test_leaden_pickup()
 	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
@@ -475,6 +476,36 @@ func _test_gleam_pending_weight_reduction() -> void:
 
 	player.queue_free()
 	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, original_gleam_level)
+
+
+## Depth Pass Group C "Leaden" (DESIGN.md 2026-08-17): a Leaden pickup must
+## add both its value bonus AND its ballast weight to the player -- the
+## "space gamble" this affix exists to create only works if slots_used
+## actually reflects the extra weight, not just the value readout.
+func _test_leaden_pickup() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 10
+	player.backpack.clear()
+
+	var gem: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem.type_id = &"rare"
+	add_child(gem)
+	gem._is_leaden = true
+	var expected_bonus: int = gem._leaden_bonus_value()
+
+	_assert(gem.collect(player), "a Leaden gem still collects normally")
+	_assert(player.bonus_loot_value == expected_bonus, "Leaden adds its value bonus on pickup")
+	_assert(
+		player.bonus_ballast_slots == Loot.LEADEN_BALLAST_SLOTS,
+		"Leaden adds its ballast weight on pickup"
+	)
+	_assert(
+		player._slots_used() == 1 + Loot.LEADEN_BALLAST_SLOTS,
+		"ballast counts toward real slots_used (1 real slot + ballast)"
+	)
+
+	player.queue_free()
 
 
 ## Verifies the Grimoire's progressive-discovery tracking round-trips

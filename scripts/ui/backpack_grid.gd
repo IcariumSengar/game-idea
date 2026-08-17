@@ -26,20 +26,29 @@ const COUNT_SHADOW_OFFSET: Vector2 = Vector2(1.0, 1.0)
 const GHOST_COLOR: Color = Color(1.0, 1.0, 1.0, 0.04)
 const GHOST_BORDER_COLOR: Color = Color(1.0, 1.0, 1.0, 0.16)
 const GHOST_DASH_LENGTH: float = 3.0
+## Leaden's ballast slots (Depth Pass Group C, DESIGN.md 2026-08-17) aren't
+## tied to a real backpack dict entry -- drawn as their own plain, muted
+## slots after the real ones so the grid's filled count always matches
+## Player.get_slots_used() exactly, same lesson as the 2026-08-17 fill-%
+## bugfix (HUD and this grid must never read two different formulas).
+const BALLAST_COLOR: Color = Color(0.3, 0.28, 0.26)
+const BALLAST_BORDER_COLOR: Color = Color(0.5, 0.46, 0.42)
 
 var _capacity: int = 0
 var _slot_ids: Array[StringName] = []
 var _slot_counts: Array[int] = []
+var _ballast_slots: int = 0
 var _show_ghost_slot: bool = false
 
 
-func update(backpack: Dictionary, capacity: int) -> void:
+func update(backpack: Dictionary, capacity: int, ballast_slots: int = 0) -> void:
 	_capacity = capacity
 	_slot_ids.clear()
 	_slot_counts.clear()
 	for slot: Array in LootTypes.slot_breakdown(backpack):
 		_slot_ids.append(slot[0])
 		_slot_counts.append(slot[1])
+	_ballast_slots = ballast_slots
 	_show_ghost_slot = not MetaProgression.is_maxed(MetaProgression.STAT_BACKPACK_CAPACITY)
 	_update_min_size()
 	queue_redraw()
@@ -64,7 +73,8 @@ func _grid_size(slot_count: int) -> Vector2:
 func _draw() -> void:
 	if _capacity <= 0:
 		return
-	var fraction := float(_slot_ids.size()) / float(_capacity)
+	var filled_total: int = _slot_ids.size() + _ballast_slots
+	var fraction := float(filled_total) / float(_capacity)
 	var danger_color := DANGER_COLOR_LOW.lerp(DANGER_COLOR_HIGH, fraction)
 	var grid_size := _grid_size(_capacity)
 	draw_rect(
@@ -82,12 +92,19 @@ func _draw() -> void:
 		)
 		if i < _slot_ids.size():
 			_draw_filled_slot(rect, font, _slot_ids[i], _slot_counts[i])
+		elif i < filled_total:
+			_draw_ballast_slot(rect)
 		else:
 			draw_rect(rect, EMPTY_COLOR)
 			draw_rect(rect, EMPTY_BORDER_COLOR, false, 1.0)
 
 	if _show_ghost_slot:
 		_draw_ghost_slot(_capacity)
+
+
+func _draw_ballast_slot(rect: Rect2) -> void:
+	draw_rect(rect, BALLAST_COLOR)
+	draw_rect(rect, BALLAST_BORDER_COLOR, false, 1.5)
 
 
 func _draw_ghost_slot(index: int) -> void:

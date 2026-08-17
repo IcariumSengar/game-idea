@@ -29,7 +29,29 @@ const AFFIX_CHANCE_BY_TIER: Dictionary = {&"epic": 0.15, &"mythic": 0.25, &"lege
 const AFFIX_VALUE_MULTIPLIER: float = 0.5
 const AFFIX_PULSE_SCALE_AMOUNT: float = 0.4
 const AFFIX_COLOR: Color = Color(1.0, 0.85, 0.3)
+## Leaden (Depth Pass Group C, DESIGN.md 2026-08-17): Blessed's dark mirror
+## -- more value, but folds extra "ballast" weight into the player's real
+## slot count even though it's still one item, so a high-value pickup can
+## finally be a genuine space gamble instead of an always-correct Keep.
+## Same AFFIX_CHANCE_BY_TIER roll as Blessed; a second coin-flip on a
+## successful roll decides which of the two it becomes.
+const AFFIX_LEADEN_CHANCE: float = 0.5
+const LEADEN_VALUE_MULTIPLIER: float = 0.8
+const LEADEN_BALLAST_SLOTS: int = 1
+const LEADEN_PULSE_SCALE_AMOUNT: float = 0.12
+const LEADEN_PULSE_SPEED: float = 2.0
+const LEADEN_COLOR: Color = Color(0.35, 0.32, 0.3)
+## A Magpie (Depth Pass Group C) that dies after eating drops everything
+## it stole back at its death position, at a bonus -- the reward for
+## catching it in time rather than a straight refund.
+const RECOVERED_VALUE_BONUS_MULTIPLIER: float = 0.5
+const RECOVERED_COLOR: Color = Color(0.4, 0.85, 0.6)
 const DISCARD_FADE_DURATION: float = 0.22
+## Scatter (Depth Pass Group C): rarity scales how far a drop skitters from
+## its kill site -- Common lands ~in place, Legendary skitters toward the
+## edge. arena.gd computes the actual offset (it knows the kill position
+## and arena bounds); this just plays the launch-and-settle hop.
+const SCATTER_DURATION: float = 0.35
 ## Cast Off (DESIGN.md's Depth Pass Group A, 2026-08-17): Discard no longer
 ## deletes the gem in place -- it throws it in the player's facing
 ## direction, dealing tier-scaled damage/knockback on impact, no value
@@ -61,25 +83,38 @@ var _magnet_target: Player = null
 var _pull_speed: float = 0.0
 var _color: Color = Color.WHITE
 var _is_affixed: bool = false
+var _is_leaden: bool = false
+var _is_recovered: bool = false
 var _pulse_scale_amount: float = PULSE_SCALE_AMOUNT
+var _pulse_speed: float = PULSE_SPEED
 ## Set once this gem reaches a real-input player and enters their triage
 ## queue (see player.gd's enqueue_loot()) -- Player then drives position
 ## directly each frame, so magnet-chasing has to stop or the two would
 ## fight over it. Bob/pulse keep running -- a queued gem stays visibly
 ## "alive," not frozen dead, while it waits.
 var _is_queued: bool = false
+## True while a Scatter launch tween owns `position` -- magnet-chasing must
+## not also write to `position` during this window (see _process() below).
+var _is_scattering: bool = false
 
 @onready var _sprite: Node2D = $Gem
 
 
 func _ready() -> void:
+	add_to_group("loot")
 	var def := LootTypes.get_type(type_id)
 	if def != null:
 		_color = def.color
-	_is_affixed = randf() < float(AFFIX_CHANCE_BY_TIER.get(type_id, 0.0))
-	if _is_affixed:
-		_color = _color.lerp(AFFIX_COLOR, 0.5)
-		_pulse_scale_amount = AFFIX_PULSE_SCALE_AMOUNT
+	if randf() < float(AFFIX_CHANCE_BY_TIER.get(type_id, 0.0)):
+		if randf() < AFFIX_LEADEN_CHANCE:
+			_is_leaden = true
+			_color = _color.lerp(LEADEN_COLOR, 0.6)
+			_pulse_scale_amount = LEADEN_PULSE_SCALE_AMOUNT
+			_pulse_speed = LEADEN_PULSE_SPEED
+		else:
+			_is_affixed = true
+			_color = _color.lerp(AFFIX_COLOR, 0.5)
+			_pulse_scale_amount = AFFIX_PULSE_SCALE_AMOUNT
 	_sprite.modulate = _color
 	# Deferred: loot can spawn synchronously from inside a physics signal
 	# callback (an AOE spell killing an enemy mid body_entered), and setting
@@ -92,10 +127,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
-	if _magnet_target != null and not _is_queued:
+	if _magnet_target != null and not _is_queued and not _is_scattering:
 		position = position.move_toward(_magnet_target.position, _pull_speed * delta)
 	_sprite.position.y = sin(_time * BOB_SPEED) * BOB_AMOUNT
-	var pulse: float = SPRITE_SCALE + sin(_time * PULSE_SPEED) * _pulse_scale_amount
+	var pulse: float = SPRITE_SCALE + sin(_time * _pulse_speed) * _pulse_scale_amount
 	_sprite.scale = Vector2(pulse, pulse)
 
 
@@ -122,6 +157,11 @@ func collect(player: Player) -> bool:
 		return false
 	if _is_affixed:
 		player.add_bonus_loot_value(_affix_bonus_value())
+	elif _is_leaden:
+		player.add_bonus_loot_value(_leaden_bonus_value())
+		player.add_ballast_slots(LEADEN_BALLAST_SLOTS)
+	if _is_recovered:
+		player.add_bonus_loot_value(_recovered_bonus_value())
 	_spawn_spark()
 	_spawn_value_text()
 	AudioManager.play("pickup")
@@ -152,6 +192,48 @@ func enter_queue() -> void:
 	AudioManager.play_rarity_cue(type_id)
 
 
+## True while a Magpie (Depth Pass Group C) can steal this gem -- already-
+## queued loot has committed to the player's triage decision and is off-
+## limits; anything else on the ground (including mid-flight to a magnet)
+## is fair game.
+func is_available_to_steal() -> bool:
+	return not _is_queued
+
+
+## Called by EnemyMagpie once it reaches this gem -- removed without any
+## player interaction. Returns the tier so the thief can remember what it
+## ate and drop it back (see EnemyMagpie's _on_died()).
+func steal() -> StringName:
+	var stolen_type: StringName = type_id
+	set_deferred("monitoring", false)
+	queue_free()
+	return stolen_type
+
+
+## Marks this instance as loot recovered from a killed Magpie -- adds a
+## bonus on top of whatever else it would have paid out (see collect()).
+func mark_recovered() -> void:
+	_is_recovered = true
+
+
+## Scatter (Depth Pass Group C): plays the launch-and-settle hop toward
+## `offset` (already computed and arena-clamped by arena.gd). No-ops for a
+## ~zero offset (Common/Uncommon) rather than playing a pointless tween.
+func launch_scatter(offset: Vector2) -> void:
+	if offset.length() < 1.0:
+		return
+	_is_scattering = true
+	var destination: Vector2 = position + offset
+	var tween := create_tween()
+	(
+		tween
+		. tween_property(self, "position", destination, SCATTER_DURATION)
+		. set_trans(Tween.TRANS_QUAD)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.finished.connect(func() -> void: _is_scattering = false)
+
+
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
@@ -169,8 +251,19 @@ func _spawn_value_text() -> void:
 	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
 	text.position = position
 	get_parent().add_child(text)
+	var bonus := 0
 	if _is_affixed:
-		text.setup("+%d Blessed!" % (value + _affix_bonus_value()), AFFIX_COLOR, 20)
+		bonus = _affix_bonus_value()
+	elif _is_leaden:
+		bonus = _leaden_bonus_value()
+	if _is_recovered:
+		bonus += _recovered_bonus_value()
+	if _is_affixed:
+		text.setup("+%d Blessed!" % (value + bonus), AFFIX_COLOR, 20)
+	elif _is_leaden:
+		text.setup("+%d, Leaden" % (value + bonus), LEADEN_COLOR, 20)
+	elif _is_recovered:
+		text.setup("+%d, Recovered!" % (value + bonus), RECOVERED_COLOR, 20)
 	else:
 		text.setup("+%d" % value, _color, 18)
 
@@ -258,3 +351,15 @@ func _affix_bonus_value() -> int:
 	var def := LootTypes.get_type(type_id)
 	var value: int = def.value if def != null else 1
 	return roundi(value * AFFIX_VALUE_MULTIPLIER)
+
+
+func _leaden_bonus_value() -> int:
+	var def := LootTypes.get_type(type_id)
+	var value: int = def.value if def != null else 1
+	return roundi(value * LEADEN_VALUE_MULTIPLIER)
+
+
+func _recovered_bonus_value() -> int:
+	var def := LootTypes.get_type(type_id)
+	var value: int = def.value if def != null else 1
+	return roundi(value * RECOVERED_VALUE_BONUS_MULTIPLIER)

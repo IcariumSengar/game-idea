@@ -617,6 +617,173 @@ build rather than a straight completion path. Not doing this now; none of
 the three trees have exclusive choices, just gating and layout — the door
 is intentionally left open to add them later.
 
+### Sanctum UX: node language, feedback, and previews
+
+Pressure-tested and fully specced 2026-08-17, from an IDEAS.md research
+pass on what makes skill trees fun/legible elsewhere (see the decision
+log for the source verdict: the three-tab structure above is *confirmed*
+by that research, this section is what got added/fixed on top of it,
+not a replacement for it). **Still on hold** with the rest of the shop
+rework — this amends that plan, it doesn't lift its hold.
+
+Five presentation fixes, all pure UX — no stat IDs, costs, gates, or
+currency behavior change anywhere in this section:
+
+**1. Currency-progress ring.** The locked geometric cost curve (see
+"Player-stat upgrade curve" below) means late-game nodes take many runs
+to afford — a 60-second run earns ~3 Stardust against Bearing's first
+level costing 100 — so most Sanctum visits currently show *no visible
+change at all* on an unaffordable node beyond a red-tinted border. Draw
+a partial-fill ring around each node showing `current_currency ÷
+next_level_cost`, recomputed live every time currency changes (same
+signal `_refresh_currency()` already listens to). A node that crosses
+into affordable *since the shop was last opened* gets a one-off shimmer
+on open (compare current currency against a snapshot taken on shop
+*close*, not per-frame — the shimmer is a "welcome back" cue, not a
+live effect). **The ring disappears once a node is maxed** — nothing
+left to save toward, see point 3 below for what maxed nodes show
+instead.
+
+**2. Node shape/size encodes kind, not tree structure.** Real bug, not
+just a preference: `_get_node_radius()` currently draws the large
+"capstone" circle for any node with zero children, which means a flat
+leaf stat with no further upgrades (e.g. Inferno Fury, +damage) renders
+*larger* than Spell Unlock, which unlocks an entire spell — visual
+weight is inverted from actual importance, an accident of tree
+topology rather than a design choice. Fix: add an explicit `is_milestone:
+bool` (or similar) to `StatDef` so size/shape is asserted, not inferred
+from "happens to have no children" — milestone nodes (Spell Unlock's
+trunk, Discard) get the large/distinct treatment regardless of what
+branches off them; flat stats stay small regardless of whether anything
+branches off them. Separately, `_chain_remaining_roots()` currently
+links Player Tree's three unrelated flat stats (Spellpower/Swiftness/
+Gleam) with a cosmetic dashed line so the tree "reads as one flowing
+branch" — this implies an order/flow the design explicitly does *not*
+have (Player Tree is deliberately ungated, see above). Remove the
+cosmetic chaining. **Real technical risk flagged, not assumed solved:**
+confirm the tree-layout algorithm can still position multiple
+disconnected roots sensibly side-by-side without that chaining hack
+before removing it — it may currently be load-bearing for layout, not
+just visual.
+
+**3. Level/cap moves onto the node itself.** Second real bug found
+alongside #2: the level-pip row under each node draws `level_cap` pips
+at 7px each, so a 20-level stat like Spellpower draws a 140px-wide row
+against ~66px of node spacing — it currently overlaps its neighbors.
+Replace the pip row with a partial arc drawn around the node's own edge
+showing `level ÷ level_cap` — this is a *different* ring from point 1's
+currency-progress ring (that one shows progress toward the *next*
+level's cost; this one shows overall progress toward the *cap*) and
+they coexist: currency ring outside, level arc as the node's own border
+treatment, distinguishable by weight/style not just position, since a
+node can be simultaneously "3 of 20 levels bought" (arc) and "60% of
+the way to affording level 4" (ring). Once a node hits its cap, the
+level arc closes to a full ring and the currency ring (nothing left to
+buy) simply stops rendering — replaced by a **sealed** state (see point
+4). Freed screen space also fits a small per-tab "N affordable" count
+on each tab button, so a player can tell which tab is worth entering
+before entering it.
+
+**4. Purchase-moment feedback, including for maxed and denied clicks.**
+Every purchase currently fires the same spark burst / `"purchase"`
+sample / currency-bounce regardless of level — level 1 and level 20
+(the cap) are indistinguishable, and clicking a node you can't afford
+does *nothing at all*, not even a refusal. Three fixes, each reusing
+something that already exists rather than new systems: step the
+purchase tone's pitch with the node's post-purchase level (the
+procedural-tone approach `audio_manager.gd` already uses elsewhere,
+parameterized by level); give a maxed node a **sealed** visual state —
+a distinct border/glow treatment, not just a barely-different alpha
+(today's maxed state is 0.9 alpha vs. locked's 0.7 — functionally
+invisible at a glance) — plus a one-off resolve cue the moment a node
+*becomes* maxed; and make a denied click (can't afford) answer with a
+short shake and the shortfall amount. **Technical note:** the shop
+scene has its own existing juicy-button feedback pattern (`juicy_button.gd`,
+already used for save-slot buttons) — reuse/extend that for the denied
+state rather than assuming the Arena's combat screen-shake system
+(`trigger_shake`) applies outside the arena scene; they're different
+scenes with no shared shake infrastructure today.
+
+**5. Preview the effect where the effect is previewable.** Tooltips
+currently describe upgrades in spreadsheet grammar ("5 → 6", "+2").
+Where a node's effect is inherently spatial, show it instead of stating
+it: hovering Bearing should ghost-preview the slot it would add, reusing
+the *exact* ghost-slot concept already built for the in-run HUD
+(`backpack_grid.gd`'s existing Bearing-preview ghost slot) — note this
+needs its own instance embedded in the Sanctum's Backpack tab, since the
+existing one lives in `arena.tscn`'s HUD, a different scene; the concept
+carries over, the node doesn't. **Scoped honestly, not oversold:**
+Bearing's preview is close to free (the mechanism already exists
+elsewhere). Gleam (pull radius) and Discard (Cast Off's throw, now that
+Cast Off is implemented) have no equivalent existing preview to reuse —
+there's no live arena in the shop scene to visualize range or a throw
+arc against, so these need a lightweight *abstract* diagram (a static
+reference icon + radius circle, not a gameplay simulation) built from
+scratch. Treat Bearing's preview as the first target; Gleam/Discard
+previews are real, separable follow-on scope, not bundled into the same
+estimate.
+
+**Visual-load caution, worth stating plainly:** points 1-4 each add
+their own encoding to a single small node — a currency ring, a level
+arc, a sealed/maxed state, an affordability border tint (already
+existing) — stacked on a circle that's currently ~66px apart from its
+neighbors. Individually each is well-motivated; together they risk
+turning "legible" back into "busy," which is the opposite of what this
+whole pass is for. This needs an actual windowed look once built, per
+CLAUDE.md's own testing tiers (visual/feel work can't be verified
+headless) — treat the combination as unverified until someone's
+actually looked at it, not as self-evidently fine because each piece
+individually made sense on paper.
+
+### Spell Choice
+
+A real mechanic/economy change, not a presentation fix — kept separate
+from the UX pass above on purpose, since it touches already-shipped,
+already-tested behavior (the Spell Unlock ladder) rather than just how
+existing behavior is drawn.
+
+**The problem:** Spell Unlock's L1-L7 ladder maps to a fixed spell order
+(L1 Inferno, L2 Frost, ... L7 Familiar) — every save, every player,
+unlocks spells in the exact same sequence forever. Cited precedent for
+why this matters: Hades 2's Arcana Cards were built specifically to fix
+this same complaint about Hades 1's Mirror ("every player was unlocking
+every skill in the same order"), and the developers point to Arcana as
+generating meaningfully more personal investment as a direct result.
+
+**The fix:** at each Spell Unlock trunk level, offer a choice of 2 of
+the remaining not-yet-chosen spells rather than a single fixed one.
+Costs nothing in the locked economy — level N still costs what level N
+costs, the cap stays 7, Essence is unaffected; only *which spell* a
+given level grants changes from fixed to chosen.
+
+**What this preserves on purpose:** the ladder currently doubles as a
+difficulty ordering, not just an unlock order — Summon Familiar sits at
+L7 deliberately, as a final-tier capstone. A fully free-choice pool
+would lose that. Resolution: **Summon Familiar is only ever offered as
+one of the two choices at the final trunk level (L7), never earlier** —
+keeps the capstone-difficulty intent while still giving real choice at
+every other tier.
+
+**Real ambiguities resolved here, not left open:**
+- **Choice UI is a new interaction pattern for this shop** — every
+  other node today is "click to buy," full stop. Buying a Spell Unlock
+  level becomes a two-step flow: buy the level, then pick one of the two
+  offered spells. Needs its own modal/panel, not an inline tree
+  interaction — flagged as real, non-trivial UI scope, not a small
+  addition to the existing tree view.
+- **Save compatibility.** Existing saves already have levels bought
+  against the old fixed order. Resolution: on first load under the new
+  system, treat each already-unlocked spell as having been "chosen" at
+  the level it was actually bought at (a one-time migration, not a
+  wipe) — no player loses progress or has an unlock silently revoked.
+  This needs to actually be implemented as a migration step, not
+  assumed to fall out for free.
+- **Persistence:** which spell was chosen at which level is new
+  per-save state (`MetaProgression` needs a new field — the old system
+  only needed to know *how many* levels were bought, since the mapping
+  was fixed; the new one needs to know *which* spell each bought level
+  actually granted).
+
 ### Player-stat upgrade curve
 
 Goal: the game should feel like *very slow* growth in power, run over run —
@@ -1250,15 +1417,39 @@ Pact of Punishment), fits the dark/mystical register, and is distinct
 from Gem Combos (in-run, reactive) and the stat trees (permanent,
 currency-bought).
 
+**Confirmed by the 2026-08-17 Sanctum UX research pass: Pacts touch
+neither Essence nor Stardust at all.** No cost, no level, no cap -- none
+of the tree's vocabulary applies, so there's structurally nothing to
+compare a Pact against a stat node with. This is also the citable reason
+Pacts belong on run-prep/Embark rather than a fourth Sanctum tab (already
+this section's plan, now with the rationale made explicit): Pacts are
+the last thing decided before leaving on a run, the trees are what
+happens on the way back in.
+
+**Burden** (working name, "Toll" as the alternative) -- a single running
+number, mirroring Hades' Heat: sums the drawbacks of every active Pact
+into one scalar that both scales the run's payout and persists into the
+in-run HUD for the whole run, so the player is reminded what they signed
+up for, not just told once at selection. Pairs deliberately with
+Bearing -- Bearing is what the bag can carry, Burden is what the player
+chose to carry on top of it. Illustrative formula, needs playtest
+tuning like every other new number this session (Rampage/Ratio/
+Attunement all got the same treatment): final run reward multiplied by
+`(1 + Burden × k)` for some small constant `k`, not locked here.
+
 Technical: new `PactDef` resource mirroring `StatDef`'s existing shape
-(id, display name, description, the rule mutation(s) it applies).
-`run_prep.tscn`/`.gd` needs a new selection UI block -- open question,
-not fully specified here, whether it's a 2-option toggle row like the
-deleted Backpack Ability picker or a longer selectable list, since
-Pacts likely wants more than 2 options. `MetaProgression` needs a new
-`active_pact` save-data field; each system a given Pact touches (queue
-cap in `player.gd`, starting fill in `player.gd`'s `_ready()`, etc.)
-checks it.
+(id, display name, description, the rule mutation(s) it applies, its
+Burden contribution). `run_prep.tscn`/`.gd` needs a new selection UI
+block -- open question, not fully specified here, whether it's a
+2-option toggle row like the deleted Backpack Ability picker or a
+longer selectable list, since Pacts likely wants more than 2 options.
+`MetaProgression` needs a new `active_pact`/`active_pacts` save-data
+field; each system a given Pact touches (queue cap in `player.gd`,
+starting fill in `player.gd`'s `_ready()`, etc.) checks it; a new
+`Player.burden` (or `Arena`-level) running total feeds both the payout
+formula and a new HUD readout -- the HUD element itself belongs with
+the already-queued HUD + death-summary rework, not built standalone
+ahead of it.
 
 ### Group F: Score the run you played
 
@@ -2329,3 +2520,70 @@ Short dated entries when a design decision is made and worth remembering
   (206 passing) plus a playtest batch with Discard/Gleam maxed and
   Bearing at its floor (1 slot) to stress the full-backpack path
   heavily -- zero errors.
+- 2026-08-17 — Depth Pass Group C (Loot Has Consequences) implemented:
+  Scatter (`arena.gd`'s `_on_enemy_died` now computes a per-tier scatter
+  offset -- Common lands in place, Legendary skitters 80-150px --
+  radially outward from the arena center so chasing rare loot costs a
+  worse position, clamped to stay in-bounds; `loot.gd`'s new
+  `launch_scatter()` plays the hop, guarded against fighting the magnet-
+  chase tween via a new `_is_scattering` flag); Leaden (Blessed's dark
+  mirror -- same `AFFIX_CHANCE_BY_TIER` roll, a second coin-flip decides
+  which of the two, more value but folds `LEADEN_BALLAST_SLOTS` extra
+  weight into `Player._slots_used()` so a high-value item can finally be
+  a real space gamble -- `BackpackGrid` draws ballast as its own plain
+  muted slots so the grid's filled count always matches the HUD readout,
+  same lesson as the fill-% bugfix earlier today); Magpie (new `Enemy`
+  subclass, `imp` sprite frames tinted green since no bird/scavenger
+  frame exists in the tileset pack -- chases the nearest unclaimed ground
+  gem via a new `"loot"` group and eats it, falls back to a normal chase
+  when nothing's stealable so it's never idle, drops everything it ate
+  back at a value bonus on death via `loot.gd`'s new `mark_recovered()`,
+  drops nothing if killed before it eats anything -- `arena.gd` skips the
+  generic per-kill loot roll for it specifically since its own drop *is*
+  what it stole). Spawn-weighted into Phase 2 (0.12) and Phase 3 (0.18)
+  only, additive on top of the existing per-tier ratios rather than
+  carved out of them. Verified via 3 new unit-test cases (210 passing),
+  a forced editor rescan + direct scene boot check (new `class_name`
+  script, same gotcha as a moved one -- CLAUDE.md), and two playtest
+  batches (5 and 8 runs, reaching Phase 3, 55-71 kills/run) with zero
+  actual errors -- an intermittent, non-reproducing "2 ObjectDB leaked at
+  exit" warning appeared on 2 of 4 batches, consistent with whatever
+  happened to be mid-tween at the exact quit moment rather than a real
+  leak (didn't recur on an identical immediate re-run).
+- 2026-08-17 — Pressure-tested and fully specced the Sanctum UX research
+  pass (previous IDEAS.md entries), at direct request: "I dont want any
+  ambiguities." Found and resolved four real conflicts/gaps the
+  individual ideas didn't surface on their own:
+  - Two of the eight ideas each wanted their own ring around the same
+    node (currency-progress-to-next-level vs. level-progress-to-cap) --
+    resolved as two distinct, coexisting rings (outer ring, inner arc)
+    rather than picking one or silently merging them into something
+    neither idea actually specified.
+  - "Let the player pick which spell comes next" reads as a UX tweak but
+    is a real mechanic/economy change touching already-shipped behavior
+    -- split into its own "Spell Choice" section rather than bundled
+    with the pure-presentation fixes, specifically because it has a save-
+    compatibility question (existing saves already have levels bought
+    against the fixed order) that a presentation change wouldn't. Chose
+    a resolution (one-time migration, treat already-bought levels as
+    "chosen" retroactively) rather than leaving it as an open question.
+  - "Show the effect, don't state it" bundled three previews (Bearing,
+    Gleam, Discard) as if equally cheap. Only Bearing actually reuses an
+    existing mechanism (the in-run HUD's ghost-slot preview); Gleam and
+    Discard have no equivalent to reuse and need new abstract diagrams
+    built from scratch. Split the estimate rather than let the cheap one
+    imply the other two are equally cheap.
+  - Stacking all five presentation fixes (ring, arc, sealed state,
+    border tint, per-tab count) onto one ~66px node risks recreating the
+    exact "busy, illegible" problem this whole pass exists to fix.
+    Flagged explicitly as needing a real windowed look once built, not
+    asserted as fine because each piece individually made sense on
+    paper -- per CLAUDE.md's own testing tiers, this is exactly the
+    category headless verification can't cover.
+  Also confirmed Pacts (Group E) touch neither currency at all --
+  resolves why they belong on run-prep, not a fourth Sanctum tab -- and
+  added Burden, a single running number summing active Pacts' drawbacks
+  (Hades' Heat precedent), paired thematically with Bearing. Everything
+  in this entry stays under the shop rework's existing on-hold status
+  except Group E/Burden, which was never on hold. See TODO.md; none of
+  this is built.
