@@ -135,20 +135,42 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 		# (DESIGN.md 2026-08-16) -- Backpack Tree is now just two nodes,
 		# Bearing then Discard.
 		MetaProgression.STAT_PURGE: MetaProgression.STAT_BACKPACK_CAPACITY,
+		# Arcane needs no unlock, so these branch off the trunk root
+		# ungated (DESIGN.md's Shop structure rework, 2026-08-17) -- solid
+		# line for the visual "part of this trunk" read, but shop.gd's own
+		# gate requirements never list them, so they stay buyable from L0.
+		MetaProgression.STAT_ARCANE_HASTE: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_ARCANE_PROJECTILE_SPEED: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_INFERNO_FURY: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_INFERNO_ARC_WIDTH: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_INFERNO_BURN_DAMAGE: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_FROST_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_FROST_RADIUS: MetaProgression.STAT_SPELL_UNLOCK,
 		MetaProgression.STAT_FROST_SLOW_STRENGTH: MetaProgression.STAT_SPELL_UNLOCK,
+		# v11 spells (DESIGN.md's Shop structure rework, 2026-08-17): each
+		# now gets the same real trunk branch Inferno/Frost already had --
+		# previously these five fell through to the generic cosmetic
+		# root-chain instead of visually reflecting the gate shop.gd's own
+		# _gate_requirements() already enforced functionally.
+		MetaProgression.STAT_METEOR_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_LIGHTNING_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_TIME_WARP_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_TELEPORT_FREQUENCY: MetaProgression.STAT_SPELL_UNLOCK,
+		MetaProgression.STAT_FAMILIAR_DURATION: MetaProgression.STAT_SPELL_UNLOCK,
 	}
-	# Frost's nodes need Spell Unlock L2, not just L1 like everything else
-	# gated behind it -- shown in the LOCKED tooltip so it's not confused
-	# with Inferno's (also "Requires: Spell Unlock") gate.
+	# Each spell's gate level, matching shop.gd's own _gate_requirements()
+	# exactly -- shown in the LOCKED tooltip so a rarer spell's gate isn't
+	# confused with an earlier one's (all read "Requires: Spell Unlock"
+	# otherwise). Arcane's two stats are absent -- ungated, no min level.
 	var gate_min_level: Dictionary = {
 		MetaProgression.STAT_FROST_FREQUENCY: 2,
 		MetaProgression.STAT_FROST_RADIUS: 2,
 		MetaProgression.STAT_FROST_SLOW_STRENGTH: 2,
+		MetaProgression.STAT_METEOR_FREQUENCY: 3,
+		MetaProgression.STAT_LIGHTNING_FREQUENCY: 4,
+		MetaProgression.STAT_TIME_WARP_FREQUENCY: 5,
+		MetaProgression.STAT_TELEPORT_FREQUENCY: 6,
+		MetaProgression.STAT_FAMILIAR_DURATION: 7,
 	}
 
 	for child_id: StringName in parent_of:

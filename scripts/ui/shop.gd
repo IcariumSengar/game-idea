@@ -2,7 +2,17 @@ extends Control
 
 const BOUNCE_SCALE: float = 1.15
 const PLAYER_ACCENT: Color = Color(0.85, 0.7, 0.35, 1.0)
+const SPELL_ACCENT: Color = Color(0.65, 0.45, 0.85, 1.0)
 const BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
+## Shop structure rework (DESIGN.md 2026-08-17): Player Tree stays flat and
+## small on purpose -- Spellpower/Swiftness/Gleam, no cross-gating -- with
+## everything spell-related (Spell Unlock plus every per-spell upgrade
+## stat) split out into its own Spell Tree tab instead. Explicit allowlist
+## rather than "everything not backpack-currency," so a future non-spell
+## Player-currency stat doesn't silently land in the wrong tree by default.
+const PLAYER_TREE_STAT_IDS: Array[StringName] = [
+	MetaProgression.STAT_DAMAGE, MetaProgression.STAT_MOVE_SPEED, MetaProgression.STAT_PICKUP_RANGE
+]
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
@@ -12,67 +22,55 @@ var _active_tab: StringName = &"player"
 @onready var _backpack_currency_label: Label = $ShopPanel/Margin/VBox/BackpackCurrencyLabel
 @onready var _backpack_tree: SkillTreeView = %BackpackTreeView
 @onready var _player_tree: SkillTreeView = %PlayerTreeView
+@onready var _spell_tree: SkillTreeView = %SpellTreeView
 @onready var _backpack_header: Label = %BackpackHeader
 @onready var _player_header: Label = %PlayerHeader
+@onready var _spell_header: Label = %SpellHeader
 @onready var _player_tab: TabButton = %PlayerTabButton
+@onready var _spell_tab: TabButton = %SpellTabButton
 @onready var _backpack_tab: TabButton = %BackpackTabButton
 @onready var _player_scroll: ScrollContainer = %PlayerScroll
+@onready var _spell_scroll: ScrollContainer = %SpellScroll
 @onready var _backpack_scroll: ScrollContainer = %BackpackScroll
-@onready var _spell_status_labels: Dictionary = {
-	MetaProgression.SPELL_ARCANE_BOLT: %ArcaneBoltStatusLabel,
-	MetaProgression.SPELL_INFERNO_BLADE: %InfernoBladeStatusLabel,
-	MetaProgression.SPELL_FROST_NOVA: %FrostNovaStatusLabel,
-	MetaProgression.SPELL_METEOR_STRIKE: %MeteorStrikeStatusLabel,
-	MetaProgression.SPELL_LIGHTNING_CHAIN: %LightningChainStatusLabel,
-	MetaProgression.SPELL_TIME_WARP: %TimeWarpStatusLabel,
-	MetaProgression.SPELL_TELEPORT_PULSE: %TeleportPulseStatusLabel,
-	MetaProgression.SPELL_SUMMON_FAMILIAR: %SummonFamiliarStatusLabel,
-}
-@onready var _spell_display_names: Dictionary = {
-	MetaProgression.SPELL_ARCANE_BOLT: "Arcane Bolt",
-	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
-	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
-	MetaProgression.SPELL_METEOR_STRIKE: "Meteor Strike",
-	MetaProgression.SPELL_LIGHTNING_CHAIN: "Lightning Chain",
-	MetaProgression.SPELL_TIME_WARP: "Time Warp",
-	MetaProgression.SPELL_TELEPORT_PULSE: "Teleport Pulse",
-	MetaProgression.SPELL_SUMMON_FAMILIAR: "Summon Familiar",
-}
 
 
 func _ready() -> void:
 	MetaProgression.currency_changed.connect(_on_currency_changed)
 	MetaProgression.stat_changed.connect(_on_stat_changed)
 	_player_tab.pressed.connect(_set_active_tab.bind(&"player"))
+	_spell_tab.pressed.connect(_set_active_tab.bind(&"spell"))
 	_backpack_tab.pressed.connect(_set_active_tab.bind(&"backpack"))
 	_update_trees()
 	_refresh_currency()
-	_update_spell_status()
 	_set_active_tab(_active_tab)
 
 
-## Only one tree is visible at a time -- both used to sit side by side, but
-## with the Player tree now spanning 17 stats across 8 spells (v11), showing
-## both trees at once got too cluttered. Each tab gets the full panel width
-## instead of half.
+## Only one tree is visible at a time -- all three used to be considered
+## for side-by-side display, but Spell Tree alone runs to 14 nodes across
+## 8 spells, so showing more than one at once doesn't fit. Each tab gets
+## the full panel width instead of a fraction of it.
 func _set_active_tab(tab: StringName) -> void:
 	_active_tab = tab
-	var player_active: bool = tab == &"player"
-	_player_scroll.visible = player_active
-	_backpack_scroll.visible = not player_active
-	_player_tab.set_active(player_active)
-	_backpack_tab.set_active(not player_active)
+	_player_scroll.visible = tab == &"player"
+	_spell_scroll.visible = tab == &"spell"
+	_backpack_scroll.visible = tab == &"backpack"
+	_player_tab.set_active(tab == &"player")
+	_spell_tab.set_active(tab == &"spell")
+	_backpack_tab.set_active(tab == &"backpack")
 
 
 func _update_trees() -> void:
 	var backpack_stats: Array[StatDef] = []
 	var player_stats: Array[StatDef] = []
+	var spell_stats: Array[StatDef] = []
 
 	for def in MetaProgression.get_stat_defs():
 		if def.currency == StatDef.Currency.BACKPACK:
 			backpack_stats.append(def)
-		else:
+		elif def.id in PLAYER_TREE_STAT_IDS:
 			player_stats.append(def)
+		else:
+			spell_stats.append(def)
 
 	_backpack_tree.set_tree_data(
 		backpack_stats,
@@ -88,17 +86,24 @@ func _update_trees() -> void:
 		_is_locked_by_currency,
 		PLAYER_ACCENT
 	)
+	_spell_tree.set_tree_data(
+		spell_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency, SPELL_ACCENT
+	)
 	_backpack_header.text = "STARDUST TREE\n%d levels bought" % _total_levels(backpack_stats)
 	_player_header.text = "ESSENCE TREE\n%d levels bought" % _total_levels(player_stats)
+	_spell_header.text = "SPELL TREE\n%d levels bought" % _total_levels(spell_stats)
 
 	# Disconnect old signals to avoid duplicates
 	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
 		_backpack_tree.node_clicked.disconnect(_on_backpack_node_clicked)
 	if _player_tree.node_clicked.is_connected(_on_player_node_clicked):
 		_player_tree.node_clicked.disconnect(_on_player_node_clicked)
+	if _spell_tree.node_clicked.is_connected(_on_spell_node_clicked):
+		_spell_tree.node_clicked.disconnect(_on_spell_node_clicked)
 
 	_backpack_tree.node_clicked.connect(_on_backpack_node_clicked)
 	_player_tree.node_clicked.connect(_on_player_node_clicked)
+	_spell_tree.node_clicked.connect(_on_spell_node_clicked)
 
 
 func _total_levels(stats: Array[StatDef]) -> int:
@@ -120,6 +125,12 @@ func _on_player_node_clicked(stat_id: StringName) -> void:
 		AudioManager.play("purchase")
 
 
+func _on_spell_node_clicked(stat_id: StringName) -> void:
+	if MetaProgression.buy_upgrade(stat_id):
+		_spell_tree.pulse(stat_id)
+		AudioManager.play("purchase")
+
+
 func _on_currency_changed() -> void:
 	_refresh_currency()
 	_update_trees()
@@ -127,18 +138,6 @@ func _on_currency_changed() -> void:
 
 func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
 	_update_trees()
-	_update_spell_status()
-
-
-## v10: every unlocked spell casts simultaneously, so this panel is just a
-## status readout (what's currently firing) rather than a switcher.
-func _update_spell_status() -> void:
-	for spell_id: StringName in _spell_status_labels:
-		var label: Label = _spell_status_labels[spell_id]
-		var display_name: String = _spell_display_names[spell_id]
-		var unlocked: bool = MetaProgression.is_spell_unlocked(spell_id)
-		label.text = display_name if unlocked else "%s (Locked)" % display_name
-		label.modulate = Color.WHITE if unlocked else Color(0.5, 0.5, 0.5)
 
 
 func _on_start_run_button_pressed() -> void:
@@ -174,10 +173,10 @@ func _bounce_label(label: Label) -> void:
 	)
 
 
-## stat_id -> [prerequisite stat_id, minimum level required in it]. Inferno
-## Blade's upgrades need Spell Unlock L1 (where Inferno itself unlocks),
-## Frost Nova's need L2 -- upgrading a spell you don't have yet doesn't
-## make sense.
+## stat_id -> [prerequisite stat_id, minimum level required in it]. Arcane
+## Bolt's two upgrades are deliberately absent -- Arcane needs no unlock,
+## so they stay ungated (see skill_tree_view.gd's parent_of for their
+## purely-visual trunk-root branch).
 func _gate_requirements() -> Dictionary:
 	return {
 		# Was gated behind Compacting's Rare Vault node before its removal

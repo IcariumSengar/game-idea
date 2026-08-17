@@ -2695,3 +2695,34 @@ Short dated entries when a design decision is made and worth remembering
   Verified via 4 new/extended unit-test cases (235 passing, including the
   encounter-flag's save round-trip alongside the existing combo-discovery
   one), a direct scene boot check, and a playtest batch with zero errors.
+- 2026-08-17 — Shop skill-tree rework implemented: three tabs (Player /
+  Spells / Backpack) instead of two, per DESIGN.md's "Shop structure:
+  skill tree" section. Player Tree now holds only Spellpower/Swiftness/
+  Gleam (an explicit allowlist in `shop.gd`, not "everything not
+  backpack-currency," so a future non-spell Player-currency stat doesn't
+  silently land in the wrong tree by default); the new Spell Tree absorbs
+  Spell Unlock plus all 13 per-spell upgrade stats. Deleted the old
+  read-only spell-lock sidebar (`_spell_status_labels`/
+  `_update_spell_status()` and its 8 status-label nodes) entirely -- the
+  Spell Tree's own node state (locked/gated/purchased) now carries that
+  information, matching the spec's "every spell upgrade is now a real,
+  purchasable tree node." Also fixed a real gap this surfaced in
+  `skill_tree_view.gd`'s purely-visual parent-chaining: only Inferno/
+  Frost's upgrade stats had a real trunk branch under Spell Unlock;
+  Arcane's two (ungated) and all five v11 spells' (gated L3-L7) fell
+  through to the generic cosmetic root-chain instead, even though
+  `shop.gd`'s own `_gate_requirements()` already enforced those gates
+  functionally -- the tree just didn't *look* like it. Extended the
+  branch map to match, using gate values that already existed, not new
+  ones. No stat ID, cost curve, or gate value changed anywhere, per the
+  item's own scope. Picked up the ALL-CAPS "START RUN" casing fix from
+  TEXT_FLAVOR.md's still-queued text-overhaul item while already
+  rewriting that exact button (zero extra cost) -- the text-overhaul pass
+  itself will find this one already done. Verified via the full unit-test
+  suite (235 passing, unaffected -- no test targets shop.gd directly), a
+  direct scene boot check (confirmed via git stash that a pre-existing,
+  unrelated ~42-object leak-at-exit warning on this scene predates this
+  rework, not a regression), and a playtest batch with zero errors. Not
+  verified: how the three-tab layout actually reads/feels in a real
+  window -- needs a human via `playdev`, same caveat as every other UI
+  change this session.
