@@ -1,3 +1,4 @@
+class_name SpellCaster
 extends Node
 
 ## Casts every spell the player has unlocked, simultaneously and
@@ -75,18 +76,33 @@ const FULL_SET_LABEL_COLOR: Color = Color(1.0, 0.55, 0.1)
 ## Gem Combos' "Streak" (DESIGN.md): N consecutive pickups of the *same*
 ## tier, uninterrupted, triggers a small tier-flavored AOE burst -- unlike
 ## Full Set, repeatable all run. "Tier-flavored" made concrete as damage
-## scaling with tier rarity (index into TIER_ORDER), so streaking a rarer
-## tier hits harder. Instant, no telegraph -- Full Set is the "build
+## scaling with tier rarity (LootTypes.get_tier_index()), so streaking a
+## rarer tier hits harder. Instant, no telegraph -- Full Set is the "build
 ## tension" moment; Streak is the immediate reward for aggressive
 ## same-tier looting.
-const TIER_ORDER: Array[StringName] = [
-	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
-]
 const STREAK_THRESHOLD: int = 3
 const STREAK_BASE_POWER: float = 12.0
 const STREAK_RADIUS: float = 200.0
 const STREAK_SHAKE_SCALE: float = 0.6
 const STREAK_LABEL: String = "STREAK!"
+
+## Attunement (Depth Pass Group D, DESIGN.md 2026-08-17): the backpack's
+## current composition continuously biases every spell. Low (lean,
+## Common-heavy): faster casts, weaker hits -- High (hoarding rares):
+## slower casts, harder hits. An empty bag is a distinct worst case, not
+## just the low end of the curve -- normal cast rate (no speed bonus) AND
+## weaker damage than even the Low floor, per the idea's own "an empty
+## bag should be weak" framing. Feeds into _scaled_power() (damage,
+## already shared by all 8 spells + Streak) and _attuned_cooldown() (cast
+## rate, wrapped at each spell's own cooldown-reset site) rather than 8
+## duplicated lerps. Numbers are a first pass, not locked -- flagged for
+## playtest-harness verification same as the rest of this group.
+const ATTUNEMENT_DAMAGE_LOW: float = 0.85
+const ATTUNEMENT_DAMAGE_HIGH: float = 1.4
+const ATTUNEMENT_DAMAGE_EMPTY: float = 0.6
+const ATTUNEMENT_COOLDOWN_LOW: float = 0.8
+const ATTUNEMENT_COOLDOWN_HIGH: float = 1.3
+const ATTUNEMENT_COOLDOWN_EMPTY: float = 1.0
 
 ## Combo-trigger callout text, above the player -- per direct feedback
 ## that the shake/flash/burst alone weren't enough to tell *what*
@@ -118,14 +134,28 @@ func _ready() -> void:
 	_owner_body = get_parent()
 	_owner_body.loot_changed.connect(_on_loot_changed)
 	_owner_body.loot_collected.connect(_on_loot_collected)
-	_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
-	_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
-	_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
-	_meteor_cooldown = MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
-	_lightning_cooldown = MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
-	_time_warp_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
-	_teleport_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
-	_familiar_cooldown = FAMILIAR_RESUMMON_COOLDOWN
+	_arcane_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
+	)
+	_inferno_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
+	)
+	_frost_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+	)
+	_meteor_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
+	)
+	_lightning_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
+	)
+	_time_warp_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
+	)
+	_teleport_cooldown = _attuned_cooldown(
+		MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
+	)
+	_familiar_cooldown = _attuned_cooldown(FAMILIAR_RESUMMON_COOLDOWN)
 
 
 func _process(delta: float) -> void:
@@ -133,42 +163,56 @@ func _process(delta: float) -> void:
 	_arcane_cooldown -= delta
 	if _arcane_cooldown <= 0.0:
 		_cast_arcane_bolt()
-		_arcane_cooldown = MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
+		_arcane_cooldown = _attuned_cooldown(
+			MetaProgression.get_stat(MetaProgression.STAT_ARCANE_HASTE)
+		)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_INFERNO_BLADE):
 		_inferno_cooldown -= delta
 		if _inferno_cooldown <= 0.0:
 			_cast_inferno_blade()
-			_inferno_cooldown = MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
+			_inferno_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_INFERNO_FURY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_FROST_NOVA):
 		_frost_cooldown -= delta
 		if _frost_cooldown <= 0.0:
 			_cast_frost_nova()
-			_frost_cooldown = MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+			_frost_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_FROST_FREQUENCY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_METEOR_STRIKE):
 		_meteor_cooldown -= delta
 		if _meteor_cooldown <= 0.0:
 			_cast_meteor_strike()
-			_meteor_cooldown = MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
+			_meteor_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_METEOR_FREQUENCY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_LIGHTNING_CHAIN):
 		_lightning_cooldown -= delta
 		if _lightning_cooldown <= 0.0:
 			_cast_lightning_chain()
-			_lightning_cooldown = MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
+			_lightning_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_LIGHTNING_FREQUENCY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_TIME_WARP):
 		_time_warp_cooldown -= delta
 		if _time_warp_cooldown <= 0.0:
 			_cast_time_warp()
-			_time_warp_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
+			_time_warp_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_TIME_WARP_FREQUENCY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_TELEPORT_PULSE):
 		_teleport_cooldown -= delta
 		if _teleport_cooldown <= 0.0:
 			_cast_teleport_pulse()
-			_teleport_cooldown = MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
+			_teleport_cooldown = _attuned_cooldown(
+				MetaProgression.get_stat(MetaProgression.STAT_TELEPORT_FREQUENCY)
+			)
 	if MetaProgression.is_spell_unlocked(MetaProgression.SPELL_SUMMON_FAMILIAR):
 		_familiar_cooldown -= delta
 		if _familiar_cooldown <= 0.0:
 			_cast_summon_familiar()
-			_familiar_cooldown = FAMILIAR_RESUMMON_COOLDOWN
+			_familiar_cooldown = _attuned_cooldown(FAMILIAR_RESUMMON_COOLDOWN)
 
 
 func _process_burns(delta: float) -> void:
@@ -191,7 +235,26 @@ func _process_burns(delta: float) -> void:
 
 func _scaled_power(spell_base_power: float) -> float:
 	var spellpower: float = MetaProgression.get_stat(MetaProgression.STAT_DAMAGE)
-	return spell_base_power * (spellpower / SPELLPOWER_BASE)
+	var base: float = spell_base_power * (spellpower / SPELLPOWER_BASE)
+	return base * _attunement_damage_multiplier()
+
+
+func _attunement_damage_multiplier() -> float:
+	if _owner_body.backpack.is_empty():
+		return ATTUNEMENT_DAMAGE_EMPTY
+	return lerpf(ATTUNEMENT_DAMAGE_LOW, ATTUNEMENT_DAMAGE_HIGH, _owner_body.get_attunement())
+
+
+func _attunement_cooldown_multiplier() -> float:
+	if _owner_body.backpack.is_empty():
+		return ATTUNEMENT_COOLDOWN_EMPTY
+	return lerpf(ATTUNEMENT_COOLDOWN_LOW, ATTUNEMENT_COOLDOWN_HIGH, _owner_body.get_attunement())
+
+
+## Shared by every cooldown-reset site (see _ready()/_process() above)
+## instead of each spell applying the multiplier inline.
+func _attuned_cooldown(base_cooldown: float) -> float:
+	return base_cooldown * _attunement_cooldown_multiplier()
 
 
 func _cast_arcane_bolt() -> void:
@@ -457,7 +520,7 @@ func _on_loot_collected(type_id: StringName) -> void:
 
 func _cast_streak_burst(tier_id: StringName) -> void:
 	MetaProgression.mark_combo_discovered(MetaProgression.COMBO_STREAK)
-	var tier_index: int = maxi(TIER_ORDER.find(tier_id), 0)
+	var tier_index: int = LootTypes.get_tier_index(tier_id)
 	var damage: float = _scaled_power(STREAK_BASE_POWER) * float(tier_index + 1)
 	var def := LootTypes.get_type(tier_id)
 	var color: Color = def.color if def != null else Color.WHITE

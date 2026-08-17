@@ -55,19 +55,16 @@ const SCATTER_DURATION: float = 0.35
 ## Cast Off (DESIGN.md's Depth Pass Group A, 2026-08-17): Discard no longer
 ## deletes the gem in place -- it throws it in the player's facing
 ## direction, dealing tier-scaled damage/knockback on impact, no value
-## banked. Reuses Streak's tier-index multiplier table (spell_caster.gd's
-## TIER_ORDER) rather than inventing a second one -- see CAST_OFF_TIER_ORDER
-## below. Deliberately not Spellpower-scaled like the 8 spells are: this is
-## the gem itself hurting something on the way out, not a cast.
+## banked. Reuses Streak's tier-index multiplier (LootTypes.get_tier_index())
+## rather than inventing a second one. Deliberately not Spellpower-scaled
+## like the 8 spells are: this is the gem itself hurting something on the
+## way out, not a cast.
 const CAST_OFF_DISTANCE: float = 180.0
 const CAST_OFF_FLIGHT_DURATION: float = 0.22
 const CAST_OFF_IMPACT_RADIUS: float = 40.0
 const CAST_OFF_KNOCKBACK_STRENGTH: float = 150.0
 const CAST_OFF_BASE_DAMAGE: float = 10.0
 const CAST_OFF_SPIN_TURNS: float = 1.0
-const CAST_OFF_TIER_ORDER: Array[StringName] = [
-	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
-]
 ## Narrow Queue pact (Depth Pass Group E, DESIGN.md 2026-08-17): the trade
 ## for capping the queue at one gem -- Cast Off hits noticeably harder.
 const NARROW_QUEUE_CAST_OFF_MULTIPLIER: float = 1.5
@@ -347,7 +344,7 @@ func _impact(impact_position: Vector2) -> void:
 ## Narrow Queue pact (Group E) multiplies the total on top, as its trade
 ## for capping the queue.
 func _cast_off_damage() -> float:
-	var tier_index: int = maxi(CAST_OFF_TIER_ORDER.find(type_id), 0)
+	var tier_index: int = LootTypes.get_tier_index(type_id)
 	var base: float = CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
 	var damage: float = base + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
 	if MetaProgression.has_active_pact(MetaProgression.PACT_NARROW_QUEUE):

@@ -2630,3 +2630,50 @@ Short dated entries when a design decision is made and worth remembering
   originally read "only one gem may wait behind" (matching the same
   off-by-one the code briefly had), corrected to "nothing queues behind"
   once the code was fixed to match the spec's actual wording.
+- 2026-08-17 — Depth Pass Group D (Attunement) implemented, last of the
+  mechanics work per the design chat's own suggested build order (biggest
+  and riskiest, deliberately given the most careful pass). `Player.
+  get_attunement()`: count-weighted average tier-index of the backpack,
+  normalized 0.0-1.0, recomputed fresh on every call (no cached/stored
+  state, same pattern as `_slots_used()`) so it's always live without a
+  dedicated change-signal. `SpellCaster` reads it through two shared
+  helpers -- `_attunement_damage_multiplier()` folded straight into
+  `_scaled_power()` (already the one place all 8 spells + Streak funnel
+  damage through, so this was a one-line change, not 8 duplicated lerps)
+  and `_attunement_cooldown_multiplier()` wrapped at each spell's own
+  cooldown-reset site via a new `_attuned_cooldown()` helper. Empty bag
+  implemented as its own branch exactly as specced, not an extrapolation
+  of the Low end: weaker damage than even the Low floor (0.6x vs. Low's
+  0.85x) AND no cast-rate speed bonus at all (1.0x vs. Low's 0.8x) --
+  genuinely worse on both axes, not just numerically identical to an
+  all-Common bag. Small cleanup along the way: the tier-index lookup
+  Attunement needed was already hand-rolled twice (Streak in
+  spell_caster.gd, Cast Off in loot.gd) -- consolidated all three onto a
+  new `LootTypes.get_tier_index()`/`get_tier_count()` instead of adding a
+  third copy, per CLAUDE.md's duplicated-lookup guidance. `spell_caster.gd`
+  gained a `class_name SpellCaster` (had none) so its Attunement constants
+  could be referenced with real static typing from the unit tests, same
+  convention every other major script already follows.
+  **Balance risk -- honestly scoped, not oversold:** verified via 7 new
+  unit-test cases (232 passing) that the formula and multipliers compute
+  correctly in isolation (weighted-not-naive averaging, Low/High/Empty
+  each land on their specced constants), and via a 10-run playtest batch
+  with all 8 spells active that nothing crashes or produces NaN/garbage
+  damage across a real spread of fill states (36-73%) reaching Phase 3.
+  What this does *not* verify: whether Low and High Attunement each
+  genuinely win in different circumstances rather than one dominating --
+  the "flask piano" risk the spec explicitly flags. The playtest bot
+  auto-collects via Manual Triage's bot-bypass and has no notion of
+  deliberately staying lean vs. deliberately hoarding, so it can't
+  produce the A/B comparison this risk actually needs; that requires
+  either extending the bot AI with a lean/hoard strategy toggle or real
+  human play across both extremes. Flagged for the next pass, not
+  asserted as solved. Also not built (explicitly out of scope): the HUD
+  Attunement gauge (belongs with the HUD + death-summary rework) and the
+  optional VFX tint (cooler/thinner at Low, warmer/thicker at High) --
+  the spec framed both as "could," and effort went into the mechanic the
+  balance risk is actually about instead. `spell_caster.gd` is now 603
+  lines, past CLAUDE.md's ~400-500 soft ceiling -- flagged, not split;
+  splitting 8 spells' casting logic into per-spell files is a real,
+  independent refactor with its own risk, not something to rush alongside
+  a balance-sensitive mechanic change in the same pass.

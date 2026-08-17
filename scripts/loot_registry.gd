@@ -104,6 +104,23 @@ func slot_breakdown(backpack: Dictionary) -> Array:
 	return slots
 
 
+## Index into the registered tier order (0 = Common ... 5 = Legendary) --
+## shared by every "rarer tier = bigger number" formula (Streak, Cast
+## Off, Attunement) instead of each hand-rolling its own copy of the
+## order, per CLAUDE.md's "duplicated lookups belong on the autoload that
+## owns the data" guidance -- this was already duplicated twice before
+## Attunement made it three.
+func get_tier_index(type_id: StringName) -> int:
+	for i in _types.size():
+		if _types[i].id == type_id:
+			return i
+	return 0
+
+
+func get_tier_count() -> int:
+	return _types.size()
+
+
 func _register(
 	id: StringName,
 	display_name: String,

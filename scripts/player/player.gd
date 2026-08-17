@@ -457,6 +457,26 @@ func get_slots_used() -> int:
 	return _slots_used()
 
 
+## Attunement (Depth Pass Group D, DESIGN.md 2026-08-17): weighted average
+## tier-index of everything currently held, normalized 0.0-1.0 -- Low
+## (Common-heavy) to High (Legendary-heavy). Recomputed fresh each call
+## (no cached/stored state), same pattern as _slots_used(), so it's always
+## "live" without needing its own change-signal. Callers must check
+## backpack.is_empty() separately (see spell_caster.gd) -- an empty bag is
+## its own distinct worst case per the design, not just attunement 0.0.
+func get_attunement() -> float:
+	if backpack.is_empty():
+		return 0.0
+	var weighted_sum := 0.0
+	var total_count := 0
+	for type_id: StringName in backpack:
+		var count: int = backpack[type_id]
+		weighted_sum += float(LootTypes.get_tier_index(type_id) * count)
+		total_count += count
+	var average_tier_index: float = weighted_sum / float(total_count)
+	return average_tier_index / float(LootTypes.get_tier_count() - 1)
+
+
 func add_ballast_slots(amount: int) -> void:
 	bonus_ballast_slots += amount
 	_update_fill_effects()

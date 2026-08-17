@@ -42,6 +42,8 @@ func _ready() -> void:
 	_test_pact_heavy_start()
 	_test_pact_fragile_bearing()
 	_test_pact_narrow_queue()
+	_test_attunement_computation()
+	_test_attunement_spell_multipliers()
 	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
@@ -621,6 +623,84 @@ func _test_pact_narrow_queue() -> void:
 	cast_off_gem.queue_free()
 	player.queue_free()
 	MetaProgression.active_pact = original_pact
+
+
+## Depth Pass Group D "Attunement" (DESIGN.md 2026-08-17): weighted
+## average tier-index of the backpack, normalized 0.0-1.0. All-Common must
+## floor at 0.0, all-Legendary must ceiling at 1.0, and a mix must land
+## exactly on the weighted average, not a naive per-type average.
+func _test_attunement_computation() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+
+	player.backpack.clear()
+	_assert(player.get_attunement() == 0.0, "an empty backpack reads 0.0 attunement")
+
+	player.backpack = {&"common": 5}
+	_assert(_almost_eq(player.get_attunement(), 0.0), "all-Common floors attunement at 0.0")
+
+	player.backpack = {&"legendary": 5}
+	_assert(_almost_eq(player.get_attunement(), 1.0), "all-Legendary ceilings attunement at 1.0")
+
+	# 1 common (tier 0) + 1 legendary (tier 5) -> weighted avg tier index
+	# 2.5, normalized over 5 tiers = 0.5 -- must be the count-weighted
+	# average, not a naive average of the two distinct tiers present.
+	player.backpack = {&"common": 1, &"legendary": 1}
+	_assert(_almost_eq(player.get_attunement(), 0.5), "a 1:1 Common/Legendary mix lands at 0.5")
+
+	# 9 common + 1 legendary -> weighted avg tier index (9*0 + 1*5)/10 =
+	# 0.5, normalized = 0.1 -- confirms weighting is by count, not by
+	# distinct tier, which a naive (0+5)/2 average would get wrong.
+	player.backpack = {&"common": 9, &"legendary": 1}
+	_assert(
+		_almost_eq(player.get_attunement(), 0.1),
+		"attunement weights by item count, not by distinct tier present"
+	)
+
+	player.queue_free()
+
+
+## Attunement must bias SpellCaster's damage/cooldown multipliers -- Low
+## end weaker/faster, High end stronger/slower, and an empty bag strictly
+## worse than the Low floor on damage while getting no cast-rate bonus at
+## all (the "empty bag is a distinct worst case" requirement).
+func _test_attunement_spell_multipliers() -> void:
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	var spell_caster: SpellCaster = player.get_node("SpellCaster")
+
+	player.backpack = {&"common": 5}
+	var low_damage: float = spell_caster._attunement_damage_multiplier()
+	var low_cooldown: float = spell_caster._attunement_cooldown_multiplier()
+	_assert(_almost_eq(low_damage, SpellCaster.ATTUNEMENT_DAMAGE_LOW), "Low attunement hits weaker")
+	_assert(
+		_almost_eq(low_cooldown, SpellCaster.ATTUNEMENT_COOLDOWN_LOW), "Low attunement casts faster"
+	)
+
+	player.backpack = {&"legendary": 5}
+	var high_damage: float = spell_caster._attunement_damage_multiplier()
+	var high_cooldown: float = spell_caster._attunement_cooldown_multiplier()
+	_assert(
+		_almost_eq(high_damage, SpellCaster.ATTUNEMENT_DAMAGE_HIGH), "High attunement hits harder"
+	)
+	_assert(
+		_almost_eq(high_cooldown, SpellCaster.ATTUNEMENT_COOLDOWN_HIGH),
+		"High attunement casts slower"
+	)
+
+	player.backpack.clear()
+	var empty_damage: float = spell_caster._attunement_damage_multiplier()
+	var empty_cooldown: float = spell_caster._attunement_cooldown_multiplier()
+	_assert(
+		empty_damage < low_damage,
+		"an empty bag hits weaker than even the Low floor, not just as weak"
+	)
+	_assert(
+		empty_cooldown >= low_cooldown,
+		"an empty bag gets no cast-rate speed bonus, unlike a lean Low-attunement bag"
+	)
+
+	player.queue_free()
 
 
 ## Verifies the Grimoire's progressive-discovery tracking round-trips
