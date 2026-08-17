@@ -46,6 +46,12 @@ func _ready() -> void:
 	_test_attunement_spell_multipliers()
 	_test_combo_discovery_save_round_trip()
 	_test_personal_best_updates()
+	_test_trophy_hall_updates()
+	_test_facets_swiftness()
+	_test_facets_gleam()
+	_test_facets_do_not_affect_other_stats()
+	_test_forge_adjusted_weights()
+	_test_forge_affects_rolls()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
@@ -726,6 +732,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 	var original_best_run_essence := MetaProgression.best_run_essence
 	var original_best_run_leanness := MetaProgression.best_run_leanness
 	var original_best_run_discards := MetaProgression.best_run_discards
+	var original_best_loot_value: Dictionary = MetaProgression.best_loot_value.duplicate()
 	var original_levels: Dictionary = MetaProgression._stat_levels.duplicate()
 
 	MetaProgression.discovered_combos.clear()
@@ -733,6 +740,8 @@ func _test_combo_discovery_save_round_trip() -> void:
 	MetaProgression.best_run_essence = 250
 	MetaProgression.best_run_leanness = 42.5
 	MetaProgression.best_run_discards = 7
+	MetaProgression.best_loot_value.clear()
+	MetaProgression.best_loot_value[&"legendary"] = 800
 	_assert(
 		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
 		"a combo starts undiscovered"
@@ -757,6 +766,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 	MetaProgression.best_run_essence = 0
 	MetaProgression.best_run_leanness = 0.0
 	MetaProgression.best_run_discards = 0
+	MetaProgression.best_loot_value.clear()
 	MetaProgression.import_save_data(exported)
 	_assert(
 		MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
@@ -778,6 +788,10 @@ func _test_combo_discovery_save_round_trip() -> void:
 		MetaProgression.best_run_discards == 7,
 		"best_run_discards survives an export/import round-trip"
 	)
+	_assert(
+		MetaProgression.get_best_loot_value(&"legendary") == 800,
+		"best_loot_value survives an export/import round-trip"
+	)
 
 	MetaProgression.reset_progress()
 	_assert(
@@ -792,6 +806,10 @@ func _test_combo_discovery_save_round_trip() -> void:
 		MetaProgression.best_run_leanness == 0.0, "reset_progress() clears best_run_leanness too"
 	)
 	_assert(MetaProgression.best_run_discards == 0, "reset_progress() clears best_run_discards too")
+	_assert(
+		MetaProgression.get_best_loot_value(&"legendary") == 0,
+		"reset_progress() clears best_loot_value too"
+	)
 
 	MetaProgression.discovered_combos = original_discovered
 	MetaProgression.magpie_encountered = original_magpie_encountered
@@ -801,6 +819,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 	MetaProgression.best_run_essence = original_best_run_essence
 	MetaProgression.best_run_leanness = original_best_run_leanness
 	MetaProgression.best_run_discards = original_best_run_discards
+	MetaProgression.best_loot_value = original_best_loot_value
 	MetaProgression._stat_levels = original_levels
 
 
@@ -856,6 +875,239 @@ func _test_personal_best_updates() -> void:
 	MetaProgression.best_run_essence = original_essence
 	MetaProgression.best_run_leanness = original_leanness
 	MetaProgression.best_run_discards = original_discards
+
+
+## Trophy Hall (DESIGN.md's "A hoard you can actually see," 2026-08-17):
+## update_best_loot_value() only overwrites a tier's entry on a strictly
+## higher value, and different tiers never clobber each other's entries.
+func _test_trophy_hall_updates() -> void:
+	var original_best_loot: Dictionary = MetaProgression.best_loot_value.duplicate()
+	MetaProgression.best_loot_value.clear()
+
+	MetaProgression.update_best_loot_value(&"common", 1)
+	_assert(MetaProgression.get_best_loot_value(&"common") == 1, "a first value is recorded")
+
+	MetaProgression.update_best_loot_value(&"common", 0)
+	_assert(MetaProgression.get_best_loot_value(&"common") == 1, "a lower value doesn't overwrite")
+
+	MetaProgression.update_best_loot_value(&"common", 5)
+	_assert(MetaProgression.get_best_loot_value(&"common") == 5, "a higher value overwrites")
+
+	MetaProgression.update_best_loot_value(&"legendary", 800)
+	_assert(
+		MetaProgression.get_best_loot_value(&"common") == 5,
+		"a different tier's update doesn't clobber another tier's entry"
+	)
+	_assert(MetaProgression.get_best_loot_value(&"legendary") == 800, "the new tier is recorded")
+	_assert(
+		MetaProgression.get_best_loot_value(&"mythic") == 0,
+		"an untouched tier reads 0, not an undefined/missing state"
+	)
+
+	MetaProgression.best_loot_value = original_best_loot
+
+
+## Facets (DESIGN.md's "Facets," 2026-08-17): flagged in its own spec as
+## the one item in this pass touching already-shipped behavior, needing
+## coverage for *both* faces of each stat, not just the new one -- a bug
+## here risks silently regressing Swiftness/Gleam's existing Face A
+## effect, not just failing to add Face B cleanly.
+func _test_facets_swiftness() -> void:
+	var original_level := MetaProgression.get_level(MetaProgression.STAT_MOVE_SPEED)
+	var original_facet := MetaProgression.is_facet_b_active(MetaProgression.STAT_MOVE_SPEED)
+	MetaProgression.debug_set_level(MetaProgression.STAT_MOVE_SPEED, 4)
+
+	MetaProgression.set_facet(MetaProgression.STAT_MOVE_SPEED, false)
+	var def := MetaProgression.get_stat_def(MetaProgression.STAT_MOVE_SPEED)
+	var face_a_expected: float = def.base_value + 4.0 * def.per_level_gain
+	_assert(
+		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED), face_a_expected),
+		"Face A (default) keeps Swiftness's normal per_level_gain, unregressed"
+	)
+	_assert(
+		MetaProgression.get_facet_bonus(MetaProgression.STAT_MOVE_SPEED) == 0.0,
+		"Face A grants no dash-cooldown bonus"
+	)
+
+	MetaProgression.set_facet(MetaProgression.STAT_MOVE_SPEED, true)
+	var face_b_gain: float = MetaProgression.FACET_FACE_B_PRIMARY_GAIN[
+		MetaProgression.STAT_MOVE_SPEED
+	]
+	var face_b_expected: float = def.base_value + 4.0 * face_b_gain
+	_assert(
+		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED), face_b_expected),
+		"Face B reduces Swiftness's per-level speed gain"
+	)
+	var secondary_gain: float = MetaProgression.FACET_FACE_B_SECONDARY_GAIN[
+		MetaProgression.STAT_MOVE_SPEED
+	]
+	_assert(
+		_almost_eq(
+			MetaProgression.get_facet_bonus(MetaProgression.STAT_MOVE_SPEED), 4.0 * secondary_gain
+		),
+		"Face B grants a dash-cooldown bonus scaled by level"
+	)
+
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	var expected_cooldown: float = maxf(0.6 - 4.0 * secondary_gain, Player.DASH_COOLDOWN_FLOOR)
+	_assert(
+		_almost_eq(player.dash_cooldown, expected_cooldown),
+		"Player applies Swiftness Face B's dash-cooldown reduction at run start"
+	)
+	player.queue_free()
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_MOVE_SPEED, original_level)
+	MetaProgression.set_facet(MetaProgression.STAT_MOVE_SPEED, original_facet)
+
+
+func _test_facets_gleam() -> void:
+	var original_level := MetaProgression.get_level(MetaProgression.STAT_PICKUP_RANGE)
+	var original_facet := MetaProgression.is_facet_b_active(MetaProgression.STAT_PICKUP_RANGE)
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, 3)
+
+	MetaProgression.set_facet(MetaProgression.STAT_PICKUP_RANGE, false)
+	var def := MetaProgression.get_stat_def(MetaProgression.STAT_PICKUP_RANGE)
+	var face_a_expected: float = def.base_value + 3.0 * def.per_level_gain
+	_assert(
+		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_PICKUP_RANGE), face_a_expected),
+		"Face A (default) keeps Gleam's normal per_level_gain, unregressed"
+	)
+
+	var gem_a: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_a.type_id = &"common"
+	add_child(gem_a)
+	var base_damage: float = (
+		Loot.CAST_OFF_BASE_DAMAGE + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
+	)
+	_assert(
+		_almost_eq(gem_a._cast_off_damage(), base_damage), "Face A grants no Cast Off damage bonus"
+	)
+	gem_a.queue_free()
+
+	MetaProgression.set_facet(MetaProgression.STAT_PICKUP_RANGE, true)
+	var face_b_gain: float = MetaProgression.FACET_FACE_B_PRIMARY_GAIN[
+		MetaProgression.STAT_PICKUP_RANGE
+	]
+	var face_b_expected: float = def.base_value + 3.0 * face_b_gain
+	_assert(
+		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_PICKUP_RANGE), face_b_expected),
+		"Face B reduces Gleam's per-level range gain"
+	)
+
+	var gem_b: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_b.type_id = &"common"
+	add_child(gem_b)
+	var secondary_gain: float = MetaProgression.FACET_FACE_B_SECONDARY_GAIN[
+		MetaProgression.STAT_PICKUP_RANGE
+	]
+	_assert(
+		_almost_eq(gem_b._cast_off_damage(), base_damage + 3.0 * secondary_gain),
+		"Face B adds a Cast Off damage bonus scaled by level"
+	)
+	gem_b.queue_free()
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, original_level)
+	MetaProgression.set_facet(MetaProgression.STAT_PICKUP_RANGE, original_facet)
+
+
+## Regression guard: a non-facet stat must be completely untouched by the
+## whole Facets system -- no accidental bonus, no accidental gain
+## substitution, regardless of active_facet's contents.
+func _test_facets_do_not_affect_other_stats() -> void:
+	var def := MetaProgression.get_stat_def(MetaProgression.STAT_DAMAGE)
+	_assert(
+		not MetaProgression.is_facet_stat(MetaProgression.STAT_DAMAGE),
+		"Spellpower is not a facet stat"
+	)
+	_assert(
+		MetaProgression.get_facet_bonus(MetaProgression.STAT_DAMAGE) == 0.0,
+		"a non-facet stat's facet bonus is always 0.0"
+	)
+	MetaProgression.set_facet(MetaProgression.STAT_DAMAGE, true)
+	_assert(
+		not MetaProgression.is_facet_b_active(MetaProgression.STAT_DAMAGE),
+		"set_facet() on a non-facet stat is a no-op"
+	)
+	var level := MetaProgression.get_level(MetaProgression.STAT_DAMAGE)
+	var expected: float = def.base_value + float(level) * def.per_level_gain
+	_assert(
+		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_DAMAGE), expected),
+		"Spellpower's formula is unaffected by the no-op facet call"
+	)
+
+
+## The Forge (DESIGN.md's "The Forge: buy odds, not numbers," 2026-08-17):
+## a level-0 call is a pure no-op, weight is conserved overall (nothing
+## invented or lost), Common/Uncommon are each reduced by exactly the
+## same fraction, and the moved weight lands on the other tiers
+## proportional to their own existing relative weights.
+func _test_forge_adjusted_weights() -> void:
+	var base: Dictionary = {
+		&"common": 55.0, &"uncommon": 30.0, &"rare": 10.0, &"epic": 4.0, &"mythic": 1.0
+	}
+	var unchanged := LootTypes.get_forge_adjusted_weights(base, 0)
+	_assert(unchanged == base, "level 0 is a pure no-op")
+
+	var per_level_gain: float = (
+		MetaProgression.get_stat_def(MetaProgression.STAT_FORGE).per_level_gain
+	)
+	var level := 5
+	var shift_fraction: float = float(level) * per_level_gain / 100.0
+	var adjusted := LootTypes.get_forge_adjusted_weights(base, level)
+
+	var base_total: float = 0.0
+	var adjusted_total: float = 0.0
+	for tier_id: StringName in base:
+		base_total += base[tier_id]
+		adjusted_total += float(adjusted[tier_id])
+	_assert(_almost_eq(adjusted_total, base_total), "total weight is conserved, not invented")
+
+	_assert(
+		_almost_eq(float(adjusted[&"common"]), base[&"common"] * (1.0 - shift_fraction)),
+		"Common is reduced by exactly the shift fraction"
+	)
+	_assert(
+		_almost_eq(float(adjusted[&"uncommon"]), base[&"uncommon"] * (1.0 - shift_fraction)),
+		"Uncommon is reduced by exactly the shift fraction"
+	)
+
+	var high_total: float = base[&"rare"] + base[&"epic"] + base[&"mythic"]
+	var moved: float = base[&"common"] * shift_fraction + base[&"uncommon"] * shift_fraction
+	var expected_rare: float = base[&"rare"] + moved * (base[&"rare"] / high_total)
+	_assert(
+		_almost_eq(float(adjusted[&"rare"]), expected_rare),
+		"Rare gains a share of the moved weight proportional to its own existing weight"
+	)
+
+
+## Statistical check that both roll paths actually route through Forge --
+## its own spec's flagged crux was that only adjusting
+## pick_random_type()'s rarely-hit fallback would visibly do nothing,
+## since real drops go through pick_random_weighted(). At Forge's level
+## cap (20% shift), Common's observed frequency across a large sample
+## must be meaningfully lower than its unadjusted ~55% share.
+func _test_forge_affects_rolls() -> void:
+	var original_level := MetaProgression.get_level(MetaProgression.STAT_FORGE)
+	var forge_def := MetaProgression.get_stat_def(MetaProgression.STAT_FORGE)
+	MetaProgression.debug_set_level(MetaProgression.STAT_FORGE, forge_def.level_cap)
+
+	var common_count := 0
+	var sample_size := 400
+	for i in sample_size:
+		var picked := LootTypes.pick_random_type()
+		if picked.id == &"common":
+			common_count += 1
+	var common_frequency: float = float(common_count) / float(sample_size)
+	_assert(
+		common_frequency < 0.5,
+		(
+			"Forge at its level cap visibly shifts Common's roll frequency below its ~55%% base share (got %.2f)"
+			% common_frequency
+		)
+	)
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_FORGE, original_level)
 
 
 ## Verifies Gem Combos' "Full Set" (DESIGN.md's Tweak 3): holding one of

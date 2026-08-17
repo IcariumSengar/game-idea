@@ -73,6 +73,29 @@ const KEEP_GESTURE_HOP: float = -7.0
 const KEEP_GESTURE_TILT: float = -0.32
 const DISCARD_GESTURE_DURATION: float = 0.2
 const DISCARD_GESTURE_TILT: float = 0.4
+## Facets (DESIGN.md's "Facets," 2026-08-17): Swiftness's Face B trades
+## some move speed (see MetaProgression.get_stat()'s own facet branch)
+## for a dash-cooldown reduction, applied once at run start alongside
+## every other MetaProgression-derived stat below. Floored, not zeroed --
+## same "floored, not zeroed" caution as MIN_PENDING_SLOT_WEIGHT
+## elsewhere, so a maxed-out Swiftness Face B can't reduce dash cooldown
+## to a degenerate near-zero value.
+const DASH_COOLDOWN_FLOOR: float = 0.15
+## Phase 4 (DESIGN.md's "Phase 4: the arena becomes the antagonist,"
+## 2026-08-17): periodic damage for standing outside arena.gd's current
+## safe zone (see set_safe_zone()) -- doesn't clamp/teleport the player
+## back in, just punishes lingering, same as a battle-royale storm
+## circle. Interval-based like Enemy's own CONTACT_COOLDOWN rather than
+## flat per-frame damage.
+const PHASE_4_DAMAGE: float = 6.0
+const PHASE_4_DAMAGE_INTERVAL: float = 0.5
+## Altar boons (DESIGN.md's "Altar," 2026-08-17) -- ship one or two, not
+## the full illustrative list. Spellpower and full heal, the two
+## simplest; a guaranteed-tier-up boon needs new per-run drop-override
+## state and is real follow-on scope, not built here.
+const ALTAR_BOON_SPELLPOWER: StringName = &"spellpower"
+const ALTAR_BOON_FULL_HEAL: StringName = &"full_heal"
+const ALTAR_BOON_SPELLPOWER_BONUS: float = 15.0
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
@@ -95,6 +118,11 @@ var bonus_loot_value: int = 0
 ## only tracks a count per tier, not item instances, so a per-item weight
 ## bump is banked as a running total rather than a persistent property.
 var bonus_ballast_slots: int = 0
+## Temporary, in-run-only Spellpower bonus from an Altar boon -- added on
+## top of MetaProgression's permanent Spellpower in
+## SpellCaster._scaled_power(), not written back to MetaProgression
+## itself (a run-scoped boon must never leak into the permanent stat).
+var bonus_spellpower: float = 0.0
 
 var _effective_speed: float = 0.0
 var _max_fill_ratio: float = 0.0
@@ -115,6 +143,11 @@ var _discard_was_pressed: bool = false
 ## Personal-best "Most Refused" (DESIGN.md's HUD + death-summary rework,
 ## 2026-08-17) -- total discards this run, read by hud.gd at death.
 var _discards_this_run: int = 0
+## Phase 4's safe zone (see set_safe_zone()) -- defaults to the full
+## arena so a standalone Player in a unit test that never calls
+## set_safe_zone() (no Arena parent driving it) never takes this damage.
+var _safe_zone: Rect2 = Rect2(Vector2.ZERO, Vector2(1280.0, 720.0))
+var _phase4_damage_cooldown: float = 0.0
 
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
@@ -133,6 +166,10 @@ func _ready() -> void:
 	backpack_capacity = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
 	pickup_range = MetaProgression.get_stat(MetaProgression.STAT_PICKUP_RANGE)
 	speed = MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED)
+	dash_cooldown = maxf(
+		dash_cooldown - MetaProgression.get_facet_bonus(MetaProgression.STAT_MOVE_SPEED),
+		DASH_COOLDOWN_FLOOR
+	)
 	_effective_speed = speed
 	max_hp = base_max_hp
 	hp = max_hp
@@ -201,6 +238,7 @@ func _physics_process(delta: float) -> void:
 
 	_check_triage_input()
 	_reposition_queue()
+	_check_phase4_damage(delta)
 
 
 func _check_dash_input() -> void:
@@ -373,6 +411,29 @@ func consume_loot(type_id: StringName, count: int) -> int:
 	return removed
 
 
+## Altar's pure sacrifice (DESIGN.md's "Altar," 2026-08-17) -- reuses
+## consume_loot()'s actual backpack removal (already exactly "subtract
+## from backpack directly, no value/Cast Off path") but all-or-nothing:
+## checks affordability first rather than consume_loot()'s own
+## partial-removal semantics (built for the since-removed Backpack
+## Ability, where "however much is available" was the intended
+## behavior). Distinct from collect_loot()/resolve_discard() -- no value
+## banked, no Cast Off throw, a pure sacrifice.
+func sacrifice_loot(type_id: StringName, count: int) -> bool:
+	if backpack.get(type_id, 0) < count:
+		return false
+	consume_loot(type_id, count)
+	return true
+
+
+func apply_altar_boon(boon_id: StringName) -> void:
+	match boon_id:
+		ALTAR_BOON_SPELLPOWER:
+			bonus_spellpower += ALTAR_BOON_SPELLPOWER_BONUS
+		ALTAR_BOON_FULL_HEAL:
+			_set_hp(max_hp)
+
+
 ## True if adding one more `type_id` item would need a slot beyond
 ## whatever's already allocated to it -- i.e. count is at a stack-size
 ## boundary (e.g. a 10-stack tier going from 10 to 11 needs a 2nd slot,
@@ -528,6 +589,21 @@ func _spawn_damage_text(amount: float) -> void:
 	text.position = position + Vector2(0.0, -24.0)
 	get_parent().add_child(text)
 	text.setup("-%d" % roundi(amount), DAMAGE_TEXT_COLOR, 22)
+
+
+## Called every frame by arena.gd once Phase 4 starts (see its own
+## get_safe_zone_rect()) -- a no-op call with the full-arena default
+## outside Phase 4, or in any context with no Arena driving it.
+func set_safe_zone(rect: Rect2) -> void:
+	_safe_zone = rect
+
+
+func _check_phase4_damage(delta: float) -> void:
+	_phase4_damage_cooldown = maxf(_phase4_damage_cooldown - delta, 0.0)
+	if _safe_zone.has_point(position) or _phase4_damage_cooldown > 0.0:
+		return
+	take_damage(PHASE_4_DAMAGE, position)
+	_phase4_damage_cooldown = PHASE_4_DAMAGE_INTERVAL
 
 
 func _get_input_direction() -> Vector2:

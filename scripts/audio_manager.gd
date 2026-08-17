@@ -48,6 +48,11 @@ func _ready() -> void:
 	_streams["warp_cast"] = _make_sweep(600.0, 220.0, 0.32, 0.3)
 	_streams["teleport_cast"] = _make_sweep(400.0, 900.0, 0.11, 0.3)
 	_streams["familiar_summon"] = _make_chime([440.0, 660.0, 880.0], 0.07, 0.3)
+	# Legendary beacon (DESIGN.md's "A Legendary is a set piece, not a
+	# drop," 2026-08-17): slower/longer rising sweep than any existing
+	# cast cue, so it reads as a distinct "something big just happened"
+	# moment, not just another pickup or spell sound.
+	_streams["legendary_beacon_spawn"] = _make_sweep(200.0, 900.0, 0.4, 0.45, "sine")
 
 	for i in POOL_SIZE:
 		var player := AudioStreamPlayer.new()

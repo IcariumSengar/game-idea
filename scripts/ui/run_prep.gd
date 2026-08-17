@@ -39,6 +39,10 @@ func _on_grimoire_pressed() -> void:
 	SceneTransition.goto_scene("res://scenes/ui/grimoire.tscn")
 
 
+func _on_trophy_hall_pressed() -> void:
+	SceneTransition.goto_scene("res://scenes/ui/trophy_hall.tscn")
+
+
 func _on_back_pressed() -> void:
 	SaveManager.clear_last_slot()
 	SceneTransition.goto_scene("res://scenes/ui/save_slot_selector.tscn")

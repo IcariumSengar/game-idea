@@ -65,6 +65,18 @@ const CAST_OFF_IMPACT_RADIUS: float = 40.0
 const CAST_OFF_KNOCKBACK_STRENGTH: float = 150.0
 const CAST_OFF_BASE_DAMAGE: float = 10.0
 const CAST_OFF_SPIN_TURNS: float = 1.0
+## Legendary beacon (DESIGN.md's "A Legendary is a set piece, not a
+## drop," 2026-08-17): a dropped Legendary never magnetizes -- the
+## player must walk to it (see start_magnet()'s early-return below) --
+## and pulls every alive enemy toward it (see enemy.gd's
+## _chase_position(), which finds this via the "legendary_beacon" group)
+## instead of being a free keypress. Pulse/glow scaled up so it reads as
+## "danger inbound," not just "shiny."
+const BEACON_PULSE_SCALE_MULTIPLIER: float = 2.0
+const BEACON_GLOW_LAYERS: int = 4
+const BEACON_GLOW_SPACING: float = 6.0
+const BEACON_GLOW_COLOR: Color = Color(0.95, 0.15, 0.15, 1.0)
+const BEACON_GLOW_PULSE_SPEED: float = 2.5
 
 ## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
 ## below to get the actual homing speed once magnetized.
@@ -93,6 +105,7 @@ var _is_queued: bool = false
 ## True while a Scatter launch tween owns `position` -- magnet-chasing must
 ## not also write to `position` during this window (see _process() below).
 var _is_scattering: bool = false
+var _is_beacon: bool = false
 
 @onready var _sprite: Node2D = $Gem
 
@@ -102,6 +115,10 @@ func _ready() -> void:
 	var def := LootTypes.get_type(type_id)
 	if def != null:
 		_color = def.color
+	if type_id == &"legendary":
+		_is_beacon = true
+		add_to_group("legendary_beacon")
+		AudioManager.play("legendary_beacon_spawn")
 	if randf() < float(AFFIX_CHANCE_BY_TIER.get(type_id, 0.0)):
 		if randf() < AFFIX_LEADEN_CHANCE:
 			_is_leaden = true
@@ -112,6 +129,11 @@ func _ready() -> void:
 			_is_affixed = true
 			_color = _color.lerp(AFFIX_COLOR, 0.5)
 			_pulse_scale_amount = AFFIX_PULSE_SCALE_AMOUNT
+	# Applied after the affix roll above so a beacon's stronger pulse
+	# always wins regardless of whether an affix also fired and reset
+	# _pulse_scale_amount to its own value.
+	if _is_beacon:
+		_pulse_scale_amount *= BEACON_PULSE_SCALE_MULTIPLIER
 	_sprite.modulate = _color
 	# Deferred: loot can spawn synchronously from inside a physics signal
 	# callback (an AOE spell killing an enemy mid body_entered), and setting
@@ -129,6 +151,26 @@ func _process(delta: float) -> void:
 	_sprite.position.y = sin(_time * BOB_SPEED) * BOB_AMOUNT
 	var pulse: float = SPRITE_SCALE + sin(_time * _pulse_speed) * _pulse_scale_amount
 	_sprite.scale = Vector2(pulse, pulse)
+	if _is_beacon:
+		queue_redraw()
+
+
+## "Danger inbound" glow (see BEACON_GLOW_* above) -- same layered-circle
+## soft-bloom technique skill_tree_view.gd's node glow already uses,
+## reused here rather than inventing a second approach.
+func _draw() -> void:
+	if not _is_beacon:
+		return
+	var pulse: float = sin(_time * BEACON_GLOW_PULSE_SPEED) * 0.5 + 0.5
+	for layer in BEACON_GLOW_LAYERS:
+		var layer_t: float = float(layer + 1) / float(BEACON_GLOW_LAYERS)
+		var layer_radius: float = BEACON_GLOW_SPACING * float(layer + 1) * (1.0 + pulse * 0.4)
+		var layer_alpha: float = (0.25 + pulse * 0.25) * (1.0 - layer_t) * (1.0 - layer_t)
+		draw_circle(
+			Vector2.ZERO,
+			layer_radius,
+			Color(BEACON_GLOW_COLOR.r, BEACON_GLOW_COLOR.g, BEACON_GLOW_COLOR.b, layer_alpha)
+		)
 
 
 func _enable_pickup() -> void:
@@ -139,7 +181,7 @@ func _enable_pickup() -> void:
 
 
 func start_magnet(player: Player) -> void:
-	if _magnet_target != null:
+	if _magnet_target != null or _is_beacon:
 		return
 	_magnet_target = player
 	_pull_speed = pull_speed_base + player.pickup_range * pull_speed_per_range
@@ -338,10 +380,18 @@ func _impact(impact_position: Vector2) -> void:
 ## Discard's level (Depth Pass Group B, DESIGN.md 2026-08-17) adds flat
 ## bonus damage on top of the tier-scaled base -- read generically via
 ## get_stat() since STAT_PURGE's per_level_gain now *is* that bonus.
+## Discard's flat bonus (STAT_PURGE) plus Gleam's Facet B bonus (DESIGN.md's
+## "Facets," 2026-08-17) -- "I fight with my discards" over "I vacuum
+## wide," see MetaProgression.get_facet_bonus()'s own docstring for why
+## this is 0.0 unless Gleam is actively on Face B.
 func _cast_off_damage() -> float:
 	var tier_index: int = LootTypes.get_tier_index(type_id)
 	var base: float = CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
-	return base + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
+	return (
+		base
+		+ MetaProgression.get_stat(MetaProgression.STAT_PURGE)
+		+ MetaProgression.get_facet_bonus(MetaProgression.STAT_PICKUP_RANGE)
+	)
 
 
 func _affix_bonus_value() -> int:

@@ -8,7 +8,6 @@ extends Node
 ## currency value, stack limits) reads the registry generically.
 
 var _types: Array[LootTypeDef] = []
-var _total_weight: float = 0.0
 
 
 func _ready() -> void:
@@ -31,22 +30,35 @@ func get_type(id: StringName) -> LootTypeDef:
 	return null
 
 
+## Now a thin wrapper over pick_random_weighted() -- see The Forge's note
+## there for why both roll paths have to share one implementation.
 func pick_random_type() -> LootTypeDef:
-	var roll := randf() * _total_weight
-	var accum := 0.0
+	return pick_random_weighted(_flat_weights())
+
+
+func _flat_weights() -> Dictionary:
+	var weights: Dictionary = {}
 	for def in _types:
-		accum += def.drop_weight
-		if roll <= accum:
-			return def
-	return _types[-1]
+		weights[def.id] = def.drop_weight
+	return weights
 
 
 ## Rolls among only the tiers listed in `weights` (tier id -> weight),
 ## e.g. an enemy's per-tier loot table from DESIGN.md's "Enemy Types &
 ## Loot Tiers" section. Falls back to the flat table if weights is empty.
+##
+## The Forge (DESIGN.md's "The Forge: buy odds, not numbers," 2026-08-17):
+## its own spec flags the real crux -- adjusting only pick_random_type()'s
+## rarely-hit fallback table would visibly do nothing, since per-enemy
+## drop tables (routed through here) are what almost every roll actually
+## uses. Both paths now go through this one function (see
+## pick_random_type() above), so one Forge check covers both.
 func pick_random_weighted(weights: Dictionary) -> LootTypeDef:
 	if weights.is_empty():
-		return pick_random_type()
+		weights = _flat_weights()
+	var forge_level: int = MetaProgression.get_level(MetaProgression.STAT_FORGE)
+	if forge_level > 0:
+		weights = get_forge_adjusted_weights(weights, forge_level)
 	var total: float = 0.0
 	for tier_id: StringName in weights:
 		total += float(weights[tier_id])
@@ -59,6 +71,45 @@ func pick_random_weighted(weights: Dictionary) -> LootTypeDef:
 		if roll <= accum:
 			return last_def
 	return last_def
+
+
+## Shifts weight from Common/Uncommon toward every other tier (Rare and
+## up), proportional to their existing relative weights so the upper
+## tiers' own ratio to each other stays intact -- Forge moves mass
+## up-tier, it doesn't invent a new distribution among the tiers it moves
+## it into. `level` is a plain param (not read live off MetaProgression)
+## so this stays a pure, directly-testable function; STAT_FORGE's
+## per_level_gain (percentage points, not a 0.0-1.0 fraction -- see its
+## registration comment) is the one place the actual balance number
+## lives, read here rather than duplicated as a second constant.
+func get_forge_adjusted_weights(base: Dictionary, level: int) -> Dictionary:
+	if level <= 0 or base.is_empty():
+		return base
+	var per_level_gain: float = (
+		MetaProgression.get_stat_def(MetaProgression.STAT_FORGE).per_level_gain
+	)
+	var shift_fraction: float = float(level) * per_level_gain / 100.0
+	const LOW_TIERS: Array[StringName] = [&"common", &"uncommon"]
+	var high_total: float = 0.0
+	for tier_id: StringName in base:
+		if tier_id not in LOW_TIERS:
+			high_total += float(base[tier_id])
+	if high_total <= 0.0:
+		return base
+	var adjusted: Dictionary = base.duplicate()
+	var moved: float = 0.0
+	for tier_id: StringName in LOW_TIERS:
+		if not base.has(tier_id):
+			continue
+		var reduction: float = float(base[tier_id]) * shift_fraction
+		adjusted[tier_id] = float(base[tier_id]) - reduction
+		moved += reduction
+	for tier_id: StringName in base:
+		if tier_id in LOW_TIERS:
+			continue
+		var share: float = float(base[tier_id]) / high_total
+		adjusted[tier_id] = float(adjusted[tier_id]) + moved * share
+	return adjusted
 
 
 ## Fixed per-tier constant since Compacting's removal (DESIGN.md
@@ -137,4 +188,3 @@ func _register(
 	def.stack_size = stack_size
 	def.drop_weight = drop_weight
 	_types.append(def)
-	_total_weight += drop_weight

@@ -15,8 +15,15 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.
 ## never survives past Phase 1 has no way to know progression exists at
 ## all. Announced the same way combo completions are (spell_caster.gd's
 ## _spawn_combo_label), above the player.
-const PHASE_LABELS: Dictionary = {2: "BRUISERS!", 3: "ELITES!"}
-const PHASE_LABEL_COLORS: Dictionary = {2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85)}
+## Phase 4 (DESIGN.md's "Phase 4: the arena becomes the antagonist,"
+## 2026-08-17) gets the same announcement treatment every other phase
+## transition already has -- the closing safe zone is otherwise a purely
+## visual reveal (arena.gd's own _draw()), easy to miss the moment it
+## actually starts.
+const PHASE_LABELS: Dictionary = {2: "BRUISERS!", 3: "ELITES!", 4: "THE ARENA CLOSES IN!"}
+const PHASE_LABEL_COLORS: Dictionary = {
+	2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85), 4: Color(0.9, 0.25, 0.2)
+}
 const BOSS_LABEL: String = "BOSS!"
 const BOSS_LABEL_COLOR: Color = Color(0.95, 0.2, 0.25)
 const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
@@ -152,6 +159,7 @@ func _on_player_died() -> void:
 	var previous_essence := MetaProgression.update_best_essence(total_value)
 	var previous_leanness := MetaProgression.update_best_leanness(leanness)
 	var previous_discards := MetaProgression.update_best_discards(discards)
+	_update_trophy_hall(_player.backpack)
 
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
 	SaveManager.save()
@@ -245,6 +253,17 @@ func _best_line(label: String, display_value: String, current: float, previous: 
 	var is_new_record: bool = previous > 0.0 and current > previous
 	var suffix: String = "  [color=#e6cc4d][b]NEW RECORD![/b][/color]" if is_new_record else ""
 	return "[color=#999999]%s: %s[/color]%s" % [label, display_value, suffix]
+
+
+## Trophy Hall (DESIGN.md's "A hoard you can actually see," 2026-08-17):
+## checked against this run's final backpack breakdown -- see
+## MetaProgression.best_loot_value's own docstring for why this reads
+## each tier's fixed base value rather than a true per-item value.
+func _update_trophy_hall(backpack: Dictionary) -> void:
+	for type_id: StringName in backpack:
+		var def := LootTypes.get_type(type_id)
+		if def != null:
+			MetaProgression.update_best_loot_value(type_id, def.value)
 
 
 func _build_loot_breakdown() -> Array[String]:

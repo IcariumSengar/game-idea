@@ -222,6 +222,10 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 		# (DESIGN.md 2026-08-16) -- Backpack Tree is now just two nodes,
 		# Bearing then Discard.
 		MetaProgression.STAT_PURGE: MetaProgression.STAT_BACKPACK_CAPACITY,
+		# The Forge extends the chain past Discard (DESIGN.md's "The Forge,"
+		# 2026-08-17) -- it's the tree's real capstone now (see
+		# meta_progression.gd's is_milestone flag having moved to it).
+		MetaProgression.STAT_FORGE: MetaProgression.STAT_PURGE,
 		# Arcane needs no unlock, so these branch off the trunk root
 		# ungated (DESIGN.md's Shop structure rework, 2026-08-17) -- solid
 		# line for the visual "part of this trunk" read, but shop.gd's own

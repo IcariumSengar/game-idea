@@ -34,6 +34,19 @@ const SPELL_DISPLAY_NAMES: Dictionary = {
 ## under 1.8x.
 const PURCHASE_PITCH_STEP: float = 0.04
 const PURCHASE_PITCH_MAX: float = 1.8
+## Facets (DESIGN.md's "Facets," 2026-08-17): Hades' Mirror toggle,
+## free/no-cost, so this is plain descriptive tooltip text rather than
+## a cost/level readout like the tree nodes' own tooltips.
+const FACET_FACE_A_DESC: Dictionary = {
+	MetaProgression.STAT_MOVE_SPEED: "Face A: full Move Speed per level (current).",
+	MetaProgression.STAT_PICKUP_RANGE: "Face A: full pickup range per level (current).",
+}
+const FACET_FACE_B_DESC: Dictionary = {
+	MetaProgression.STAT_MOVE_SPEED:
+	"Face B: reduced Move Speed per level, trades the rest for a shorter Dash cooldown.",
+	MetaProgression.STAT_PICKUP_RANGE:
+	"Face B: reduced pickup range per level, trades the rest for bonus Cast Off damage.",
+}
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
@@ -56,6 +69,7 @@ var _active_tab: StringName = &"player"
 @onready var _spell_choice_panel: PanelContainer = %SpellChoicePanel
 @onready var _spell_choice_option_row: HBoxContainer = %OptionRow
 @onready var _bearing_preview_grid: BackpackGrid = %BearingPreviewGrid
+@onready var _facets_section: VBoxContainer = %FacetsSection
 
 
 func _ready() -> void:
@@ -194,6 +208,59 @@ func _update_trees() -> void:
 	_backpack_tree.node_clicked.connect(_on_backpack_node_clicked)
 	_player_tree.node_clicked.connect(_on_player_node_clicked)
 	_spell_tree.node_clicked.connect(_on_spell_node_clicked)
+
+	_update_facets_section()
+
+
+## Facets (DESIGN.md's "Facets," 2026-08-17): rebuilt on every tree
+## refresh, same reactive-rebuild pattern set_tree_data() already uses --
+## cheap at two rows, and avoids stale button state after a facet toggle
+## (which itself fires stat_changed, routing back through this same
+## _update_trees() call, see _on_facet_button_pressed()).
+func _update_facets_section() -> void:
+	for child in _facets_section.get_children():
+		child.queue_free()
+	for stat_id: StringName in MetaProgression.FACET_STATS:
+		_facets_section.add_child(_build_facet_row(stat_id))
+
+
+func _build_facet_row(stat_id: StringName) -> HBoxContainer:
+	var def := MetaProgression.get_stat_def(stat_id)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+
+	var label := Label.new()
+	label.text = def.display_name if def != null else String(stat_id)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 13)
+	row.add_child(label)
+
+	var is_face_b := MetaProgression.is_facet_b_active(stat_id)
+
+	var face_a := TabButton.new()
+	face_a.text = "Face A"
+	face_a.accent_color = PLAYER_ACCENT
+	face_a.tooltip_text = FACET_FACE_A_DESC.get(stat_id, "")
+	face_a.set_active(not is_face_b)
+	face_a.pressed.connect(_on_facet_button_pressed.bind(stat_id, false))
+	row.add_child(face_a)
+
+	var face_b := TabButton.new()
+	face_b.text = "Face B"
+	face_b.accent_color = PLAYER_ACCENT
+	face_b.tooltip_text = FACET_FACE_B_DESC.get(stat_id, "")
+	face_b.set_active(is_face_b)
+	face_b.pressed.connect(_on_facet_button_pressed.bind(stat_id, true))
+	row.add_child(face_b)
+
+	return row
+
+
+## set_facet() already emits stat_changed, which _on_stat_changed() below
+## already routes to _update_trees() -- no separate refresh call needed
+## here, same as every other stat-mutating click in this file.
+func _on_facet_button_pressed(stat_id: StringName, use_face_b: bool) -> void:
+	MetaProgression.set_facet(stat_id, use_face_b)
 
 
 func _tab_label(base_text: String, stats: Array[StatDef]) -> String:
@@ -352,6 +419,10 @@ func _gate_requirements() -> Dictionary:
 		# (DESIGN.md 2026-08-16) -- re-pointed to Bearing's first level so
 		# Backpack Tree keeps some gating structure instead of going flat.
 		MetaProgression.STAT_PURGE: [MetaProgression.STAT_BACKPACK_CAPACITY, 1],
+		# The Forge extends the Backpack Tree chain past Discard (DESIGN.md's
+		# "The Forge," 2026-08-17) -- same "previous node bought once" gate
+		# pattern as everything else in the shop.
+		MetaProgression.STAT_FORGE: [MetaProgression.STAT_PURGE, 1],
 		MetaProgression.STAT_INFERNO_FURY: [MetaProgression.STAT_SPELL_UNLOCK, 1],
 		MetaProgression.STAT_INFERNO_ARC_WIDTH: [MetaProgression.STAT_SPELL_UNLOCK, 1],
 		MetaProgression.STAT_INFERNO_BURN_DAMAGE: [MetaProgression.STAT_SPELL_UNLOCK, 1],

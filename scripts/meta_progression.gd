@@ -31,6 +31,21 @@ const STAT_LIGHTNING_FREQUENCY: StringName = &"lightning_frequency"
 const STAT_TIME_WARP_FREQUENCY: StringName = &"time_warp_frequency"
 const STAT_TELEPORT_FREQUENCY: StringName = &"teleport_frequency"
 const STAT_FAMILIAR_DURATION: StringName = &"familiar_duration"
+const STAT_FORGE: StringName = &"forge"
+
+## Facets (DESIGN.md's "Facets," 2026-08-17): Hades' Mirror pattern --
+## already-purchased levels of a facet stat express either face, no new
+## currency/cost/cap, switched freely from the Sanctum. Two stats only
+## for this first pass ("every stat" was too broad); everything else has
+## a single fixed effect and never reads these tables. Face A is just
+## each stat's normal registered per_level_gain (below); Face B instead
+## grants a reduced primary gain (half of Face A's, first-pass numbers)
+## plus a secondary bonus -- dash-cooldown reduction for Swiftness,
+## Cast Off damage for Gleam -- read by player.gd/loot.gd respectively
+## via get_facet_bonus().
+const FACET_STATS: Array[StringName] = [STAT_MOVE_SPEED, STAT_PICKUP_RANGE]
+const FACET_FACE_B_PRIMARY_GAIN: Dictionary = {STAT_MOVE_SPEED: 5.0, STAT_PICKUP_RANGE: 4.0}
+const FACET_FACE_B_SECONDARY_GAIN: Dictionary = {STAT_MOVE_SPEED: 0.03, STAT_PICKUP_RANGE: 2.0}
 
 const SPELL_ARCANE_BOLT: StringName = &"arcane_bolt"
 const SPELL_INFERNO_BLADE: StringName = &"inferno_blade"
@@ -117,6 +132,21 @@ var magpie_encountered: bool = false
 ## pending, and that's a valid, save-safe state (quitting mid-choice loses
 ## nothing, see has_pending_spell_choice()).
 var chosen_spells: Dictionary = {}
+## Facets: stat id -> true means Face B is active, absent/false means
+## Face A (the default, matching pre-Facets behavior for a save that's
+## never touched this).
+var active_facet: Dictionary = {}
+## Trophy Hall (DESIGN.md's "A hoard you can actually see," 2026-08-17):
+## tier id -> highest single-item value ever seen for that tier, six
+## fixed entries forever (Common through Legendary) rather than an
+## unbounded "everything ever collected" list. Checked at death time
+## against that run's final backpack breakdown (see hud.gd's
+## _update_trophy_hall()) rather than a new mid-run signal hook -- scoped
+## honestly: this reads each tier's fixed LootTypeDef.value, not a
+## discarded-before-death item's or an affixed item's real bonus-inflated
+## value, since neither survives into the backpack's tier->count
+## aggregate by the time death is reached.
+var best_loot_value: Dictionary = {}
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -136,6 +166,13 @@ func _ready() -> void:
 	# Off instead, read generically via get_stat() like every other stat's
 	# effect (loot.gd's _cast_off_damage()).
 	_register_stat(STAT_PURGE, "Discard", 0.0, 4.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	# The Forge (DESIGN.md's "The Forge: buy odds, not numbers," 2026-08-17):
+	# extends the Backpack Tree chain past Discard. base_value/per_level_gain
+	# are percentage POINTS (0, 2, 4... 20 at cap), not a 0.0-1.0 fraction --
+	# LootTypes.get_forge_adjusted_weights() divides by 100 itself, so the
+	# skill-tree tooltip's "Current: X -> Y" reads as plain whole numbers
+	# like every other stat instead of a confusing 0.02-style fraction.
+	_register_stat(STAT_FORGE, "Forge", 0.0, 2.0, 150, 1.2, 10, 0, StatDef.Currency.BACKPACK)
 	# Cap raised 5->7 for v11's five new spells (L3-L7) on top of Inferno/Frost
 	# (L1/L2) -- same base cost/growth as originally locked in, just extended.
 	_register_stat(
@@ -246,7 +283,10 @@ func _ready() -> void:
 	# inferred from tree topology -- Spell Unlock is the gated trunk,
 	# Discard is Backpack Tree's own capstone.
 	get_stat_def(STAT_SPELL_UNLOCK).is_milestone = true
-	get_stat_def(STAT_PURGE).is_milestone = true
+	# The Forge extends the Backpack Tree past Discard (DESIGN.md's "The
+	# Forge," 2026-08-17) -- it's the chain's real capstone now, so the
+	# milestone flag moves from Discard to it rather than both being large.
+	get_stat_def(STAT_FORGE).is_milestone = true
 
 
 func get_stat_defs() -> Array[StatDef]:
@@ -258,7 +298,34 @@ func get_stat(id: StringName) -> float:
 	if def == null:
 		push_error("Unknown stat id: %s" % id)
 		return 0.0
-	return def.base_value + float(get_level(id)) * def.per_level_gain
+	var per_level_gain: float = def.per_level_gain
+	if is_facet_b_active(id) and FACET_FACE_B_PRIMARY_GAIN.has(id):
+		per_level_gain = FACET_FACE_B_PRIMARY_GAIN[id]
+	return def.base_value + float(get_level(id)) * per_level_gain
+
+
+func is_facet_stat(stat_id: StringName) -> bool:
+	return stat_id in FACET_STATS
+
+
+func is_facet_b_active(stat_id: StringName) -> bool:
+	return active_facet.get(stat_id, false)
+
+
+func set_facet(stat_id: StringName, use_face_b: bool) -> void:
+	if not is_facet_stat(stat_id):
+		return
+	active_facet[stat_id] = use_face_b
+	stat_changed.emit(stat_id, get_level(stat_id))
+
+
+## Face B's secondary bonus, scaled by level -- 0.0 on Face A or a
+## non-facet stat. Callers (player.gd's dash cooldown, loot.gd's Cast
+## Off damage) add this on top of their own base calculation.
+func get_facet_bonus(stat_id: StringName) -> float:
+	if not is_facet_b_active(stat_id):
+		return 0.0
+	return float(get_level(stat_id)) * float(FACET_FACE_B_SECONDARY_GAIN.get(stat_id, 0.0))
 
 
 func get_level(id: StringName) -> int:
@@ -381,6 +448,15 @@ func is_combo_discovered(combo_id: StringName) -> bool:
 	return discovered_combos.get(combo_id, false)
 
 
+func update_best_loot_value(tier_id: StringName, value: int) -> void:
+	if value > int(best_loot_value.get(tier_id, 0)):
+		best_loot_value[tier_id] = value
+
+
+func get_best_loot_value(tier_id: StringName) -> int:
+	return best_loot_value.get(tier_id, 0)
+
+
 ## Called by EnemyMagpie the moment one spawns in. Harmless to call
 ## repeatedly -- stays encountered forever once seen once.
 func mark_magpie_encountered() -> void:
@@ -467,6 +543,12 @@ func export_save_data() -> Dictionary:
 	var serialized_choices: Dictionary = {}
 	for level: int in chosen_spells:
 		serialized_choices[str(level)] = String(chosen_spells[level])
+	var serialized_best_loot: Dictionary = {}
+	for tier_id: StringName in best_loot_value:
+		serialized_best_loot[String(tier_id)] = best_loot_value[tier_id]
+	var serialized_facets: Dictionary = {}
+	for stat_id: StringName in active_facet:
+		serialized_facets[String(stat_id)] = active_facet[stat_id]
 	return {
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
@@ -477,7 +559,9 @@ func export_save_data() -> Dictionary:
 		"stat_levels": _stat_levels,
 		"discovered_combos": discovered,
 		"magpie_encountered": magpie_encountered,
-		"chosen_spells": serialized_choices
+		"chosen_spells": serialized_choices,
+		"best_loot_value": serialized_best_loot,
+		"active_facet": serialized_facets
 	}
 
 
@@ -501,6 +585,14 @@ func import_save_data(data: Dictionary) -> void:
 	for combo_id: String in saved_combos:
 		discovered_combos[StringName(combo_id)] = true
 	magpie_encountered = data.get("magpie_encountered", false)
+	best_loot_value.clear()
+	var saved_best_loot: Dictionary = data.get("best_loot_value", {})
+	for tier_id: String in saved_best_loot:
+		best_loot_value[StringName(tier_id)] = int(saved_best_loot[tier_id])
+	active_facet.clear()
+	var saved_facets: Dictionary = data.get("active_facet", {})
+	for stat_id: String in saved_facets:
+		active_facet[StringName(stat_id)] = bool(saved_facets[stat_id])
 	if data.has("chosen_spells"):
 		chosen_spells.clear()
 		var saved_choices: Dictionary = data["chosen_spells"]
@@ -543,5 +635,7 @@ func reset_progress() -> void:
 		_stat_levels[stat_id] = 0
 	discovered_combos.clear()
 	magpie_encountered = false
+	best_loot_value.clear()
+	active_facet.clear()
 	chosen_spells.clear()
 	currency_changed.emit()

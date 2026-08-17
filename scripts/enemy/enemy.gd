@@ -42,9 +42,7 @@ const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 ## Phase 1 a small (1%) Epic chance -- previously capped hard at Rare,
 ## per live-play feedback that rarer tiers should feel reachable, not
 ## exclusively gated behind surviving to a later phase.
-var loot_weights: Dictionary = {
-	&"common": 55.0, &"uncommon": 30.0, &"rare": 14.0, &"epic": 1.0
-}
+var loot_weights: Dictionary = {&"common": 55.0, &"uncommon": 30.0, &"rare": 14.0, &"epic": 1.0}
 
 var hp: float
 var target: Player
@@ -124,11 +122,28 @@ func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
 	speed *= speed_scale
 
 
+## Legendary beacon (DESIGN.md's "A Legendary is a set piece, not a
+## drop," 2026-08-17): while an uncollected Legendary sits on the ground,
+## every enemy chases its position instead of the player's -- movement
+## only, not attack aim or contact damage (both stay player-directed via
+## `target` unchanged, so the fight still threatens the player rather
+## than the loot). Queried live off the group each call rather than
+## pushed to enemies individually -- picking the beacon up (or it never
+## having existed) just means the group lookup returns null, no
+## broadcast/cleanup bookkeeping needed either way, and an enemy that
+## spawns after the beacon already exists still picks it up for free.
+func _chase_position() -> Vector2:
+	var beacon := get_tree().get_first_node_in_group("legendary_beacon")
+	if beacon != null:
+		return beacon.position
+	return target.position
+
+
 ## Default: Tier 1 Minion behavior (melee chaser). Subclasses override
 ## this for their own movement/attack pattern.
 func _update_behavior(delta: float) -> void:
 	velocity = (
-		position.direction_to(target.position + _approach_offset) * _slowed(speed) + _knockback
+		position.direction_to(_chase_position() + _approach_offset) * _slowed(speed) + _knockback
 	)
 	move_and_slide()
 	_apply_contact_damage(delta)

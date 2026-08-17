@@ -9,6 +9,7 @@ const ELITE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_elite.tscn")
 const MAGPIE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_magpie.tscn")
 const BOSS_SCENE: PackedScene = preload("res://scenes/enemy/enemy_boss.tscn")
 const LOOT_SCENE: PackedScene = preload("res://scenes/loot/loot.tscn")
+const ALTAR_SCENE: PackedScene = preload("res://scenes/structures/altar.tscn")
 ## Tier 4: unique, one per run, spawned directly at this mark rather than
 ## through PHASE_SPAWN_WEIGHTS' repeating roll -- per DESIGN.md's "Future
 ## Expansions" note ("unique, 55+ sec, guaranteed Mythic+ drop").
@@ -77,23 +78,53 @@ const ENEMY_HP_SCALE_MIN: float = 1.5
 const ENEMY_HP_SCALE_MAX: float = 3.0
 const ENEMY_SPEED_SCALE_MIN: float = 1.6
 const ENEMY_SPEED_SCALE_MAX: float = 2.4
+## Phase 4 (DESIGN.md's "Phase 4: the arena becomes the antagonist,"
+## 2026-08-17): one shape for this first pass -- a closing safe zone --
+## chosen well clear of the Boss's 55s beat so Phase 3 gets its own
+## stretch before escalating again. "Going dark" and hostile drop zones
+## are real follow-on scope, deliberately deferred, not forgotten.
+const PHASE_4_TIME: float = 90.0
+const PHASE_4_SHRINK_DURATION: float = 30.0
+const PHASE_4_SAFE_ZONE_SIZE: Vector2 = Vector2(640.0, 360.0)
+## Reuses BackpackGrid's own red danger-color language rather than
+## inventing new color vocabulary for this second "danger" signal.
+const PHASE_4_DANGER_COLOR: Color = Color(0.9, 0.25, 0.2, 0.35)
+const PHASE_4_EDGE_WIDTH: float = 4.0
+## Altar (DESIGN.md's "Altar," 2026-08-17): spawns at each existing phase
+## boundary (reusing the 20s/40s pacing beats already gating Phase 2/3,
+## not a new clock), offset from the player's current position so
+## reaching it is a real "go get it" decision, not already underfoot.
+const ALTAR_SPAWN_TIMES: Array[float] = [20.0, 40.0]
+const ALTAR_OFFSET_RANGE: Vector2 = Vector2(150.0, 250.0)
+const ALTAR_ARENA_MARGIN: float = 40.0
 
 var _shake_time_left: float = 0.0
 var _shake_magnitude: float = SHAKE_MAGNITUDE
 var _run_time: float = 0.0
 var _enemies_killed: int = 0
 var _boss_spawned: bool = false
+var _altars_spawned: int = 0
+var _player: Player
 
 @onready var _spawn_timer: Timer = $EnemySpawnTimer
 
 
 func _ready() -> void:
-	var player: Player = get_tree().get_first_node_in_group("player")
-	player.hit.connect(_on_player_hit)
+	_player = get_tree().get_first_node_in_group("player")
+	_player.hit.connect(_on_player_hit)
 
 
 func _process(delta: float) -> void:
 	_run_time += delta
+	_player.set_safe_zone(get_safe_zone_rect())
+	if _run_time >= PHASE_4_TIME:
+		queue_redraw()
+	if (
+		_altars_spawned < ALTAR_SPAWN_TIMES.size()
+		and _run_time >= ALTAR_SPAWN_TIMES[_altars_spawned]
+	):
+		_spawn_altar()
+		_altars_spawned += 1
 	if _shake_time_left <= 0.0:
 		return
 	_shake_time_left = max(_shake_time_left - delta, 0.0)
@@ -101,6 +132,43 @@ func _process(delta: float) -> void:
 		position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake_magnitude
 	else:
 		position = Vector2.ZERO
+
+
+func _draw() -> void:
+	if _run_time < PHASE_4_TIME:
+		return
+	draw_rect(get_safe_zone_rect(), PHASE_4_DANGER_COLOR, false, PHASE_4_EDGE_WIDTH)
+
+
+func _spawn_altar() -> void:
+	var altar: Altar = ALTAR_SCENE.instantiate()
+	var angle: float = randf() * TAU
+	var distance: float = randf_range(ALTAR_OFFSET_RANGE.x, ALTAR_OFFSET_RANGE.y)
+	var offset: Vector2 = Vector2(cos(angle), sin(angle)) * distance
+	altar.position = (_player.position + offset).clamp(
+		Vector2(ALTAR_ARENA_MARGIN, ALTAR_ARENA_MARGIN),
+		ARENA_SIZE - Vector2(ALTAR_ARENA_MARGIN, ALTAR_ARENA_MARGIN)
+	)
+	add_child(altar)
+
+
+## Phase 4: the current "don't linger here" rect, centered on the arena
+## and shrinking from the full ARENA_SIZE toward PHASE_4_SAFE_ZONE_SIZE
+## over PHASE_4_SHRINK_DURATION once PHASE_4_TIME is reached. Read by
+## both this scene's own _draw() (the visible encroaching edge) and
+## player.gd's damage-over-time check (see Player.set_safe_zone()) -- the
+## hard arena-bounds clamp stays fixed at the full ARENA_SIZE always, a
+## player can still walk to the true edge, this is a separate zone
+## layered on top of it, not a replacement for it.
+func get_safe_zone_rect() -> Rect2:
+	if _run_time < PHASE_4_TIME:
+		return Rect2(Vector2.ZERO, ARENA_SIZE)
+	var shrink_progress: float = clampf(
+		(_run_time - PHASE_4_TIME) / PHASE_4_SHRINK_DURATION, 0.0, 1.0
+	)
+	var size: Vector2 = ARENA_SIZE.lerp(PHASE_4_SAFE_ZONE_SIZE, shrink_progress)
+	var offset: Vector2 = (ARENA_SIZE - size) / 2.0
+	return Rect2(offset, size)
 
 
 func _on_player_hit() -> void:
@@ -155,14 +223,20 @@ func get_enemies_killed() -> int:
 	return _enemies_killed
 
 
-## Difficulty phase (1/2/3), per DESIGN.md's "Spawn Rules" timing --
-## drives both PHASE_SPAWN_WEIGHTS below and the death-summary readout.
+## Difficulty phase (1/2/3/4), per DESIGN.md's "Spawn Rules" timing plus
+## Phase 4's PHASE_4_TIME above -- drives the death-summary readout and
+## (capped at 3, see _pick_enemy_scene()) PHASE_SPAWN_WEIGHTS/
+## MAGPIE_PHASE_WEIGHT, which only have entries through Phase 3. Phase 4
+## is about the closing arena, not a new enemy-composition tier -- keeps
+## Phase 3's spawn mix rather than needing a 5th table entry.
 func get_phase() -> int:
 	if _run_time < 20.0:
 		return 1
 	if _run_time < 40.0:
 		return 2
-	return 3
+	if _run_time < PHASE_4_TIME:
+		return 3
+	return 4
 
 
 func _on_enemy_spawn_timer_timeout() -> void:
@@ -195,7 +269,9 @@ func _spawn_boss(ramp: float) -> void:
 
 
 func _pick_enemy_scene() -> PackedScene:
-	var phase := get_phase()
+	# Capped at 3: PHASE_SPAWN_WEIGHTS/MAGPIE_PHASE_WEIGHT only have
+	# entries through Phase 3 (see get_phase()'s own docstring).
+	var phase: int = mini(get_phase(), 3)
 	var weights: Dictionary = PHASE_SPAWN_WEIGHTS[phase].duplicate()
 	var magpie_weight: float = MAGPIE_PHASE_WEIGHT[phase]
 	if magpie_weight > 0.0:

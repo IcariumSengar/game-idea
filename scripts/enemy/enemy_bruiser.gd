@@ -42,7 +42,7 @@ func _update_behavior(delta: float) -> void:
 			move_and_slide()
 			_state_timer -= delta
 			if _state_timer <= 0.0:
-				_charge_direction = position.direction_to(target.position)
+				_charge_direction = position.direction_to(_chase_position())
 				_charge_distance_left = charge_distance
 				_state = State.CHARGE
 		State.CHARGE:

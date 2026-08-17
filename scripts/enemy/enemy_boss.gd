@@ -37,7 +37,7 @@ func apply_difficulty_scale(hp_scale: float, speed_scale: float) -> void:
 
 func _update_behavior(delta: float) -> void:
 	velocity = (
-		position.direction_to(target.position + _approach_offset) * _slowed(speed) + _knockback
+		position.direction_to(_chase_position() + _approach_offset) * _slowed(speed) + _knockback
 	)
 	move_and_slide()
 	_apply_contact_damage(delta)

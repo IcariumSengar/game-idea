@@ -234,7 +234,13 @@ func _process_burns(delta: float) -> void:
 
 
 func _scaled_power(spell_base_power: float) -> float:
-	var spellpower: float = MetaProgression.get_stat(MetaProgression.STAT_DAMAGE)
+	# Altar's Spellpower boon (DESIGN.md, 2026-08-17) adds a temporary,
+	# run-scoped bonus on top of the permanent shop stat -- see
+	# Player.bonus_spellpower's own docstring for why it lives there, not
+	# written back into MetaProgression.
+	var spellpower: float = (
+		MetaProgression.get_stat(MetaProgression.STAT_DAMAGE) + _owner_body.bonus_spellpower
+	)
 	var base: float = spell_base_power * (spellpower / SPELLPOWER_BASE)
 	return base * _attunement_damage_multiplier()
 

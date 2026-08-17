@@ -1495,6 +1495,291 @@ established split. Technical: extends `meta_progression.gd`'s existing
 `update_best_run()` pattern with these additional derived, independently
 -persisted bests.
 
+## Art Direction
+
+**Decided 2026-08-17: Painted Hoard.** Every sprite in the game has been
+procedural/placeholder since day one (player, enemies, spells, loot
+pips) -- this is the first real art-direction call, chosen from three
+pitched options each anchored to a real Godot-built game rather than a
+mood word: chunky flat pixel art (Brotato), dim glowing dungeon pixel
+art (Halls of Torment), and hand-painted fantasy illustration (Backpack
+Battles, Sovereign Tower). Painted Hoard won as the closest thematic
+match available -- Backpack Battles is, like this game, a backpack-
+inventory game built in Godot, and Sovereign Tower demonstrates the
+same painterly approach is viable as a solo/small-team Godot art
+pipeline, not just a AAA-budget technique.
+
+**Visual language:** soft painterly shading (gradient-based, light-to-
+dark across a form) instead of flat pixel-block fills; warm ink outlines
+(dark brown, not black) instead of hard black strokes; illustrated-
+manuscript treatment for UI chrome -- the Grimoire in particular should
+read as an actual illuminated page, not a UI panel with a spell list on
+it. Environment/UI neutrals lean warm parchment and muted forest/gold
+rather than the flat dark grays "Visual System (Shared)" above
+currently specs for panels -- that section's colors were written before
+this decision and need reconciling once real screens get built, not
+silently treated as still-correct.
+
+**What stays locked, explicitly:** the six rarity hex colors themselves
+(`loot_registry.gd`'s white/green/blue/purple/orange/red) are unchanged
+-- they're read by the HUD, `BackpackGrid`, the Grimoire, and Streak/
+Attunement's tier-index math, so changing the *hues* is a balance/
+legibility question this pass isn't touching. Painted Hoard changes
+*how* those six colors get rendered (soft jewel-toned gradient shading
+instead of a flat fill), not what they are.
+
+**Production method -- a real fork, flagged rather than silently
+assumed:** "hand-painted" can mean two very different scopes. (A)
+**Procedural approximation**, extending the exact technique
+`loot_gem.gd` already uses (`_draw()` calls, no image assets at all) --
+swap its flat `draw_colored_polygon()` facets for gradient fills and a
+warm-ink stroke. Zero new asset pipeline, zero new tooling, immediately
+buildable by the same process that's built every other visual system in
+this game so far. (B) **Real illustrated sprite assets** -- actual
+painted artwork (AI-generated sprite sheets, a purchased asset pack, or
+commissioned art), which is asset *sourcing*, not code, and isn't
+something the implementing process can originate on its own the way it
+built `loot_gem.gd`. **Recommendation, not a unilateral lock:** start
+with (A). It's consistent with the project's entire existing art
+pipeline, costs nothing to try, and if the procedural approximation
+doesn't actually read as "painted" once it's on screen, that's a cheap,
+fast finding -- far cheaper than discovering the same thing after
+sourcing real assets. Override this if real assets are actually wanted
+from the start; the two paths aren't a small difference in effort.
+
+**Phasing, not a full-game re-skin in one pass:** the surface area is
+large -- player, 6+ enemy variants (Minion/Fast/Tanky, Bruiser, Elite,
+Boss, Magpie), 8 spells' VFX, loot gems, and UI chrome across the
+Sanctum/Grimoire/HUD/run-prep screens. Same "ship one thing, see how it
+plays" discipline this doc has used everywhere else (Group A shipping
+Streak before Rampage/Ascension, Phase 4 shipping the closing-arena
+shape before going-dark/drop-zones): **start with the loot gems.**
+Smallest surface area, a direct existing precedent to extend
+(`loot_gem.gd`), and it's the one piece already validated -- the pitch
+artifact rendered this exact gem, in this exact style, at the game's
+real Legendary red. Expand outward (player -> enemies -> spell VFX ->
+UI chrome) only once the technique reads correctly in that one place.
+
+**Technical, for the loot-gem starting point specifically:**
+`loot_gem.gd`'s three `draw_colored_polygon()` calls (flat top-left-
+bottom, top-right-bottom, top-left-right facets) become gradient fills
+-- e.g. `Gradient`/`GradientTexture2D` or a manual multi-stop polygon
+fill approximating light-to-dark across each facet -- plus a stroke
+pass in a warm dark brown (not `Color(0,0,0)`-derived) instead of the
+current unstroked flat polygons. Tint source stays exactly as-is
+(`modulate`, set by `loot.gd` from the rarity color) -- only the
+facet-fill and outline technique changes, not the tinting mechanism.
+
+## Later Bucket: First Spec Pass (2026-08-17)
+
+TODO.md's Later bucket held seven blue-sky ideas, deliberately unspecced
+per that doc's own philosophy ("no spec required... until something
+graduates up into Next"). Spec'd here at the same rigor as the Depth
+Pass groups above so they're actually buildable, not just named. Six of
+seven are ready to hand to the other process as-is; one (Hoard should be
+losable) still needs a shape confirmed first — flagged clearly below,
+not silently decided.
+
+### Altar
+
+**Problem:** loot is inert until death -- the only in-run choice about
+it is keep/discard, never *spend*. No in-run choice point beyond
+triage.
+
+**Mechanic:** a structure spawns in the arena at each existing phase
+boundary (20s, 40s -- reusing the pacing beats Phase 2/3 already gate
+on, not a new clock) at a point offset from the player's current
+position (same margin-from-player logic Scatter already uses for
+Legendary drops), and despawns after 15s if unused -- skipping it is a
+real, if minor, cost. On approach it offers one boon (not a menu of
+several -- the decision is *whether* to take it, not which of many,
+keeping this UI-cheap) at a stated cost in items of a tier ("3 Rare or
+higher"). Confirming the offer removes that many items from the
+backpack (no Cast Off throw, no value banked -- a pure sacrifice, not a
+discard) and applies the boon for the rest of the run.
+
+**Boon pool (illustrative, first pass):** flat Spellpower bonus for the
+remainder of the run (the game's first in-run temporary power spike,
+distinct from permanent shop stats), a full heal, or a guaranteed
+tier-up on the next 3 drops. Ship one or two, not the full list, and
+see how it plays before adding more -- same "one thing first" discipline
+Group A used for Streak before Rampage/Ascension.
+
+**Technical:** new `Altar` scene/script (`Area2D` interaction, structured
+like `Loot`/`Enemy`), spawned by `arena.gd` alongside its existing
+phase-boundary checks. Consuming items needs a new
+`Player.sacrifice_loot(type_id, count)` (subtracts from `backpack`
+directly, no value/Cast Off path -- distinct from both `collect_loot()`
+and `resolve_discard()`). Boons apply via a new
+`Player.apply_altar_boon(boon_id)`.
+
+### Hoard should be losable — needs a shape decision before this ships
+
+**Not silently resolved.** The idea's own text flags this as "the
+softest spot in the whole design" and weighs three shapes (voluntary
+exit + bonus, partial loss on death, an always-safe pocket) without
+picking one -- that's a real open question, not an oversight to paper
+over the way Burden's formula or Pact severity were.
+
+**Recommendation, not a decision:** voluntary extraction, not partial
+death-loss. Reasoning: death banking loot in full is a pillar this doc
+already states plainly (Core loop step 5: "Death is inevitable... just
+how much you collect before it happens"; step 7: loot converts to
+currency on death, unconditionally) -- reversing that is a bigger,
+riskier philosophy change than the idea needs to make its point. A
+**voluntary extraction window** (opening periodically, e.g. every 30s
+survived starting at 30s -- reusing the same beat-based cadence as the
+Altar above) that lets the player end the run early for a small payout
+bonus (e.g. +10% Essence/Stardust) creates the same repeated "push or
+lock it in" decision the idea is actually after, without touching the
+already-shipped death-payout path at all. The source material's own
+"sharpest lesson" paragraph leans toward partial/repeated loss as
+psychologically sharper -- if that's actually wanted over the safer
+option above, say so and this gets re-specced around death-time loss
+instead; the technical shape is meaningfully different (a payout
+reduction on death vs. an entirely separate early-exit path), so this
+isn't a small edit either way.
+
+**Technical (assuming the recommendation):** a new UI prompt (reusing
+the pause-menu's existing modal pattern) appearing on a timer, offering
+"Extract now" vs. dismiss; confirming calls `award_run_end_currency()`
+early with the bonus multiplier applied, same as a death would, then
+ends the run without playing the death sequence.
+
+### A Legendary is a set piece, not a drop
+
+**Problem:** at 0.5% base weight the top tier is effectively Boss-only,
+and when it appears it magnetizes in exactly like everything else --
+the rarest thing in the game gets the same non-event as a Common pip.
+
+**Mechanic:** a dropped Legendary never magnetizes -- the player must
+walk to it. While uncollected, it pulls every currently-alive enemy in
+the `"enemies"` group toward its position, turning "go get it" into a
+real fight rather than a free keypress. Visual: pulse scaled roughly
+2x `Loot`'s existing `PULSE_SCALE_AMOUNT`, tinted the existing Legendary
+red, plus a glow radius that reads as "danger inbound," not just
+"shiny." Audio: a distinct rising cue on spawn (new `AudioManager`
+entry), separate from the normal pickup sound.
+
+**Balance flag, honestly scoped:** pulling literally every alive enemy
+to one point risks an unwinnable dogpile at low Spellpower -- this needs
+a playtest-harness batch specifically measuring survival in the seconds
+after a beacon spawns before shipping unguarded. If it reads as a death
+sentence, the tuning lever is capping the pull to enemies within some
+radius of the beacon rather than the whole arena, not abandoning the
+mechanic.
+
+**Technical:** `loot.gd` gains an `_is_beacon: bool` set when
+`type_id == &"legendary"`; `start_magnet()` early-returns while it's
+true. The enemy-redirect side needs the actual chase/targeting call
+site in `enemy.gd` inspected before implementation -- not read this
+session, flagged as a real unknown rather than guessed at.
+
+### Phase 4: the arena becomes the antagonist
+
+**Problem:** `Arena.get_phase()` caps at 3 forever -- nothing new
+happens after the Boss's 55s climax; the arena itself is completely
+inert past that point.
+
+**Mechanic, one shape chosen for a first pass (not all three the idea
+lists at once -- same "ship one thing" discipline as Group A's Streak
+before Rampage/Ascension):** a closing arena. At a new threshold
+(`PHASE_4_TIME = 90.0`, chosen to give Phase 3 room as its own stretch
+before escalating again, well clear of the Boss's 55s beat) the
+playable bounds shrink from the full 1280x720 toward a smaller safe
+zone, marked by a visible encroaching edge (reusing `BackpackGrid`'s
+existing red danger-color language rather than inventing new color
+vocabulary) that damages the player for lingering outside it.
+
+**Deferred, flagged as real follow-on scope, not forgotten:** "going
+dark" (a visibility mechanic) and hostile drop zones (loot avoiding the
+shrinking safe area) -- both genuine Phase 4 candidates, out of scope
+for this first ship.
+
+**Technical:** `arena.gd` gains `PHASE_4_TIME`, `get_phase()` extended
+to return 4 past it; a shrinking bounds value (lerped down over a fixed
+duration once Phase 4 starts) read by both `player.gd`'s existing
+`position.clamp(...)` movement-bounds line and a new periodic
+damage-over-time tick for standing outside it.
+
+### A hoard you can actually see (Trophy Hall)
+
+**Problem:** the game is called Hoard Survivors and nothing is ever
+hoarded -- loot converts to currency and vanishes, no persistent
+trophy of what's ever been found.
+
+**Mechanic:** a new Sanctum-adjacent screen (pure display, no currency
+spent -- same non-economic role the Grimoire already has) showing the
+single best item ever found per rarity tier, six fixed slots (Common
+through Legendary), each showing that item's value. Deliberately not
+"everything ever collected" -- unbounded and illegible at scale -- just
+best-of-tier keeps it exactly six entries forever, and gives a concrete,
+nameable target ("beat your best Legendary").
+
+**Technical:** new `MetaProgression.best_loot_value: Dictionary` (tier
+id -> highest single-item value seen, since loot affixes already make
+same-tier items vary in value -- see "Loot affixes"), checked at death
+time against that run's loot breakdown rather than a new mid-run signal
+hook. New `TrophyHall` scene/script reusing the Grimoire's dark-panel/
+section-header visual language. Persisted through the same export/
+import/reset path everything else in `MetaProgression` already uses.
+
+### The Forge: buy odds, not numbers
+
+**Mechanic:** a new chain-gated Backpack Tree node (Stardust-funded,
+matching "backpack track funds hoard-related things") that shifts the
+global rarity table toward higher tiers per level, same chain-gate
+pattern (can't invest in the next rank until the previous is maxed)
+already used throughout the shop.
+
+**The real technical crux, flagged explicitly so it doesn't get
+half-built:** `LootTypes`' registered weights are the source of truth
+(`loot_registry.gd`'s own header comment), but most loot doesn't roll
+against them directly -- per-enemy drop tables
+(`pick_random_weighted(weights)`) are what Minion/Bruiser/Elite/Boss
+actually use. A Forge that only adjusts `pick_random_type()`'s internal
+fallback table would visibly do nothing, since almost no roll takes
+that path. Implementation: `LootTypes.get_forge_adjusted_weights(base:
+Dictionary, level: int) -> Dictionary` returns a shifted copy (source
+table in `_register()` stays untouched, per its own "update there
+first" comment) -- both `pick_random_type()` and
+`pick_random_weighted()` route their table through this when Forge
+level > 0.
+
+**First-pass numbers**, same geometric-curve `StatDef` shape as every
+other node, no new cost system: base_value 0% shift, per-level gain 2%
+(moved from Common/Uncommon toward Rare+), base_cost 150 Stardust
+(pricier than Bearing/Discard -- a global economy multiplier, not a
+personal stat), growth ×1.2/lvl, cap 10 levels (20% max shift).
+
+### Facets
+
+**Scope decision, since "every stat" is too broad for a first pass**
+(same "ship one thing" discipline used throughout this pass): two
+stats, not all of them -- **Swiftness** (Face A: current, +move speed;
+Face B: trades some move speed for +dash cooldown reduction -- a
+mobility-*shape* choice, not a strict upgrade) and **Gleam** (Face A:
+current, +pickup range; Face B: trades range for +Cast Off damage,
+leaning into "I fight with my discards" over "I vacuum wide"). Both
+already imply a natural second face from their own post-pivot role
+(Group B's Discard/Gleam re-point), not invented from nothing.
+
+**Mechanic:** Hades' Mirror pattern -- already-purchased levels express
+either face, switched freely, no cost, any time from the Sanctum. No
+new node, currency, cost curve, or cap; the same purchased levels just
+point at a different effect depending on which face is active.
+
+**Technical, flagged as the one item in this batch touching
+already-shipped behavior rather than adding net-new:** `StatDef` (or a
+small paired sub-resource) gains a second effect definition per facet
+stat; `MetaProgression` gains a persisted `active_facet: Dictionary`
+(stat id -> bool), free to toggle. Every read site for that stat's
+effect branches on it (`player.gd`'s speed/dash-cooldown application,
+`loot.gd`'s Cast Off damage). Needs unit-test coverage for *both* faces
+of each stat before shipping, not just the new one -- a bug here risks
+silently regressing an already-tested existing stat, not just failing
+to add a new one cleanly.
+
 ## Decisions log
 
 Short dated entries when a design decision is made and worth remembering
@@ -2995,3 +3280,128 @@ Short dated entries when a design decision is made and worth remembering
   Attunement-gauge + real-death-screen check (temporarily pointing
   `main_scene` at `arena.tscn` and letting an unattended run play out to
   a real death, rather than clicking into the window).
+- 2026-08-17 — TODO.md's seven-item Later bucket given a first full spec
+  pass, at direct request ("give these as instructions to other process
+  to implement them"), same rigor as the Depth Pass groups rather than
+  forwarded as one-liners. New "## Later Bucket: First Spec Pass" section
+  above. Six of seven (Altar, Legendary set piece, Phase 4, Trophy Hall,
+  the Forge, Facets) are fully specced and moved to TODO.md's Next list.
+  The seventh, "hoard should be losable," is explicitly **not** silently
+  resolved -- the idea's own text flags it as "the softest spot in the
+  whole design," weighing three shapes without picking one, so it gets a
+  recommendation (voluntary extraction, not partial death-loss -- keeps
+  the already-shipped "death banks in full" pillar intact rather than
+  reversing it) instead of a unilateral call, and stays flagged pending
+  confirmation rather than shipped as an instruction. Two scope-narrowing
+  calls made explicitly rather than left open, same "ship one thing"
+  discipline Group A already established for Streak-before-Rampage:
+  Phase 4 picks the closing-arena shape only (going-dark and hostile-
+  drop-zones deferred); Facets picks Swiftness and Gleam only, not all
+  stats. One real technical unknown flagged rather than guessed: the
+  Legendary beacon's enemy-redirect needs `enemy.gd`'s actual chase/
+  targeting call site inspected before implementation, not read this
+  session. One real technical crux caught before it could become a
+  half-built bug: the Forge must adjust the weights every per-enemy
+  `pick_random_weighted()` call actually uses, not just
+  `pick_random_type()`'s rarely-hit fallback table, or it would ship
+  doing visibly nothing.
+- 2026-08-17 — First real art-direction decision: **Painted Hoard**
+  (soft hand-painted illustration), chosen from three pitched options
+  each anchored to a real Godot-built game -- Brotato (chunky flat
+  pixel art), Halls of Torment (dim glowing dungeon pixel art),
+  Backpack Battles/Sovereign Tower (painted illustration) -- rather than
+  mood words, since every sprite in the game has been procedural
+  placeholder since day one and this was the first time an actual
+  direction needed picking. Backpack Battles' own genre (backpack-
+  inventory, Godot) made it the closest thematic match of the three.
+  New "## Art Direction" section above. Rarity hex colors stay locked --
+  this changes render technique, not the six base hues. Production
+  method (procedural approximation extending `loot_gem.gd`'s existing
+  `_draw()` technique, vs. sourcing real illustrated sprite assets) is
+  flagged as a genuine fork, not silently resolved -- recommended the
+  procedural path since it costs nothing to try and matches every other
+  visual system this game has shipped so far, but explicitly left
+  overridable. Scoped as a phased rollout, not a full re-skin in one
+  pass, same "ship one thing" discipline used throughout this doc:
+  starting point is the loot gems specifically (smallest surface area,
+  already validated in the pitch itself), player/enemies/spell-VFX/UI
+  chrome come after. Not yet built -- see TODO.md.
+- 2026-08-17 — The other six items from this pass's "Later Bucket: First
+  Spec Pass" implemented (Art Direction not included -- see the entry
+  above, picked up separately). **Altar**: new `scripts/structures/`
+  domain folder (`Altar` scene/script), spawns at arena.gd's existing
+  20s/40s phase beats offset from the player, offers one of two boons
+  (Spellpower or full heal -- the guaranteed-tier-up boon deferred, real
+  follow-on scope) at a cost simplified to one concrete tier drawn from
+  "Rare or higher" (matching `Player.sacrifice_loot()`'s single-tier
+  signature rather than an any-of-several-tiers combo cost), confirmed
+  with the Keep key while in range, despawns after 15s unused. **A
+  Legendary is a set piece**: `enemy.gd`'s chase call sites (base Minion,
+  Boss, Bruiser's charge, Elite's kiting, Magpie's fallback -- attack
+  aim/contact damage left player-directed on purpose) now route through
+  a new `_chase_position()` that finds an uncollected Legendary via the
+  `legendary_beacon` group; `loot.gd` gains `_is_beacon`, a stronger
+  pulse, and a layered danger-glow reusing the skill tree's own glow
+  technique; `start_magnet()` early-returns for it. Balance-tested with
+  an artificially inflated drop rate (no crashes, survival not uniformly
+  collapsed) rather than the real 0.5%/35% rates, which are too rare to
+  sample cleanly -- flagged as a stress test, not a clean single-beacon
+  read; the spec's own radius-cap mitigation wasn't needed on this
+  evidence. **Phase 4**: `get_phase()` now returns 4 past a new
+  `PHASE_4_TIME = 90.0` (capped at 3 for `PHASE_SPAWN_WEIGHTS`/
+  `MAGPIE_PHASE_WEIGHT` lookups, which only have entries through Phase
+  3); a shrinking safe-zone `Rect2` (`Arena.get_safe_zone_rect()`) drawn
+  as a red encroaching edge and read by a new `Player.set_safe_zone()`
+  damage-over-time check -- doesn't clamp/teleport, the hard arena-bounds
+  clamp stays fixed at the full size, lingering outside the safe zone
+  just costs HP, same as a battle-royale storm circle. Gets the same
+  phase-announcement banner treatment as Phase 2/3. **Trophy Hall**: new
+  `MetaProgression.best_loot_value` (tier -> highest value seen, checked
+  at death against that run's final backpack -- reads each tier's fixed
+  base value, not a true per-item value including affix bonuses, since
+  those aren't tracked per-item by death time) and a new `TrophyHall`
+  screen reusing the Grimoire's visual language, six fixed slots, linked
+  from run-prep. **The Forge**: new `STAT_FORGE` (Backpack Tree, gated
+  behind Discard L1, now the tree's real capstone -- the `is_milestone`
+  flag moved off Discard onto it), `LootTypes.get_forge_adjusted_weights()`
+  shifts weight from Common/Uncommon proportionally into every other
+  tier; `pick_random_type()` and `pick_random_weighted()` were unified
+  into one roll path (the former is now a thin wrapper over the latter)
+  so both actually route through the adjustment, closing the spec's own
+  flagged crux (adjusting only the rarely-hit fallback would have done
+  nothing). **Facets**: `MetaProgression.get_stat()` branches on a new
+  `active_facet` map for Swiftness/Gleam's reduced Face B primary gain;
+  `get_facet_bonus()` returns Face B's secondary effect (dash-cooldown
+  reduction, Cast Off damage) scaled by level; toggle UI lives above the
+  Player tree in the Sanctum (moved there after a windowed check showed
+  it invisible below the fold when placed after the tree). All six
+  verified: 290/290 unit tests (new coverage for both faces of each
+  Facet stat, the Forge's weight math and roll routing, Trophy Hall's
+  update contract, all specifically called out in each spec as needing
+  direct coverage, not just playtest-harness inference), multiple
+  playtest batches including a temporarily-lowered `PHASE_4_TIME` and an
+  inflated Legendary rate (both reverted after, per this project's
+  established "lower the threshold, confirm clean, revert" technique),
+  and windowed screenshots of Trophy Hall, the Sanctum's Facets/Forge UI,
+  and a real death screen. The Altar's own live visual wasn't caught in
+  an unattended screenshot (the test player died 2 seconds before its
+  20s spawn) -- accepted on the strength of the headless batches
+  spawning/despawning it repeatedly with zero errors rather than
+  re-rolling the timing.
+- 2026-08-17 — Art Direction's loot-gem starting point implemented, per
+  the recommended procedural path (option A). `loot_gem.gd`'s three flat
+  `draw_colored_polygon()` facets became `draw_polygon()` calls with a
+  color per vertex (Godot interpolates the fill between them -- no
+  `GradientTexture2D`/shader needed), each facet lighter near the top
+  and darker toward the bottom point for a real light-to-dark form read,
+  plus a warm dark-brown `draw_polyline()` stroke around the outer
+  silhouette where there was previously no outline at all. Tint source
+  untouched -- still neutral grayscale-ish vertex colors multiplied by
+  loot.gd's rarity-color `modulate`, exactly as the spec required.
+  Verified visually: an unattended arena run couldn't hold a clean shot
+  of the (deliberately tiny, ~12px) in-game gems before dying, so a
+  temporary scene instancing all six rarity tints at 9x scale was built,
+  screenshotted, and deleted -- confirmed the gradient shading and ink
+  outline read clearly and rarity tinting is unaffected. 290/290 unit
+  tests and a 10-run playtest batch pass (pure `_draw()` change, no
+  gameplay logic touched).
