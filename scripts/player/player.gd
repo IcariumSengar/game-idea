@@ -73,6 +73,14 @@ const KEEP_GESTURE_HOP: float = -7.0
 const KEEP_GESTURE_TILT: float = -0.32
 const DISCARD_GESTURE_DURATION: float = 0.2
 const DISCARD_GESTURE_TILT: float = 0.4
+## Pacts (Depth Pass Group E, DESIGN.md 2026-08-17): per-run rule
+## mutations applied once at _ready() (Heavy Start/Fragile Bearing) or
+## checked live (Narrow Queue, below). Illustrative starter roster, not
+## locked numbers -- see MetaProgression's Pact registry for descriptions.
+const HEAVY_START_FILL_ITEMS: int = 8
+const HEAVY_START_CURRENCY_BONUS: int = 50
+const FRAGILE_BEARING_CAPACITY_REDUCTION: int = 2
+const FRAGILE_BEARING_CURRENCY_BONUS: int = 40
 
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
@@ -110,6 +118,12 @@ var _bot_direction: Vector2 = Vector2.ZERO
 var _bot_dash_requested: bool = false
 var _pending_gem: Loot = null
 var _gem_queue: Array[Loot] = []
+## Narrow Queue pact: gems that arrive while the (capped) queue has no room
+## hold here -- still magnetized, not yet part of the queue -- and get
+## promoted as room frees up (see _promote_waiting_gems()). Without this
+## they'd sit stuck: an Area2D only re-fires body_entered on a fresh
+## overlap, and a magnetized gem never stops overlapping the player.
+var _narrow_queue_overflow: Array[Loot] = []
 var _keep_was_pressed: bool = false
 var _discard_was_pressed: bool = false
 
@@ -141,6 +155,24 @@ func _ready() -> void:
 	_body_shape.shape = _body_shape.shape.duplicate()
 	(_pickup_shape.shape as CircleShape2D).radius = pickup_range
 	_pickup_area.area_entered.connect(_on_pickup_area_entered)
+	_apply_active_pact()
+
+
+## Heavy Start/Fragile Bearing apply once, at run start; Narrow Queue is
+## checked live (see _queue_has_room()) rather than applied here, since it
+## has to keep affecting every enqueue for the whole run, not just this
+## one moment.
+func _apply_active_pact() -> void:
+	match MetaProgression.active_pact:
+		MetaProgression.PACT_HEAVY_START:
+			backpack[&"common"] = HEAVY_START_FILL_ITEMS
+			MetaProgression.player_currency += HEAVY_START_CURRENCY_BONUS
+			MetaProgression.currency_changed.emit()
+			_update_fill_effects()
+		MetaProgression.PACT_FRAGILE_BEARING:
+			backpack_capacity = maxi(1, backpack_capacity - FRAGILE_BEARING_CAPACITY_REDUCTION)
+			MetaProgression.player_currency += FRAGILE_BEARING_CURRENCY_BONUS
+			MetaProgression.currency_changed.emit()
 
 
 ## Bots still gate magnetizing on backpack capacity (matches the old
@@ -195,6 +227,7 @@ func _physics_process(delta: float) -> void:
 
 	_check_triage_input()
 	_reposition_queue()
+	_promote_waiting_gems()
 
 
 func _check_dash_input() -> void:
@@ -242,17 +275,45 @@ func collect_loot(type_id: StringName) -> bool:
 ## (real-input players only -- bots skip the queue entirely and collect
 ## directly, see loot.gd's _on_body_entered). Becomes the active/front
 ## gem immediately if nothing's already pending, otherwise waits behind
-## it -- no cap, deliberately: a neglected queue backing up under
-## pressure is the intended tension, not something to design away.
+## it -- no cap, deliberately, UNLESS the Narrow Queue pact is active (see
+## _queue_has_room()): a neglected queue backing up under pressure is the
+## intended tension, not something to design away by default.
 func enqueue_loot(loot: Loot) -> void:
 	if _pending_gem == null:
 		_pending_gem = loot
 		loot.enter_queue()
-	else:
+	elif _queue_has_room():
 		_gem_queue.append(loot)
 		loot.enter_queue()
+	else:
+		_narrow_queue_overflow.append(loot)
 	_reposition_queue()
 	_update_fill_effects()
+
+
+## Narrow Queue pact: only the active gem may exist, nothing ever waits
+## behind it -- "must resolve before the next can even enter." Without a
+## pact, the queue stays uncapped as always.
+func _queue_has_room() -> bool:
+	return not MetaProgression.has_active_pact(MetaProgression.PACT_NARROW_QUEUE)
+
+
+## Drains gems that arrived while the queue had no room, as room frees up
+## -- called every physics frame alongside the queue repositioning it
+## needs to stay in sync with. Promotes straight to the active slot if
+## it's empty (the only path that matters today, since _queue_has_room()
+## is always false while Narrow Queue is active -- the while loop below is
+## for a hypothetical future pact capping at some number above zero).
+func _promote_waiting_gems() -> void:
+	if _narrow_queue_overflow.is_empty():
+		return
+	if _pending_gem == null:
+		_pending_gem = _narrow_queue_overflow.pop_front()
+		_pending_gem.enter_queue()
+	while not _narrow_queue_overflow.is_empty() and _queue_has_room():
+		var loot: Loot = _narrow_queue_overflow.pop_front()
+		_gem_queue.append(loot)
+		loot.enter_queue()
 
 
 func _check_triage_input() -> void:

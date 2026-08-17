@@ -39,6 +39,9 @@ func _ready() -> void:
 	_test_cast_off_damage()
 	_test_gleam_pending_weight_reduction()
 	_test_leaden_pickup()
+	_test_pact_heavy_start()
+	_test_pact_fragile_bearing()
+	_test_pact_narrow_queue()
 	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
@@ -506,6 +509,118 @@ func _test_leaden_pickup() -> void:
 	)
 
 	player.queue_free()
+
+
+## Depth Pass Group E "Pacts" (DESIGN.md 2026-08-17): Heavy Start must
+## pre-fill the bag and grant its currency bonus at run start, in one shot
+## via _ready() -> _apply_active_pact().
+func _test_pact_heavy_start() -> void:
+	var original_pact := MetaProgression.active_pact
+	var original_currency := MetaProgression.player_currency
+	MetaProgression.active_pact = MetaProgression.PACT_HEAVY_START
+	MetaProgression.player_currency = 0
+
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+
+	_assert(
+		player.backpack.get(&"common", 0) == Player.HEAVY_START_FILL_ITEMS,
+		"Heavy Start pre-fills the bag with common loot"
+	)
+	_assert(
+		MetaProgression.player_currency == Player.HEAVY_START_CURRENCY_BONUS,
+		"Heavy Start grants its currency bonus at run start"
+	)
+	_assert(
+		player._max_fill_ratio > 0.0, "the pre-fill is reflected in fill % immediately, not lazily"
+	)
+
+	player.queue_free()
+	MetaProgression.active_pact = original_pact
+	MetaProgression.player_currency = original_currency
+
+
+## Fragile Bearing must reduce starting capacity and grant its own
+## currency bonus, both applied once at run start.
+func _test_pact_fragile_bearing() -> void:
+	var original_pact := MetaProgression.active_pact
+	var original_currency := MetaProgression.player_currency
+	MetaProgression.active_pact = MetaProgression.PACT_FRAGILE_BEARING
+	MetaProgression.player_currency = 0
+	var base_capacity: int = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
+
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+
+	_assert(
+		player.backpack_capacity == base_capacity - Player.FRAGILE_BEARING_CAPACITY_REDUCTION,
+		"Fragile Bearing reduces starting capacity by its fixed amount"
+	)
+	_assert(
+		MetaProgression.player_currency == Player.FRAGILE_BEARING_CURRENCY_BONUS,
+		"Fragile Bearing grants its currency bonus at run start"
+	)
+
+	player.queue_free()
+	MetaProgression.active_pact = original_pact
+	MetaProgression.player_currency = original_currency
+
+
+## Narrow Queue must cap the queue at just the active gem (nothing waits
+## behind it), hold overflow arrivals outside the queue until room frees,
+## and boost Cast Off's damage as the trade.
+func _test_pact_narrow_queue() -> void:
+	var original_pact := MetaProgression.active_pact
+	MetaProgression.active_pact = MetaProgression.PACT_NARROW_QUEUE
+
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+	player.backpack_capacity = 10
+	player.backpack.clear()
+
+	var gem_a: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_a.type_id = &"common"
+	var gem_b: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem_b.type_id = &"common"
+	add_child(gem_a)
+	add_child(gem_b)
+
+	player.enqueue_loot(gem_a)
+	player.enqueue_loot(gem_b)
+	_assert(player._pending_gem == gem_a, "first gem still becomes active as normal")
+	_assert(
+		player._gem_queue.is_empty(), "Narrow Queue keeps nothing waiting behind the active gem"
+	)
+	_assert(
+		player._narrow_queue_overflow.size() == 1 and player._narrow_queue_overflow[0] == gem_b,
+		"a second arrival holds outside the queue instead of stacking behind the first"
+	)
+
+	gem_a.collect(player)
+	player._advance_queue()
+	player._promote_waiting_gems()
+	_assert(
+		player._pending_gem == gem_b,
+		"resolving the active gem promotes the waiting one immediately"
+	)
+	_assert(player._narrow_queue_overflow.is_empty(), "the overflow list drains once room frees up")
+
+	var cast_off_gem: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	cast_off_gem.type_id = &"common"
+	add_child(cast_off_gem)
+	var base_damage: float = (
+		Loot.CAST_OFF_BASE_DAMAGE + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
+	)
+	_assert(
+		_almost_eq(
+			cast_off_gem._cast_off_damage(), base_damage * Loot.NARROW_QUEUE_CAST_OFF_MULTIPLIER
+		),
+		"Narrow Queue multiplies Cast Off's damage as its trade"
+	)
+
+	cast_off_gem.queue_free()
+	player.queue_free()
+	MetaProgression.active_pact = original_pact
 
 
 ## Verifies the Grimoire's progressive-discovery tracking round-trips

@@ -2587,3 +2587,46 @@ Short dated entries when a design decision is made and worth remembering
   in this entry stays under the shop rework's existing on-hold status
   except Group E/Burden, which was never on hold. See TODO.md; none of
   this is built.
+- 2026-08-17 — Depth Pass Group E (Pacts) implemented, against the spec
+  as it stood when this pass started: a single `active_pact` (not
+  `active_pacts`), no Burden. The Burden/multi-pact extension above
+  landed in TODO.md mid-implementation of this same item -- deliberately
+  NOT retrofitted here; see "Not yet built" below for why. What shipped:
+  new top-level `PactDef` resource (mirrors `StatDef`'s identity shape,
+  no cost/level fields -- Pacts are a free per-run choice, not a
+  purchase); `MetaProgression` gained a 3-entry Pact registry
+  (`get_pact_defs()`/`get_pact_def()`) plus `active_pact` persisted
+  through export/import/reset like everything else. Starter roster, each
+  with a distinct mechanism rather than a shared numeric knob: **Heavy
+  Start** (bag pre-filled with `HEAVY_START_FILL_ITEMS` Common at
+  `_ready()`, flat Essence bonus); **Fragile Bearing** (starting capacity
+  reduced by a fixed amount, flat Essence bonus); **Narrow Queue**
+  (queue capped at zero -- nothing waits behind the active gem, "must
+  resolve before the next can even enter" taken literally -- in exchange
+  for a Cast Off damage multiplier). Narrow Queue needed real new
+  plumbing, not just a stat tweak: gems that arrive while capped now hold
+  in a new `_narrow_queue_overflow` list (still magnetized, not yet
+  queued) and get promoted once room frees, since an Area2D only re-fires
+  `body_entered` on a fresh overlap and a magnetized gem never stops
+  overlapping the player -- without this, a denied arrival would've
+  softlocked exactly like the pre-Group-A Keep-when-full bug did. Caught
+  by a unit test before it shipped: my first `_queue_has_room()` draft
+  allowed exactly one gem through before capping (checked "is `_gem_queue`
+  empty" rather than "is Narrow Queue active at all"), off by one from
+  the spec's own "nothing waits behind it, ever." Selection UI: a row of
+  `TabButton`s (the same toggle-with-underline component the shop's
+  Player/Backpack tabs already use) on `run_prep.tscn`, built from
+  `MetaProgression.get_pact_defs()` in code rather than hand-laid per-row
+  markup, plus "None" (always first, always valid -- Pacts are opt-in).
+  Verified via 11 new unit-test cases (221 passing, all against the real
+  `player.tscn` scene, not a mock, so `_ready()`'s full pact-application
+  path is genuinely exercised) and a forced editor rescan + direct boot
+  check (new `class_name` script, same gotcha as any other). Not yet
+  built: multi-pact selection (`active_pacts`) and Burden (the summed-
+  drawback running number scaling payout) from the TODO.md update above
+  -- a real scope change mid-item, not a small addition, so left as
+  explicit follow-up rather than rushed into this same pass. The
+  description text on Narrow Queue also needed a mid-pass fix: it
+  originally read "only one gem may wait behind" (matching the same
+  off-by-one the code briefly had), corrected to "nothing queues behind"
+  once the code was fixed to match the spec's actual wording.

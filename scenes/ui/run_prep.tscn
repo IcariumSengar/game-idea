@@ -67,6 +67,18 @@ text = "Your Hoard"
 horizontal_alignment = 0
 vertical_alignment = 1
 
+[node name="PactLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.6, 0.6, 0.63, 1)
+text = "PACT (optional -- hover a name for what it does)"
+horizontal_alignment = 0
+
+[node name="PactRow" type="HBoxContainer" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
 [node name="ButtonContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8

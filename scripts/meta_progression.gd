@@ -62,6 +62,17 @@ const SPELL_UNLOCK_REQUIREMENTS: Dictionary = {
 const COMBO_FULL_SET: StringName = &"full_set"
 const COMBO_STREAK: StringName = &"streak"
 
+## Pacts (Depth Pass Group E, DESIGN.md 2026-08-17): per-run rule
+## mutations chosen at run-prep, selling risk rather than permanent power
+## -- the direction Compacting's removal already pointed at. Re-selected
+## every run, not a one-time purchase; effects live where they apply
+## (player.gd's _apply_active_pact(), loot.gd's Cast Off damage), not here
+## -- this registry is identity/display data only, same split StatDef has
+## from its own effect application sites.
+const PACT_HEAVY_START: StringName = &"heavy_start"
+const PACT_NARROW_QUEUE: StringName = &"narrow_queue"
+const PACT_FRAGILE_BEARING: StringName = &"fragile_bearing"
+
 ## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
@@ -73,9 +84,13 @@ var best_run_time: float = 0.0
 ## nothing in actual gameplay reads this, combos work identically whether
 ## discovered or not.
 var discovered_combos: Dictionary = {}
+## Empty string means no Pact active -- the default, and always a valid
+## choice (Pacts are opt-in, not mandatory).
+var active_pact: StringName = &""
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
+var _pact_defs: Array[PactDef] = []
 
 
 func _ready() -> void:
@@ -198,6 +213,22 @@ func _ready() -> void:
 		StatDef.Currency.PLAYER
 	)
 
+	_register_pact(
+		PACT_HEAVY_START,
+		"Heavy Start",
+		"Begin the run with your bag already part-full, for a flat Essence bonus."
+	)
+	_register_pact(
+		PACT_NARROW_QUEUE,
+		"Narrow Queue",
+		"Nothing queues behind the gem you're deciding on -- but Cast Off hits harder."
+	)
+	_register_pact(
+		PACT_FRAGILE_BEARING,
+		"Fragile Bearing",
+		"Start the run with less backpack capacity, for a flat Essence bonus."
+	)
+
 
 func get_stat_defs() -> Array[StatDef]:
 	return _stat_defs
@@ -314,6 +345,33 @@ func get_stat_def(id: StringName) -> StatDef:
 	return null
 
 
+func get_pact_defs() -> Array[PactDef]:
+	return _pact_defs
+
+
+func get_pact_def(id: StringName) -> PactDef:
+	for def in _pact_defs:
+		if def.id == id:
+			return def
+	return null
+
+
+func set_active_pact(pact_id: StringName) -> void:
+	active_pact = pact_id
+
+
+func has_active_pact(pact_id: StringName) -> bool:
+	return active_pact == pact_id and pact_id != StringName()
+
+
+func _register_pact(id: StringName, display_name: String, description: String) -> void:
+	var def := PactDef.new()
+	def.id = id
+	def.display_name = display_name
+	def.description = description
+	_pact_defs.append(def)
+
+
 ## Directly sets a stat's level without spending currency -- used only to
 ## seed a playtest batch's starting loadout (e.g. unlocking a spell so the
 ## bot actually exercises it), never reachable from normal play.
@@ -333,7 +391,8 @@ func export_save_data() -> Dictionary:
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
 		"stat_levels": _stat_levels,
-		"discovered_combos": discovered
+		"discovered_combos": discovered,
+		"active_pact": String(active_pact)
 	}
 
 
@@ -353,6 +412,7 @@ func import_save_data(data: Dictionary) -> void:
 	var saved_combos: Array = data.get("discovered_combos", [])
 	for combo_id: String in saved_combos:
 		discovered_combos[StringName(combo_id)] = true
+	active_pact = StringName(data.get("active_pact", ""))
 	currency_changed.emit()
 
 
@@ -368,4 +428,5 @@ func reset_progress() -> void:
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 	discovered_combos.clear()
+	active_pact = &""
 	currency_changed.emit()
