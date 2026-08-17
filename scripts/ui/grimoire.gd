@@ -104,9 +104,11 @@ func _build_bbcode() -> String:
 			lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, spell["name"]])
 			lines.append("[color=%s]%s[/color]" % [DESC_COLOR, spell["desc"]])
 		else:
-			var required: int = MetaProgression.SPELL_UNLOCK_REQUIREMENTS.get(spell["id"], 0)
+			# Spell Choice (DESIGN.md 2026-08-17): which level grants which
+			# spell is chosen, not fixed, so there's no single "Lv N" to
+			# name anymore -- a spell could be offered as early as L1.
 			lines.append(
-				"[color=%s][b]???[/b]  (Spell Unlock Lv %d)[/color]" % [LOCKED_COLOR, required]
+				"[color=%s][b]???[/b]  (unlock it via a Spell Unlock choice)[/color]" % LOCKED_COLOR
 			)
 		lines.append("")
 

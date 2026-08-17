@@ -42,6 +42,9 @@ func _ready() -> void:
 	_test_pact_heavy_start()
 	_test_pact_fragile_bearing()
 	_test_pact_narrow_queue()
+	_test_spell_choice_basic_flow()
+	_test_spell_choice_final_levels()
+	_test_spell_choice_migration()
 	_test_attunement_computation()
 	_test_attunement_spell_multipliers()
 	_test_combo_discovery_save_round_trip()
@@ -68,6 +71,11 @@ func _almost_eq(a: float, b: float, epsilon: float = 0.01) -> bool:
 ## base_value + level * per_level_gain) using each def's own live fields,
 ## not hardcoded balance numbers -- stays valid across balance passes.
 func _test_meta_progression_cost_and_stat_curve() -> void:
+	# debug_set_level() has a side effect on STAT_SPELL_UNLOCK specifically
+	# (backfills chosen_spells, see its own docstring) -- snapshot/restore
+	# around the whole loop so probing every stat here can't leak Spell
+	# Choice state into whatever test runs after this one.
+	var original_chosen_spells: Dictionary = MetaProgression.chosen_spells.duplicate()
 	for def: StatDef in MetaProgression.get_stat_defs():
 		var original_level := MetaProgression.get_level(def.id)
 		var probe_level: int = mini(3, def.level_cap)
@@ -83,9 +91,12 @@ func _test_meta_progression_cost_and_stat_curve() -> void:
 			"%s stat value at level %d == %.2f" % [def.id, probe_level, expected_stat]
 		)
 		MetaProgression.debug_set_level(def.id, original_level)
+	MetaProgression.chosen_spells = original_chosen_spells
 
 
 func _test_meta_progression_level_cap() -> void:
+	# Same chosen_spells isolation concern as the test above.
+	var original_chosen_spells: Dictionary = MetaProgression.chosen_spells.duplicate()
 	for def: StatDef in MetaProgression.get_stat_defs():
 		var original_level := MetaProgression.get_level(def.id)
 		MetaProgression.debug_set_level(def.id, def.level_cap)
@@ -94,6 +105,7 @@ func _test_meta_progression_level_cap() -> void:
 			MetaProgression.debug_set_level(def.id, def.level_cap - 1)
 			_assert(not MetaProgression.is_maxed(def.id), "%s is not maxed one below cap" % def.id)
 		MetaProgression.debug_set_level(def.id, original_level)
+	MetaProgression.chosen_spells = original_chosen_spells
 
 
 ## Exercises buy_upgrade() against one PLAYER-pool and one BACKPACK-pool
@@ -623,6 +635,112 @@ func _test_pact_narrow_queue() -> void:
 	cast_off_gem.queue_free()
 	player.queue_free()
 	MetaProgression.active_pact = original_pact
+
+
+## Spell Choice (DESIGN.md 2026-08-17): buying a Spell Unlock level must
+## leave the choice pending (not auto-grant a fixed spell), offer 2 real
+## candidates, and resolve cleanly once one is picked.
+func _test_spell_choice_basic_flow() -> void:
+	var original_chosen: Dictionary = MetaProgression.chosen_spells.duplicate()
+	var original_level := MetaProgression.get_level(MetaProgression.STAT_SPELL_UNLOCK)
+	MetaProgression.chosen_spells.clear()
+	MetaProgression._stat_levels[MetaProgression.STAT_SPELL_UNLOCK] = 0
+
+	_assert(
+		not MetaProgression.has_pending_spell_choice(), "no pending choice before any level bought"
+	)
+
+	MetaProgression._stat_levels[MetaProgression.STAT_SPELL_UNLOCK] = 1
+	_assert(MetaProgression.has_pending_spell_choice(), "buying a level leaves its choice pending")
+	_assert(MetaProgression.pending_spell_choice_level() == 1, "the pending level is L1")
+	_assert(
+		not MetaProgression.is_spell_unlocked(MetaProgression.SPELL_INFERNO_BLADE),
+		"nothing is unlocked yet while the choice is pending"
+	)
+
+	var offer: Array[StringName] = MetaProgression.get_spell_choice_offer(1)
+	_assert(offer.size() == 2, "L1's offer has 2 real candidates")
+	_assert(
+		MetaProgression.SPELL_SUMMON_FAMILIAR not in offer,
+		"Familiar is never offered before the final level"
+	)
+
+	var picked: StringName = offer[0]
+	MetaProgression.choose_spell(picked)
+	_assert(not MetaProgression.has_pending_spell_choice(), "choosing resolves the pending level")
+	_assert(MetaProgression.is_spell_unlocked(picked), "the chosen spell is unlocked")
+	var rejected: StringName = offer[1]
+	_assert(not MetaProgression.is_spell_unlocked(rejected), "the un-chosen candidate stays locked")
+
+	MetaProgression.chosen_spells = original_chosen
+	MetaProgression._stat_levels[MetaProgression.STAT_SPELL_UNLOCK] = original_level
+
+
+## The 7-spells-across-7-levels math can't sustain a real 2-way choice all
+## the way to the end (see get_spell_choice_offer()'s own docstring) --
+## verifies the two single-candidate levels land exactly where derived:
+## L6 offers whichever one non-Familiar spell is left, L7 always offers
+## Familiar alone, regardless of choice order.
+func _test_spell_choice_final_levels() -> void:
+	var original_chosen: Dictionary = MetaProgression.chosen_spells.duplicate()
+	MetaProgression.chosen_spells.clear()
+
+	var non_familiar: Array[StringName] = []
+	for spell_id: StringName in MetaProgression.UNLOCKABLE_SPELLS:
+		if spell_id != MetaProgression.SPELL_SUMMON_FAMILIAR:
+			non_familiar.append(spell_id)
+	for i in 5:
+		MetaProgression.chosen_spells[i + 1] = non_familiar[i]
+
+	var l6_offer: Array[StringName] = MetaProgression.get_spell_choice_offer(6)
+	_assert(l6_offer.size() == 1, "L6 has exactly one non-Familiar spell left to offer")
+	_assert(l6_offer[0] == non_familiar[5], "L6's sole candidate is the one spell never chosen")
+
+	var l7_offer: Array[StringName] = MetaProgression.get_spell_choice_offer(7)
+	_assert(
+		l7_offer == [MetaProgression.SPELL_SUMMON_FAMILIAR],
+		"L7 always offers Familiar alone, regardless of what's left"
+	)
+
+	MetaProgression.chosen_spells = original_chosen
+
+
+## A save from before Spell Choice existed has no chosen_spells key --
+## import_save_data() must reconstruct it from the old fixed order so an
+## already-unlocked spell doesn't vanish. Only levels actually bought
+## backfill; anything above the save's level stays a real pending choice.
+func _test_spell_choice_migration() -> void:
+	var original_chosen: Dictionary = MetaProgression.chosen_spells.duplicate()
+	var original_level := MetaProgression.get_level(MetaProgression.STAT_SPELL_UNLOCK)
+	var original_currency := MetaProgression.player_currency
+
+	var old_save_data: Dictionary = {"player_currency": 100, "stat_levels": {"spell_unlock": 3}}
+	MetaProgression.import_save_data(old_save_data)
+
+	_assert(
+		MetaProgression.is_spell_unlocked(MetaProgression.SPELL_INFERNO_BLADE),
+		"migration unlocks Inferno (old L1 requirement) for a save at level 3"
+	)
+	_assert(
+		MetaProgression.is_spell_unlocked(MetaProgression.SPELL_FROST_NOVA),
+		"migration unlocks Frost (old L2 requirement) for a save at level 3"
+	)
+	_assert(
+		MetaProgression.is_spell_unlocked(MetaProgression.SPELL_METEOR_STRIKE),
+		"migration unlocks Meteor (old L3 requirement) for a save at level 3"
+	)
+	_assert(
+		not MetaProgression.is_spell_unlocked(MetaProgression.SPELL_LIGHTNING_CHAIN),
+		"migration leaves spells above the save's level untouched"
+	)
+	_assert(
+		not MetaProgression.has_pending_spell_choice(),
+		"a fully-migrated save has no pending choice (every bought level got backfilled)"
+	)
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_SPELL_UNLOCK, original_level)
+	MetaProgression.chosen_spells = original_chosen
+	MetaProgression.player_currency = original_currency
 
 
 ## Depth Pass Group D "Attunement" (DESIGN.md 2026-08-17): weighted

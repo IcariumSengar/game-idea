@@ -2726,3 +2726,56 @@ Short dated entries when a design decision is made and worth remembering
   verified: how the three-tab layout actually reads/feels in a real
   window -- needs a human via `playdev`, same caveat as every other UI
   change this session.
+- 2026-08-17 — Spell Choice implemented: buying a Spell Unlock level no
+  longer grants a fixed spell -- it spends currency and grows the trunk
+  immediately (unchanged), then leaves that level's spell as a real
+  pending choice between 2 offered candidates, resolved via a new shop
+  panel. `MetaProgression.chosen_spells` (level -> spell id) replaces
+  `SPELL_UNLOCK_REQUIREMENTS` as the live source `is_spell_unlocked()`
+  reads; a level can legitimately be bought with its choice still
+  pending (no progress lost quitting mid-choice, since the trunk level
+  itself is already paid for and saved).
+  **A real math problem found and resolved, not just an "ambiguity":**
+  the spec's own "offer 2 of the remaining pool, Familiar reserved for
+  the final level" doesn't actually work with exactly 7 spells across
+  exactly 7 levels -- a pool that shrinks by exactly 1 per level always
+  leaves precisely 1 candidate at the last pick, structurally, regardless
+  of how the reservation is arranged (verified by hand-tracing the pool
+  size level by level before implementing, not discovered by trial and
+  error in code). Resolution: L1-L5 are real 2-way choices (pool sizes
+  6,5,4,3,2 flowing in, all >= 2); L6 auto-resolves to whichever single
+  non-Familiar spell is left (deterministic, not random -- an emergent
+  "the spell you always passed on" moment); L7 always resolves to
+  Familiar alone. Both single-candidate levels still route through the
+  same reveal panel as a real 2-way choice, just showing one option
+  instead of two, so every level still feels like a "new spell" moment --
+  this is the detail that makes the resolution feel intentional rather
+  than a bug, and it's why "5 real choices instead of 7" doesn't
+  contradict "the final trunk level is a genuine capstone reveal."
+  Save compatibility: `_migrate_fixed_spell_order()` backfills
+  `chosen_spells` from the old fixed order for any save with no
+  `chosen_spells` key, using only levels actually already bought --
+  nothing is silently wiped. The playtest harness's `--playtest-seed`
+  (and every `debug_set_level()` call across this session's own unit
+  tests) sets stat levels generically with no player to click through a
+  real choice panel, so `debug_set_level()` picked up the same
+  old-fixed-order backfill specifically for `STAT_SPELL_UNLOCK` --
+  without it, every seeded/test spell-unlock level would grow the trunk
+  but leave every spell locked, silently breaking every playtest batch
+  this entire session has relied on for balance signal. `grimoire.gd`'s
+  locked-spell tooltip lost its "(Spell Unlock Lv N)" text since which
+  level unlocks which spell is no longer fixed or knowable in advance.
+  Known small duplication, flagged not fixed: `shop.gd`'s new
+  `SPELL_DISPLAY_NAMES` repeats 7 of `grimoire.gd`'s `SPELLS` names,
+  since `grimoire.gd` has no `class_name` and no clean public accessor to
+  reuse from a second script -- a future cleanup could unify these, not
+  worth the extra surface area in this same pass. Verified via 3 new
+  unit-test cases (252 passing) covering the basic buy-then-choose flow,
+  the exact L6/L7 single-candidate math derived above, and the migration
+  backfill; two pre-existing generic tests that loop `debug_set_level()`
+  across every stat needed `chosen_spells` snapshot/restore added to stay
+  isolated from this new side effect. Also verified via a direct shop.tscn
+  boot check and three playtest batches (full unlock, partial unlock, and
+  the existing zero-error baseline) confirming seeded spell unlocks still
+  actually cast in a real run. Not verified: the choice panel's actual
+  feel/usability in a window -- needs a human via `playdev`.

@@ -213,5 +213,46 @@ theme_override_font_sizes/font_size = 16
 text = "← BACK"
 script = ExtResource("7_link")
 
+[node name="SpellChoicePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -110.0
+offset_right = 230.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = ExtResource("2_panel_dark")
+
+[node name="Margin" type="MarginContainer" parent="SpellChoicePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="SpellChoicePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="SpellChoicePanel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.65, 0.45, 0.85, 1)
+text = "A NEW SPELL AWAITS"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="OptionRow" type="HBoxContainer" parent="SpellChoicePanel/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
 [connection signal="pressed" from="ButtonContainer/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="pressed" from="ButtonContainer/BackButton" to="." method="_on_back_pressed"]

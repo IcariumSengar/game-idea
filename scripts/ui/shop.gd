@@ -13,6 +13,20 @@ const BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
 const PLAYER_TREE_STAT_IDS: Array[StringName] = [
 	MetaProgression.STAT_DAMAGE, MetaProgression.STAT_MOVE_SPEED, MetaProgression.STAT_PICKUP_RANGE
 ]
+## Spell Choice (DESIGN.md 2026-08-17): short display names for the choice
+## panel's option buttons. Grimoire.SPELLS already has fuller name+desc
+## pairs, but only for UI-string purposes local to that screen -- this is
+## a small, deliberate duplication rather than exposing Grimoire's
+## anonymous-Dictionary data as a cross-script API for one caller.
+const SPELL_DISPLAY_NAMES: Dictionary = {
+	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
+	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
+	MetaProgression.SPELL_METEOR_STRIKE: "Meteor Strike",
+	MetaProgression.SPELL_LIGHTNING_CHAIN: "Lightning Chain",
+	MetaProgression.SPELL_TIME_WARP: "Time Warp",
+	MetaProgression.SPELL_TELEPORT_PULSE: "Teleport Pulse",
+	MetaProgression.SPELL_SUMMON_FAMILIAR: "Summon Familiar",
+}
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
@@ -32,6 +46,8 @@ var _active_tab: StringName = &"player"
 @onready var _player_scroll: ScrollContainer = %PlayerScroll
 @onready var _spell_scroll: ScrollContainer = %SpellScroll
 @onready var _backpack_scroll: ScrollContainer = %BackpackScroll
+@onready var _spell_choice_panel: PanelContainer = %SpellChoicePanel
+@onready var _spell_choice_option_row: HBoxContainer = %OptionRow
 
 
 func _ready() -> void:
@@ -57,6 +73,10 @@ func _set_active_tab(tab: StringName) -> void:
 	_player_tab.set_active(tab == &"player")
 	_spell_tab.set_active(tab == &"spell")
 	_backpack_tab.set_active(tab == &"backpack")
+	if tab == &"spell" and MetaProgression.has_pending_spell_choice():
+		_show_spell_choice_panel()
+	else:
+		_spell_choice_panel.hide()
 
 
 func _update_trees() -> void:
@@ -125,10 +145,45 @@ func _on_player_node_clicked(stat_id: StringName) -> void:
 		AudioManager.play("purchase")
 
 
+## Spell Choice (DESIGN.md 2026-08-17): buying Spell Unlock is now a
+## two-step flow -- the click above still spends currency and grows the
+## trunk immediately (same as every other node), but doesn't grant a
+## spell by itself anymore; a follow-up choice does. If a choice is
+## already pending, clicking again just re-shows the panel instead of
+## buying a level ahead of an unresolved one.
 func _on_spell_node_clicked(stat_id: StringName) -> void:
+	if stat_id == MetaProgression.STAT_SPELL_UNLOCK and MetaProgression.has_pending_spell_choice():
+		_show_spell_choice_panel()
+		return
 	if MetaProgression.buy_upgrade(stat_id):
 		_spell_tree.pulse(stat_id)
 		AudioManager.play("purchase")
+		if stat_id == MetaProgression.STAT_SPELL_UNLOCK:
+			_show_spell_choice_panel()
+
+
+func _show_spell_choice_panel() -> void:
+	var level := MetaProgression.pending_spell_choice_level()
+	if level == 0:
+		_spell_choice_panel.hide()
+		return
+	for child in _spell_choice_option_row.get_children():
+		child.queue_free()
+	var offer: Array[StringName] = MetaProgression.get_spell_choice_offer(level)
+	for spell_id: StringName in offer:
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(160, 60)
+		button.text = SPELL_DISPLAY_NAMES.get(spell_id, String(spell_id))
+		button.pressed.connect(_on_spell_choice_picked.bind(spell_id))
+		_spell_choice_option_row.add_child(button)
+	_spell_choice_panel.show()
+
+
+func _on_spell_choice_picked(spell_id: StringName) -> void:
+	MetaProgression.choose_spell(spell_id)
+	AudioManager.play("purchase")
+	_spell_choice_panel.hide()
+	_update_trees()
 
 
 func _on_currency_changed() -> void:

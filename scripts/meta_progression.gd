@@ -41,8 +41,12 @@ const SPELL_TIME_WARP: StringName = &"time_warp"
 const SPELL_TELEPORT_PULSE: StringName = &"teleport_pulse"
 const SPELL_SUMMON_FAMILIAR: StringName = &"summon_familiar"
 
-## Spell -> Spell Unlock level required. Arcane Bolt isn't listed -- it's
-## always available, checked separately in is_spell_unlocked().
+## Migration-only now (DESIGN.md's Spell Choice, 2026-08-17): this used to
+## be the live spell->required-level check, but which spell each Spell
+## Unlock level grants is chosen, not fixed, as of that change. Kept
+## solely to backfill chosen_spells for saves from before it (see
+## _migrate_fixed_spell_order()) and to seed playtest batches (see
+## debug_set_level()) -- is_spell_unlocked() no longer reads this.
 const SPELL_UNLOCK_REQUIREMENTS: Dictionary = {
 	SPELL_INFERNO_BLADE: 1,
 	SPELL_FROST_NOVA: 2,
@@ -52,6 +56,17 @@ const SPELL_UNLOCK_REQUIREMENTS: Dictionary = {
 	SPELL_TELEPORT_PULSE: 6,
 	SPELL_SUMMON_FAMILIAR: 7,
 }
+## The 7 spells a Spell Unlock choice can ever grant (everything except
+## Arcane, which needs no unlock).
+const UNLOCKABLE_SPELLS: Array[StringName] = [
+	SPELL_INFERNO_BLADE,
+	SPELL_FROST_NOVA,
+	SPELL_METEOR_STRIKE,
+	SPELL_LIGHTNING_CHAIN,
+	SPELL_TIME_WARP,
+	SPELL_TELEPORT_PULSE,
+	SPELL_SUMMON_FAMILIAR,
+]
 
 ## Gem Combos, for the codex's progressive-discovery tracking (see
 ## discovered_combos below) -- combos themselves stay purely in-run/
@@ -92,6 +107,14 @@ var active_pact: StringName = &""
 ## visible in the Grimoire, since nothing about them is a run-time
 ## surprise) it has real "hasn't happened yet" discovery value.
 var magpie_encountered: bool = false
+## Spell Choice (DESIGN.md 2026-08-17): Spell Unlock level -> which spell
+## that level actually granted, once resolved. A level can legitimately be
+## bought (STAT_SPELL_UNLOCK's own level already incremented via the
+## normal buy_upgrade() path) before its choice is made -- this can have
+## fewer entries than get_level(STAT_SPELL_UNLOCK) while a choice is
+## pending, and that's a valid, save-safe state (quitting mid-choice loses
+## nothing, see has_pending_spell_choice()).
+var chosen_spells: Dictionary = {}
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -283,8 +306,57 @@ func update_best_run(seconds_survived: float) -> float:
 func is_spell_unlocked(spell_id: StringName) -> bool:
 	if spell_id == SPELL_ARCANE_BOLT:
 		return true
-	var required_level: int = SPELL_UNLOCK_REQUIREMENTS.get(spell_id, -1)
-	return required_level >= 0 and get_level(STAT_SPELL_UNLOCK) >= required_level
+	return spell_id in chosen_spells.values()
+
+
+## True while a bought Spell Unlock level hasn't had its spell chosen yet.
+func has_pending_spell_choice() -> bool:
+	return chosen_spells.size() < get_level(STAT_SPELL_UNLOCK)
+
+
+## The level currently awaiting a choice (matches Spell Unlock's own
+## level numbering), or 0 if nothing's pending.
+func pending_spell_choice_level() -> int:
+	return chosen_spells.size() + 1 if has_pending_spell_choice() else 0
+
+
+## Candidate spells offered for the given pending level. Exactly 7 spells
+## across exactly 7 levels means a strict "offer 2, keep 1, remove from
+## the pool" can't sustain a real 2-way choice all the way to the last
+## level -- the pool for the 6 non-Familiar spells only has enough slack
+## for 5 real choices (L1-L5; sizes 6,5,4,3,2 all have >=2 candidates
+## going in). L6 is left with exactly one non-Familiar spell -- returned
+## alone, no real choice, since there's nothing left to pair it with. L7
+## always returns Familiar alone -- the capstone reservation ("only ever
+## offered at the final level") made literal rather than merely a
+## priority rule, since by L7 it's the only spell left in the whole pool
+## either way. Both single-candidate levels still route through the same
+## reveal panel as a real choice would, just with one option instead of
+## two -- a "new spell" moment either way, not a silent auto-grant.
+## Recomputed fresh (not stored) each call, so re-opening the panel before
+## deciding can reshuffle a real 2-way offer -- accepted tradeoff, not
+## treated as a bug, given how small the actual exploit surface is.
+func get_spell_choice_offer(level: int) -> Array[StringName]:
+	var level_cap: int = get_stat_def(STAT_SPELL_UNLOCK).level_cap
+	if level >= level_cap:
+		return [SPELL_SUMMON_FAMILIAR]
+	var chosen_so_far: Array = chosen_spells.values()
+	var remaining: Array[StringName] = []
+	for spell_id: StringName in UNLOCKABLE_SPELLS:
+		if spell_id != SPELL_SUMMON_FAMILIAR and spell_id not in chosen_so_far:
+			remaining.append(spell_id)
+	if remaining.size() <= 1:
+		return remaining
+	remaining.shuffle()
+	return [remaining[0], remaining[1]]
+
+
+## Resolves the currently-pending choice. No-op if nothing's pending.
+func choose_spell(spell_id: StringName) -> void:
+	var level := pending_spell_choice_level()
+	if level == 0:
+		return
+	chosen_spells[level] = spell_id
 
 
 ## Called by spell_caster.gd the moment a combo actually fires. Harmless
@@ -385,9 +457,19 @@ func _register_pact(id: StringName, display_name: String, description: String) -
 
 ## Directly sets a stat's level without spending currency -- used only to
 ## seed a playtest batch's starting loadout (e.g. unlocking a spell so the
-## bot actually exercises it), never reachable from normal play.
+## bot actually exercises it), never reachable from normal play. Setting
+## STAT_SPELL_UNLOCK this way also backfills chosen_spells using the old
+## fixed order (SPELL_UNLOCK_REQUIREMENTS) -- debug seeding has no player
+## to click through a real choice panel, so without this a seeded batch
+## would bump the trunk level but leave every spell's choice pending
+## forever, unlocking nothing.
 func debug_set_level(id: StringName, level: int) -> void:
 	_stat_levels[id] = level
+	if id == STAT_SPELL_UNLOCK:
+		for spell_id: StringName in SPELL_UNLOCK_REQUIREMENTS:
+			var required_level: int = SPELL_UNLOCK_REQUIREMENTS[spell_id]
+			if required_level <= level:
+				chosen_spells[required_level] = spell_id
 
 
 ## Packs the fields SaveManager persists to a save-slot file. Save-file
@@ -397,6 +479,9 @@ func export_save_data() -> Dictionary:
 	var discovered: Array = []
 	for combo_id: StringName in discovered_combos:
 		discovered.append(String(combo_id))
+	var serialized_choices: Dictionary = {}
+	for level: int in chosen_spells:
+		serialized_choices[str(level)] = String(chosen_spells[level])
 	return {
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
@@ -404,7 +489,8 @@ func export_save_data() -> Dictionary:
 		"stat_levels": _stat_levels,
 		"discovered_combos": discovered,
 		"active_pact": String(active_pact),
-		"magpie_encountered": magpie_encountered
+		"magpie_encountered": magpie_encountered,
+		"chosen_spells": serialized_choices
 	}
 
 
@@ -426,7 +512,30 @@ func import_save_data(data: Dictionary) -> void:
 		discovered_combos[StringName(combo_id)] = true
 	active_pact = StringName(data.get("active_pact", ""))
 	magpie_encountered = data.get("magpie_encountered", false)
+	if data.has("chosen_spells"):
+		chosen_spells.clear()
+		var saved_choices: Dictionary = data["chosen_spells"]
+		for level_key: String in saved_choices:
+			chosen_spells[int(level_key)] = StringName(saved_choices[level_key])
+	else:
+		_migrate_fixed_spell_order()
 	currency_changed.emit()
+
+
+## One-time migration (DESIGN.md's Spell Choice, 2026-08-17): a save from
+## before this feature has spells unlocked against the old fixed order
+## (SPELL_UNLOCK_REQUIREMENTS), with no chosen_spells key at all --
+## reconstruct it from that order so no player loses an already-unlocked
+## spell. Only backfills levels actually already bought; anything above
+## the save's current Spell Unlock level is left as a real pending choice,
+## same as any other save going forward.
+func _migrate_fixed_spell_order() -> void:
+	chosen_spells.clear()
+	var current_level := get_level(STAT_SPELL_UNLOCK)
+	for spell_id: StringName in SPELL_UNLOCK_REQUIREMENTS:
+		var required_level: int = SPELL_UNLOCK_REQUIREMENTS[spell_id]
+		if required_level <= current_level:
+			chosen_spells[required_level] = spell_id
 
 
 ## Resets in-memory progress to a fresh save's defaults -- used by
@@ -443,4 +552,5 @@ func reset_progress() -> void:
 	discovered_combos.clear()
 	active_pact = &""
 	magpie_encountered = false
+	chosen_spells.clear()
 	currency_changed.emit()
