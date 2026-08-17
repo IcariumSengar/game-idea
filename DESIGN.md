@@ -2779,3 +2779,30 @@ Short dated entries when a design decision is made and worth remembering
   the existing zero-error baseline) confirming seeded spell unlocks still
   actually cast in a real run. Not verified: the choice panel's actual
   feel/usability in a window -- needs a human via `playdev`.
+- 2026-08-17 — Text overhaul implemented, per TEXT_FLAVOR.md's four fixes
+  (the fifth, Sanctum's "Start Run" ALL-CAPS casing, was already picked
+  up during the Shop tree rework while that exact button was already
+  being rewritten). Deleted the death screen's redundant static
+  "RUN SUMMARY" `GameOverLabel` -- `hud.gd`'s dynamically-built "Lost to
+  the Void" already carries the title role at that size/weight, no script
+  referenced the deleted node. Fixed `arena.tscn`'s `MetaStatsLabel`
+  scene-default text (still read the pre-v5-naming-pass "Speed/Pickup
+  Range/Capacity") to the current Swiftness/Gleam/Bearing names --
+  invisible in play (`hud.gd` overwrites it before the player ever sees a
+  frame) but misleading to anyone reading the scene file directly.
+  Confirmed `scenes/main.tscn`/`scripts/main.gd` were fully dead (not
+  `project.godot`'s `run/main_scene` -- that's `main_menu.tscn` -- and not
+  referenced by any script or SceneTransition call, only by stale doc
+  mentions) and deleted both outright rather than just dropping the
+  hardcoded "game-idea v1" string, per TEXT_FLAVOR.md's own stronger
+  option once dead-ness is confirmed. Fixed the `CLAUDE.md`/`README.md`
+  references that deletion broke (the `main.tscn ↔ main.gd` naming
+  example, the "root-flow scenes" list, the project-layout table, and the
+  "Getting started" instructions) as a direct consequence of the
+  deletion, not a broader doc pass -- README.md's other staleness (Godot
+  4.4 vs. the project's actual 4.7, "v1" versioning framing) is
+  unrelated and untouched. Verified via a direct `arena.tscn` boot check,
+  a forced editor rescan (deleted files, not just added ones -- same
+  global-class-cache gotcha applies both directions), the full unit-test
+  suite (252 passing, unaffected), and a playtest batch exercising the
+  death-screen path (every run ends in death) with zero errors.

@@ -95,8 +95,8 @@ DESIGN.md            what the game is: core loop, scope, design decisions
 ```
 
 Keep this pairing as the project grows: a scene's primary script lives in
-`scripts/` under the same base name as the scene (`main.tscn` ↔ `main.gd`),
-mirrored in `scenes/` under the matching domain subfolder.
+`scripts/` under the same base name as the scene (`arena.tscn` ↔
+`arena.gd`), mirrored in `scenes/` under the matching domain subfolder.
 
 `scripts/` and `scenes/` are split into domain subfolders --
 `player/` (player, spells, familiar), `enemy/` (all
@@ -104,16 +104,18 @@ enemy tiers, enemy projectiles), `loot/` (drops), `fx/` (procedural
 visual effects: bursts, projectiles, background decor), `ui/` (HUD, shop,
 skill tree, menus, save-slot screen). Autoloads (`MetaProgression`,
 `SaveManager`, `LootTypes`, `SceneTransition`,
-`AudioManager`, `Settings`, `PlaytestHarness`, `UnitTests`) and the two
-root-flow scenes/scripts (`main`, `arena`) stay at `scripts/`/`scenes/`
-top level -- they're cross-cutting or the entry points into everything
-else, not domain-specific. Shared `class_name` data-model definitions
-(`StatDef`, `LootTypeDef`) also stay at top level since nothing
-references them by path (GDScript resolves `class_name` globally).
+`AudioManager`, `Settings`, `PlaytestHarness`, `UnitTests`) and the
+root-flow scene/script (`arena`, the run itself -- the project's actual
+entry point, `main_menu`, lives in `ui/` alongside the other menu
+screens) stay at `scripts/`/`scenes/` top level -- they're cross-cutting
+or the entry point into everything else, not domain-specific. Shared
+`class_name` data-model definitions (`StatDef`, `LootTypeDef`) also stay
+at top level since nothing references them by path (GDScript resolves
+`class_name` globally).
 
 When adding a new script/scene, put it in the subfolder matching its
 domain rather than defaulting to the top level -- top level is reserved
-for autoloads, root-flow scenes, and shared data classes specifically.
+for autoloads, the root-flow scene, and shared data classes specifically.
 
 **Moving/renaming a script or scene file:** Godot's global `class_name`
 resolution is cached in `.godot/global_script_class_cache.cfg`, rebuilt

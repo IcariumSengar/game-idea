@@ -191,7 +191,7 @@ vertical_alignment = 1
 [node name="MetaStatsLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
-text = "Speed: 250   Pickup Range: 60   Capacity: 20"
+text = "Swiftness: 250   Gleam: 60   Bearing: 20"
 
 [node name="GameOverCircle" type="Control" parent="HUD"]
 process_mode = 3
@@ -236,14 +236,6 @@ theme_override_constants/margin_bottom = 20
 [node name="GameOverVBox" type="VBoxContainer" parent="HUD/GameOverPanel/GameOverMargin"]
 theme_override_constants/separation = 10
 alignment = 0
-
-[node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
-theme_override_font_sizes/font_size = 30
-theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
-theme_override_constants/outline_size = 3
-theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
-text = "RUN SUMMARY"
-horizontal_alignment = 1
 
 [node name="HeaderDivider" type="ColorRect" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]
 custom_minimum_size = Vector2(0, 2)
