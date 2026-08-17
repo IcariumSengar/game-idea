@@ -27,8 +27,8 @@ const BOON_LABELS: Dictionary = {
 }
 const RADIUS: float = 22.0
 const DETECTION_RADIUS: float = 50.0
-const ACCENT_COLOR: Color = Color(0.85, 0.7, 0.35, 1.0)
-const DENIED_COLOR: Color = Color(0.9, 0.3, 0.3, 1.0)
+const ACCENT_COLOR: Color = Palette.ALTAR_ACCENT
+const DENIED_COLOR: Color = Palette.ALTAR_DENIED
 const PULSE_SPEED: float = 2.0
 const PULSE_AMOUNT: float = 0.15
 ## Fades out over the last few seconds before despawn -- a visible

@@ -39,7 +39,7 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 
 	if metadata.get("last_played", 0) == 0:
 		info_label.text = "Slot %d — Empty" % (slot + 1)
-		info_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.58, 1))
+		info_label.add_theme_color_override("font_color", Palette.SAVE_SLOT_EMPTY_TEXT)
 	else:
 		var last_played_str := _format_timestamp(metadata.get("last_played", 0))
 		var playtime: float = metadata.get("playtime_hours", 0.0)
@@ -47,7 +47,7 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 		info_label.text = (
 			"Slot %d — %s | %d h | %s" % [slot + 1, last_played_str, roundi(playtime), preview]
 		)
-		info_label.add_theme_color_override("font_color", Color(0.88, 0.88, 0.85, 1))
+		info_label.add_theme_color_override("font_color", Palette.SAVE_SLOT_FILLED_TEXT)
 
 	button_container.add_child(info_label)
 

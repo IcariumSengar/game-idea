@@ -15,17 +15,14 @@ signal died(enemy: Enemy)
 ## DPS while in contact) to let the offense fix actually extend survival.
 const CONTACT_DAMAGE: float = 8.0
 const CONTACT_COOLDOWN: float = 0.4
-const SPARK_COLOR: Color = Color.CRIMSON
 const FLASH_DECAY_PER_SEC: float = 8.0
-const HIT_FLASH_COLOR: Color = Color(4.0, 4.0, 4.0)
 const HIT_SPARK_AMOUNT: int = 6
 const DEATH_SPARK_AMOUNT: int = 18
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
-const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.9, 0.3)
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const ARENA_MARGIN: float = 16.0
-const FROST_TINT: Color = Color(0.6, 0.9, 1.3, 1.0)
+const FROST_TINT: Color = Palette.ENEMY_FROST_TINT
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 
 ## Minion (Tier 1) baseline -- per DESIGN.md's Enemy Types table (Base HP
@@ -83,7 +80,7 @@ func _physics_process(delta: float) -> void:
 		_sprite.flip_h = velocity.x < 0.0
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
-	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
+	_sprite.modulate = Color.WHITE.lerp(Palette.ENEMY_HIT_FLASH, _flash_amount)
 	if _slow_time_left > 0.0:
 		_slow_time_left -= delta
 		modulate = _base_modulate * FROST_TINT
@@ -179,7 +176,7 @@ func take_damage(amount: float) -> void:
 func _spawn_spark(amount: int) -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = SPARK_COLOR
+	spark.color = Palette.ENEMY_SPARK
 	spark.amount = amount
 	get_parent().add_child(spark)
 	spark.emitting = true
@@ -189,4 +186,4 @@ func _spawn_damage_text(amount: float) -> void:
 	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
 	text.position = position + Vector2(0.0, -20.0)
 	get_parent().add_child(text)
-	text.setup("%d" % roundi(amount), DAMAGE_TEXT_COLOR)
+	text.setup("%d" % roundi(amount), Palette.ENEMY_DAMAGE_TEXT)

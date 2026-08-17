@@ -7,7 +7,6 @@ extends Area2D
 
 const LIFETIME: float = 2.0
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
-const BOLT_COLOR: Color = Color(0.55, 0.35, 0.95)
 const RADIUS: float = 6.0
 ## Painted Hoard (DESIGN.md's "Art Direction," 2026-08-17): a layered
 ## warm glow instead of one flat circle -- same technique
@@ -16,7 +15,6 @@ const RADIUS: float = 6.0
 ## loot_gem.gd's own warm-brown stroke, not spell-tinted, so every
 ## procedural visual in this pass reads as one consistent style.
 const GLOW_LAYERS: int = 3
-const INK_COLOR: Color = Color(0.22, 0.14, 0.08, 0.7)
 
 @export var speed: float = 400.0
 @export var damage: float = 20.0
@@ -27,16 +25,17 @@ var _time_left: float = LIFETIME
 
 
 func _draw() -> void:
+	var bolt_color := Palette.SPELL_ARCANE
 	for layer in GLOW_LAYERS:
 		var layer_t: float = float(layer + 1) / float(GLOW_LAYERS)
 		var layer_radius: float = RADIUS * (1.0 + layer_t * 1.4)
 		var layer_alpha: float = 0.3 * (1.0 - layer_t) * (1.0 - layer_t)
 		draw_circle(
-			Vector2.ZERO, layer_radius, Color(BOLT_COLOR.r, BOLT_COLOR.g, BOLT_COLOR.b, layer_alpha)
+			Vector2.ZERO, layer_radius, Color(bolt_color.r, bolt_color.g, bolt_color.b, layer_alpha)
 		)
-	draw_circle(Vector2.ZERO, RADIUS, BOLT_COLOR)
-	draw_circle(Vector2.ZERO, RADIUS * 0.5, Color(0.92, 0.85, 1.0))
-	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 16, INK_COLOR, 1.0)
+	draw_circle(Vector2.ZERO, RADIUS, bolt_color)
+	draw_circle(Vector2.ZERO, RADIUS * 0.5, Palette.SPELL_ARCANE_CORE)
+	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 16, Palette.PAINTED_INK_PROJECTILE, 1.0)
 
 
 func _physics_process(delta: float) -> void:
@@ -56,7 +55,7 @@ func _on_body_entered(body: Node2D) -> void:
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = BOLT_COLOR
+	spark.color = Palette.SPELL_ARCANE
 	spark.amount = 6
 	get_parent().add_child(spark)
 	spark.emitting = true

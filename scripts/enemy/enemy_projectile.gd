@@ -8,7 +8,6 @@ extends Area2D
 
 const LIFETIME: float = 3.0
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
-const BOLT_COLOR: Color = Color(0.85, 0.25, 0.55)
 const RADIUS: float = 6.0
 
 @export var speed: float = 150.0
@@ -20,8 +19,8 @@ var _time_left: float = LIFETIME
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, RADIUS, BOLT_COLOR)
-	draw_circle(Vector2.ZERO, RADIUS * 0.5, Color(1.0, 0.85, 0.95))
+	draw_circle(Vector2.ZERO, RADIUS, Palette.ENEMY_PROJECTILE_BOLT)
+	draw_circle(Vector2.ZERO, RADIUS * 0.5, Palette.ENEMY_PROJECTILE_CORE)
 
 
 func _physics_process(delta: float) -> void:
@@ -41,7 +40,7 @@ func _on_body_entered(body: Node2D) -> void:
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = BOLT_COLOR
+	spark.color = Palette.ENEMY_PROJECTILE_BOLT
 	spark.amount = 6
 	get_parent().add_child(spark)
 	spark.emitting = true

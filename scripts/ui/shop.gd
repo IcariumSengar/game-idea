@@ -1,9 +1,9 @@
 extends Control
 
 const BOUNCE_SCALE: float = 1.15
-const PLAYER_ACCENT: Color = Color(0.85, 0.7, 0.35, 1.0)
-const SPELL_ACCENT: Color = Color(0.65, 0.45, 0.85, 1.0)
-const BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
+const PLAYER_ACCENT: Color = Palette.SANCTUM_PLAYER_ACCENT
+const SPELL_ACCENT: Color = Palette.SANCTUM_SPELL_ACCENT
+const BACKPACK_ACCENT: Color = Palette.SANCTUM_BACKPACK_ACCENT
 ## Shop structure rework (DESIGN.md 2026-08-17): Player Tree stays flat and
 ## small on purpose -- Spellpower/Swiftness/Gleam, no cross-gating -- with
 ## everything spell-related (Spell Unlock plus every per-spell upgrade
@@ -75,6 +75,9 @@ var _active_tab: StringName = &"player"
 func _ready() -> void:
 	MetaProgression.currency_changed.connect(_on_currency_changed)
 	MetaProgression.stat_changed.connect(_on_stat_changed)
+	_player_tab.accent_color = PLAYER_ACCENT
+	_spell_tab.accent_color = SPELL_ACCENT
+	_backpack_tab.accent_color = BACKPACK_ACCENT
 	_player_tab.pressed.connect(_set_active_tab.bind(&"player"))
 	_spell_tab.pressed.connect(_set_active_tab.bind(&"spell"))
 	_backpack_tab.pressed.connect(_set_active_tab.bind(&"backpack"))

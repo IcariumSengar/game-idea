@@ -6,10 +6,6 @@ extends Control
 ## layout survives being resized after _ready() runs.
 
 const STAR_COUNT: int = 140
-const SKY_TOP: Color = Color(0.04, 0.03, 0.09)
-const SKY_MID: Color = Color(0.22, 0.09, 0.24)
-const SKY_HORIZON: Color = Color(0.55, 0.24, 0.32)
-const MOUNTAIN_COLOR: Color = Color(0.03, 0.035, 0.05)
 const STAR_BAND: float = 0.62
 const GRADIENT_STEPS: int = 32
 
@@ -70,19 +66,20 @@ func _draw() -> void:
 		var t1: float = float(i + 1) / GRADIENT_STEPS
 		var color: Color
 		if t0 < 0.6:
-			color = SKY_TOP.lerp(SKY_MID, t0 / 0.6)
+			color = Palette.VOID_BASE.lerp(Palette.NIGHT_SKY_MID, t0 / 0.6)
 		else:
-			color = SKY_MID.lerp(SKY_HORIZON, (t0 - 0.6) / 0.4)
+			color = Palette.NIGHT_SKY_MID.lerp(Palette.NIGHT_SKY_HORIZON, (t0 - 0.6) / 0.4)
 		draw_rect(Rect2(0.0, size.y * t0, size.x, size.y * (t1 - t0) + 1.0), color)
 
 	for star: Dictionary in _stars:
 		var twinkle: float = 0.5 + 0.5 * sin(_time * star["speed"] + star["offset"])
 		var alpha: float = star["base_alpha"] * (0.4 + 0.6 * twinkle)
 		var pos := Vector2(star["x"] * size.x, star["y"] * size.y)
-		draw_circle(pos, star["radius"], Color(1.0, 1.0, 1.0, alpha))
+		var tint := Palette.STAR_TINT
+		draw_circle(pos, star["radius"], Color(tint.r, tint.g, tint.b, alpha))
 
 	var points := PackedVector2Array()
 	for i in _mountain_norm_x.size():
 		points.append(Vector2(_mountain_norm_x[i] * size.x, _mountain_norm_y[i] * size.y))
 	if points.size() > 2:
-		draw_colored_polygon(points, MOUNTAIN_COLOR)
+		draw_colored_polygon(points, Palette.NIGHT_SKY_MOUNTAIN)

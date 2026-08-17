@@ -4,9 +4,9 @@ extends Button
 ## default, gold with flourish lines above/below when hovered/focused.
 ## No button box -- just color, scale, and drawn accents.
 
-const NORMAL_COLOR: Color = Color(0.82, 0.82, 0.85, 1.0)
-const HOVER_COLOR: Color = Color(0.95, 0.85, 0.35, 1.0)
-const LINE_COLOR: Color = Color(0.95, 0.85, 0.35, 0.9)
+const NORMAL_COLOR: Color = Palette.BUTTON_NORMAL
+const HOVER_COLOR: Color = Palette.BUTTON_HOVER
+const LINE_COLOR: Color = Palette.BUTTON_HOVER_LINE
 const HOVER_SCALE: float = 1.08
 const TWEEN_DURATION: float = 0.15
 

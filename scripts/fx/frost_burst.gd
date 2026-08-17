@@ -10,12 +10,6 @@ extends Node2D
 const DURATION: float = 0.4
 const MIN_RADIUS: float = 8.0
 const SPIKE_COUNT: int = 10
-const COLOR: Color = Color(0.55, 0.85, 1.0)
-## Painted Hoard (DESIGN.md's "Art Direction," 2026-08-17): a bright icy-
-## white core alongside the saturated outer cyan approximates a
-## light-to-dark gradient across the ring/spike cross-section, instead
-## of the old single flat-color stroke.
-const COLD_CORE_COLOR: Color = Color(0.9, 0.98, 1.0)
 
 var target_radius: float = 150.0
 
@@ -34,10 +28,10 @@ func _draw() -> void:
 	var progress: float = _time / DURATION
 	var radius: float = lerp(MIN_RADIUS, target_radius, progress)
 	var alpha: float = 1.0 - progress
-	var color: Color = Color(COLOR.r, COLOR.g, COLOR.b, alpha)
-	var core_color: Color = Color(
-		COLD_CORE_COLOR.r, COLD_CORE_COLOR.g, COLD_CORE_COLOR.b, alpha * 0.85
-	)
+	var base := Palette.SPELL_FROST_BURST
+	var core := Palette.SPELL_FROST_CORE
+	var color: Color = Color(base.r, base.g, base.b, alpha)
+	var core_color: Color = Color(core.r, core.g, core.b, alpha * 0.85)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, color, 3.0)
 	draw_arc(Vector2.ZERO, radius * 0.94, 0.0, TAU, 32, core_color, 1.2)
 	for i in range(SPIKE_COUNT):

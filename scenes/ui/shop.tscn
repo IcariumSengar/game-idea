@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop.gd" id="1_shop"]
 [ext_resource type="Script" path="res://scripts/ui/skill_tree_view.gd" id="1_skill_tree"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/ui/menu_link_button.gd" id="7_link"]
 [ext_resource type="Script" path="res://scripts/ui/tab_button.gd" id="8_tab"]
 [ext_resource type="Script" path="res://scripts/ui/backpack_grid.gd" id="9_backpackgrid"]
+[ext_resource type="Theme" path="res://resources/game_theme.tres" id="10_theme"]
 
 [node name="Shop" type="Control"]
 layout_mode = 3
@@ -15,6 +16,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("10_theme")
 script = ExtResource("1_shop")
 
 [node name="NightSky" type="Control" parent="."]
@@ -60,14 +62,14 @@ horizontal_alignment = 1
 [node name="PlayerCurrencyLabel" type="Label" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.9, 0.8, 0.3, 1)
+theme_type_variation = &"EssenceLabel"
 text = "Essence: 0"
 horizontal_alignment = 1
 
 [node name="BackpackCurrencyLabel" type="Label" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.3, 0.75, 0.9, 1)
+theme_type_variation = &"StardustLabel"
 text = "Stardust: 0"
 horizontal_alignment = 1
 
@@ -87,7 +89,6 @@ custom_minimum_size = Vector2(100, 34)
 theme_override_font_sizes/font_size = 15
 text = "PLAYER"
 script = ExtResource("8_tab")
-accent_color = Color(0.85, 0.7, 0.35, 1)
 
 [node name="SpellTabButton" type="Button" parent="ShopPanel/Margin/VBox/TabBar"]
 unique_name_in_owner = true
@@ -96,7 +97,6 @@ custom_minimum_size = Vector2(100, 34)
 theme_override_font_sizes/font_size = 15
 text = "SPELLS"
 script = ExtResource("8_tab")
-accent_color = Color(0.65, 0.45, 0.85, 1)
 
 [node name="BackpackTabButton" type="Button" parent="ShopPanel/Margin/VBox/TabBar"]
 unique_name_in_owner = true
@@ -105,7 +105,6 @@ custom_minimum_size = Vector2(100, 34)
 theme_override_font_sizes/font_size = 15
 text = "BACKPACK"
 script = ExtResource("8_tab")
-accent_color = Color(0.35, 0.75, 0.85, 1)
 
 [node name="PlayerScroll" type="ScrollContainer" parent="ShopPanel/Margin/VBox"]
 unique_name_in_owner = true
@@ -122,7 +121,7 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.85, 0.7, 0.35, 1)
+theme_type_variation = &"PlayerAccentLabel"
 text = "ESSENCE TREE
 0 levels bought"
 horizontal_alignment = 1
@@ -158,7 +157,7 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.65, 0.45, 0.85, 1)
+theme_type_variation = &"SpellAccentLabel"
 text = "SPELL TREE
 0 levels bought"
 horizontal_alignment = 1
@@ -184,7 +183,7 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.35, 0.75, 0.85, 1)
+theme_type_variation = &"BackpackAccentLabel"
 text = "STARDUST TREE
 0 levels bought"
 horizontal_alignment = 1
@@ -263,7 +262,7 @@ theme_override_constants/separation = 14
 [node name="TitleLabel" type="Label" parent="SpellChoicePanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(0.65, 0.45, 0.85, 1)
+theme_type_variation = &"SpellAccentLabel"
 text = "A NEW SPELL AWAITS"
 horizontal_alignment = 1
 autowrap_mode = 2

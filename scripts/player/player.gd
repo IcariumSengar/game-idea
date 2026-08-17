@@ -12,9 +12,7 @@ signal loot_changed(backpack: Dictionary)
 signal loot_collected(type_id: StringName)
 
 const RADIUS: float = 16.0
-const SPARK_COLOR: Color = Color.CYAN
 const FLASH_DECAY_PER_SEC: float = 6.0
-const HIT_FLASH_COLOR: Color = Color(1.0, 0.35, 0.35)
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 ## Backpack-fill penalty (Tweak 4, DESIGN.md 2026-08-16): a full bag no
@@ -30,7 +28,6 @@ const MIN_SPEED_FRACTION: float = 0.8
 const HIT_SPARK_AMOUNT: int = 8
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
-const DAMAGE_TEXT_COLOR: Color = Color(1.0, 0.35, 0.35)
 
 ## Active Pickup: Manual Triage (DESIGN.md 2026-08-16) -- gems no longer
 ## auto-commit on arrival; they queue in front of the player awaiting an
@@ -234,7 +231,7 @@ func _physics_process(delta: float) -> void:
 	_knockback = _knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY_PER_SEC * speed * delta)
 	if _flash_amount > 0.0:
 		_flash_amount = max(_flash_amount - FLASH_DECAY_PER_SEC * delta, 0.0)
-	_sprite.modulate = Color.WHITE.lerp(HIT_FLASH_COLOR, _flash_amount)
+	_sprite.modulate = Color.WHITE.lerp(Palette.PLAYER_HIT_FLASH, _flash_amount)
 
 	_check_triage_input()
 	_reposition_queue()
@@ -578,7 +575,7 @@ func _set_hp(new_hp: float) -> void:
 func _spawn_spark() -> void:
 	var spark: CPUParticles2D = SPARK_SCENE.instantiate()
 	spark.position = position
-	spark.color = SPARK_COLOR
+	spark.color = Palette.PLAYER_SPARK
 	spark.amount = HIT_SPARK_AMOUNT
 	get_parent().add_child(spark)
 	spark.emitting = true
@@ -588,7 +585,7 @@ func _spawn_damage_text(amount: float) -> void:
 	var text: Node2D = FLOATING_TEXT_SCENE.instantiate()
 	text.position = position + Vector2(0.0, -24.0)
 	get_parent().add_child(text)
-	text.setup("-%d" % roundi(amount), DAMAGE_TEXT_COLOR, 22)
+	text.setup("-%d" % roundi(amount), Palette.PLAYER_DAMAGE_TEXT, 22)
 
 
 ## Called every frame by arena.gd once Phase 4 starts (see its own

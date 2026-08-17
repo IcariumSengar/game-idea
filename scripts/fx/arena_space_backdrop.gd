@@ -8,7 +8,6 @@ extends Node2D
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
 const STAR_COUNT: int = 220
 const NEBULA_COUNT: int = 7
-const VOID_COLOR: Color = Color(0.04, 0.03, 0.09)
 
 var _stars: Array = []
 var _nebulae: Array = []
@@ -40,11 +39,6 @@ func _generate_stars() -> void:
 
 func _generate_nebulae() -> void:
 	_nebulae.clear()
-	var palette: Array[Color] = [
-		Color(0.45, 0.25, 0.55, 0.12),
-		Color(0.25, 0.35, 0.6, 0.1),
-		Color(0.55, 0.3, 0.45, 0.11),
-	]
 	for i in NEBULA_COUNT:
 		(
 			_nebulae
@@ -52,7 +46,7 @@ func _generate_nebulae() -> void:
 				{
 					"pos": Vector2(randf() * ARENA_SIZE.x, randf() * ARENA_SIZE.y),
 					"radius": randf_range(140.0, 260.0),
-					"color": palette[i % palette.size()],
+					"color": Palette.NEBULA_TINTS[i % Palette.NEBULA_TINTS.size()],
 				}
 			)
 		)
@@ -64,7 +58,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), VOID_COLOR)
+	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), Palette.VOID_BASE)
 
 	for nebula: Dictionary in _nebulae:
 		draw_circle(nebula["pos"], nebula["radius"], nebula["color"])
@@ -72,4 +66,5 @@ func _draw() -> void:
 	for star: Dictionary in _stars:
 		var twinkle: float = 0.5 + 0.5 * sin(_time * star["speed"] + star["offset"])
 		var alpha: float = star["base_alpha"] * (0.4 + 0.6 * twinkle)
-		draw_circle(star["pos"], star["radius"], Color(1.0, 1.0, 1.0, alpha))
+		var tint := Palette.STAR_TINT
+		draw_circle(star["pos"], star["radius"], Color(tint.r, tint.g, tint.b, alpha))

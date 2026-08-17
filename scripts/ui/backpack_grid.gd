@@ -12,27 +12,27 @@ const SLOT_SIZE: float = 20.0
 const SLOT_GAP: float = 4.0
 const SLOTS_PER_ROW: int = 10
 const SLOT_PADDING: float = 4.0
-const EMPTY_COLOR: Color = Color(1.0, 1.0, 1.0, 0.1)
-const EMPTY_BORDER_COLOR: Color = Color(1.0, 1.0, 1.0, 0.22)
+const EMPTY_COLOR: Color = Palette.BACKPACK_EMPTY
+const EMPTY_BORDER_COLOR: Color = Palette.BACKPACK_EMPTY_BORDER
 const FILLED_BORDER_DARKEN: float = 0.4
-const DANGER_COLOR_LOW: Color = Color(0.3, 0.65, 0.9, 0.0)
-const DANGER_COLOR_HIGH: Color = Color(0.9, 0.25, 0.2, 0.35)
+const DANGER_COLOR_LOW: Color = Palette.DANGER_LOW
+const DANGER_COLOR_HIGH: Color = Palette.DANGER_HIGH
 const COUNT_FONT_SIZE: int = 11
 const COUNT_SHADOW_OFFSET: Vector2 = Vector2(1.0, 1.0)
 ## Ghost slot: previews the next Bearing purchase right in the HUD, per
 ## DESIGN.md's Backpack UI "longer-term idea" note. Fainter than a real
 ## empty (purchased-but-unfilled) slot and dashed rather than solid, so it
 ## reads as "not real yet" at a glance.
-const GHOST_COLOR: Color = Color(1.0, 1.0, 1.0, 0.04)
-const GHOST_BORDER_COLOR: Color = Color(1.0, 1.0, 1.0, 0.16)
+const GHOST_COLOR: Color = Palette.BACKPACK_GHOST
+const GHOST_BORDER_COLOR: Color = Palette.BACKPACK_GHOST_BORDER
 const GHOST_DASH_LENGTH: float = 3.0
 ## Leaden's ballast slots (Depth Pass Group C, DESIGN.md 2026-08-17) aren't
 ## tied to a real backpack dict entry -- drawn as their own plain, muted
 ## slots after the real ones so the grid's filled count always matches
 ## Player.get_slots_used() exactly, same lesson as the 2026-08-17 fill-%
 ## bugfix (HUD and this grid must never read two different formulas).
-const BALLAST_COLOR: Color = Color(0.3, 0.28, 0.26)
-const BALLAST_BORDER_COLOR: Color = Color(0.5, 0.46, 0.42)
+const BALLAST_COLOR: Color = Palette.BACKPACK_BALLAST
+const BALLAST_BORDER_COLOR: Color = Palette.BACKPACK_BALLAST_BORDER
 ## Combo-nearing pips (DESIGN.md's HUD + death-summary rework, 2026-08-17):
 ## Streak lerps its one hot slot toward white as it nears
 ## SpellCaster.STREAK_THRESHOLD; Full Set pulses every filled slot once

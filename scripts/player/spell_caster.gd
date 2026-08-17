@@ -30,11 +30,9 @@ const INFERNO_BASE_POWER: float = 25.0
 const INFERNO_BURN_DURATION: float = 1.5
 const INFERNO_TICK_INTERVAL: float = 0.5
 const INFERNO_TICK_COUNT: int = 3
-const INFERNO_COLOR: Color = Color(0.95, 0.4, 0.15)
 const INFERNO_KNOCKBACK_STRENGTH: float = 200.0
 const FROST_BASE_POWER: float = 15.0
 const FROST_FREEZE_DURATION: float = 0.8
-const FROST_COLOR: Color = Color(0.5, 0.85, 1.0)
 
 ## v11 spells. Each got exactly one upgrade stat (see meta_progression.gd)
 ## instead of the 2-3 the original three got, to keep five new spells'
@@ -51,12 +49,10 @@ const TIME_WARP_RADIUS: float = 200.0
 const TIME_WARP_BASE_POWER: float = 10.0
 const TIME_WARP_SLOW_STRENGTH: float = 0.8
 const TIME_WARP_DURATION: float = 2.0
-const TIME_WARP_COLOR: Color = Color(0.65, 0.45, 0.95)
 const TELEPORT_BASE_POWER: float = 20.0
 const TELEPORT_DISTANCE: float = 250.0
 const TELEPORT_BURST_RADIUS: float = 80.0
 const TELEPORT_ARENA_MARGIN: float = 20.0
-const TELEPORT_COLOR: Color = Color(0.6, 0.85, 1.0)
 const FAMILIAR_RESUMMON_COOLDOWN: float = 8.0
 
 ## Gem Combos' "Full Set" (DESIGN.md, Tweak 3): not a levelled spell --
@@ -71,7 +67,6 @@ const FULL_SET_RADIUS: float = 700.0
 const FULL_SET_SHAKE_SCALE: float = 2.0
 const FULL_SET_HIT_STOP: float = 0.1
 const FULL_SET_LABEL: String = "FULL SET!"
-const FULL_SET_LABEL_COLOR: Color = Color(1.0, 0.55, 0.1)
 
 ## Gem Combos' "Streak" (DESIGN.md): N consecutive pickups of the *same*
 ## tier, uninterrupted, triggers a small tier-flavored AOE burst -- unlike
@@ -299,7 +294,7 @@ func _cast_inferno_blade() -> void:
 		if burn_total > 0.0:
 			_apply_burn(enemy, burn_total)
 	if hit_any:
-		_spawn_burst(_owner_body.position, INFERNO_COLOR)
+		_spawn_burst(_owner_body.position, Palette.SPELL_INFERNO)
 		_spawn_inferno_graphic(_owner_body.position)
 		AudioManager.play("inferno_cast")
 
@@ -321,7 +316,7 @@ func _cast_frost_nova() -> void:
 		enemy.take_damage(damage)
 		enemy.apply_slow(1.0 - slow_strength, FROST_FREEZE_DURATION)
 	if hit_any:
-		_spawn_burst(_owner_body.position, FROST_COLOR)
+		_spawn_burst(_owner_body.position, Palette.SPELL_FROST)
 		_spawn_frost_graphic(_owner_body.position, radius)
 		AudioManager.play("frost_cast")
 
@@ -418,7 +413,7 @@ func _cast_teleport_pulse() -> void:
 	var damage: float = _scaled_power(TELEPORT_BASE_POWER)
 	var start_position: Vector2 = _owner_body.position
 	_damage_in_radius(start_position, TELEPORT_BURST_RADIUS, damage)
-	_spawn_burst(start_position, TELEPORT_COLOR)
+	_spawn_burst(start_position, Palette.SPELL_TELEPORT)
 
 	var direction: Vector2 = _teleport_direction()
 	var target_position: Vector2 = start_position + direction * TELEPORT_DISTANCE
@@ -428,7 +423,7 @@ func _cast_teleport_pulse() -> void:
 	)
 	_owner_body.position = target_position
 	_damage_in_radius(target_position, TELEPORT_BURST_RADIUS, damage)
-	_spawn_burst(target_position, TELEPORT_COLOR)
+	_spawn_burst(target_position, Palette.SPELL_TELEPORT)
 	AudioManager.play("teleport_cast")
 
 
@@ -499,7 +494,7 @@ func _on_full_set_impact() -> void:
 	var arena := get_tree().current_scene as Arena
 	if arena != null:
 		arena.trigger_shake(FULL_SET_SHAKE_SCALE, FULL_SET_HIT_STOP)
-	_spawn_combo_label(FULL_SET_LABEL, FULL_SET_LABEL_COLOR)
+	_spawn_combo_label(FULL_SET_LABEL, Palette.COMBO_FULL_SET_LABEL)
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Enemy
 		if enemy == null:

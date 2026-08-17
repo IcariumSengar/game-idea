@@ -8,12 +8,6 @@ extends Node2D
 
 const DURATION: float = 0.5
 const MIN_RADIUS: float = 8.0
-const COLOR: Color = Color(0.65, 0.45, 0.95)
-## Painted Hoard (DESIGN.md's "Art Direction," 2026-08-17): a bright
-## core ring alongside the two saturated outer/inner ones approximates a
-## light-to-dark gradient across the field, instead of two flat-color
-## strokes.
-const CORE_COLOR: Color = Color(0.92, 0.85, 1.0)
 
 var target_radius: float = 200.0
 
@@ -34,16 +28,12 @@ func _draw() -> void:
 	var inner_radius: float = lerp(MIN_RADIUS, target_radius * 0.7, progress)
 	var core_radius: float = lerp(MIN_RADIUS, target_radius * 0.4, progress)
 	var alpha: float = 1.0 - progress
-	draw_arc(Vector2.ZERO, outer_radius, 0.0, TAU, 40, Color(COLOR.r, COLOR.g, COLOR.b, alpha), 3.0)
+	var base := Palette.SPELL_TIME_WARP
+	var core := Palette.SPELL_TIME_WARP_CORE
+	draw_arc(Vector2.ZERO, outer_radius, 0.0, TAU, 40, Color(base.r, base.g, base.b, alpha), 3.0)
 	draw_arc(
-		Vector2.ZERO, inner_radius, 0.0, TAU, 40, Color(COLOR.r, COLOR.g, COLOR.b, alpha * 0.6), 2.0
+		Vector2.ZERO, inner_radius, 0.0, TAU, 40, Color(base.r, base.g, base.b, alpha * 0.6), 2.0
 	)
 	draw_arc(
-		Vector2.ZERO,
-		core_radius,
-		0.0,
-		TAU,
-		32,
-		Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, alpha * 0.5),
-		1.5
+		Vector2.ZERO, core_radius, 0.0, TAU, 32, Color(core.r, core.g, core.b, alpha * 0.5), 1.5
 	)

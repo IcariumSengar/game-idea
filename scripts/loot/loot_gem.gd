@@ -22,9 +22,6 @@ extends Node2D
 
 const GEM_HEIGHT: float = 12.0
 const GEM_WIDTH: float = 8.2
-## Warm ink, not a pure-black stroke -- per the Art Direction spec's
-## "dark brown, not black" outline language.
-const INK_COLOR: Color = Color(0.22, 0.14, 0.08, 0.85)
 const INK_WIDTH: float = 1.1
 
 
@@ -70,4 +67,4 @@ func _draw() -> void:
 	)
 
 	var outline := PackedVector2Array([top, right, bottom, left, top])
-	draw_polyline(outline, INK_COLOR, INK_WIDTH, true)
+	draw_polyline(outline, Palette.PAINTED_INK_GEM, INK_WIDTH, true)

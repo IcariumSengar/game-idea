@@ -11,12 +11,6 @@ signal impact
 
 const TELEGRAPH_DURATION: float = 0.5
 const FLASH_DURATION: float = 0.25
-const COLOR: Color = Color(1.0, 0.55, 0.1)
-## Painted Hoard (DESIGN.md's "Art Direction," 2026-08-17): the impact
-## flash is the one genuinely filled shape in this spell's visual, so it
-## gets a real radial gradient (hot white core fading to the spell's own
-## orange) instead of a flat-color disc.
-const FLASH_CORE_COLOR: Color = Color(1.0, 0.95, 0.8)
 
 var radius: float = 100.0
 
@@ -36,18 +30,19 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	var base := Palette.SPELL_METEOR
 	if not _impacted:
 		var progress: float = _time / TELEGRAPH_DURATION
 		var alpha: float = 0.3 + 0.5 * sin(progress * PI * 6.0) * 0.5 + 0.3
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(COLOR.r, COLOR.g, COLOR.b, alpha), 2.0)
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(base.r, base.g, base.b, alpha), 2.0)
 	else:
 		var flash_progress: float = (_time - TELEGRAPH_DURATION) / FLASH_DURATION
 		var flash_radius: float = lerp(radius * 0.3, radius * 1.3, flash_progress)
 		var flash_alpha: float = 1.0 - flash_progress
-		draw_circle(Vector2.ZERO, flash_radius, Color(COLOR.r, COLOR.g, COLOR.b, flash_alpha))
-		draw_circle(
-			Vector2.ZERO,
-			flash_radius * 0.5,
-			Color(FLASH_CORE_COLOR.r, FLASH_CORE_COLOR.g, FLASH_CORE_COLOR.b, flash_alpha)
+		var core := Palette.SPELL_METEOR_CORE
+		var ring := Palette.SPELL_METEOR_FLASH_RING
+		draw_circle(Vector2.ZERO, flash_radius, Color(base.r, base.g, base.b, flash_alpha))
+		draw_circle(Vector2.ZERO, flash_radius * 0.5, Color(core.r, core.g, core.b, flash_alpha))
+		draw_arc(
+			Vector2.ZERO, radius, 0.0, TAU, 40, Color(ring.r, ring.g, ring.b, flash_alpha), 4.0
 		)
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, Color(1.0, 0.9, 0.6, flash_alpha), 4.0)

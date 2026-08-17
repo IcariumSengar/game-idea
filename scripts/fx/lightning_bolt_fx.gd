@@ -10,11 +10,6 @@ extends Node2D
 const DURATION: float = 0.18
 const JAG_COUNT: int = 5
 const JAG_OFFSET: float = 10.0
-const COLOR: Color = Color(0.6, 0.85, 1.0)
-## Painted Hoard (DESIGN.md's "Art Direction," 2026-08-17): warmed off-
-## white instead of pure white for the bright core overlay, consistent
-## with the rest of this pass's "warm, not stark" highlight language.
-const CORE_HIGHLIGHT_COLOR: Color = Color(1.0, 0.97, 0.9)
 
 var from_point: Vector2 = Vector2.ZERO
 var to_point: Vector2 = Vector2.ZERO
@@ -50,10 +45,10 @@ func _build_jagged_line() -> PackedVector2Array:
 
 func _draw() -> void:
 	var alpha: float = 1.0 - (_time / DURATION)
-	var color := Color(COLOR.r, COLOR.g, COLOR.b, alpha)
-	var core_color := Color(
-		CORE_HIGHLIGHT_COLOR.r, CORE_HIGHLIGHT_COLOR.g, CORE_HIGHLIGHT_COLOR.b, alpha * 0.6
-	)
+	var base := Palette.SPELL_LIGHTNING
+	var core := Palette.SPELL_LIGHTNING_CORE
+	var color := Color(base.r, base.g, base.b, alpha)
+	var core_color := Color(core.r, core.g, core.b, alpha * 0.6)
 	for i in range(_points.size() - 1):
 		draw_line(_points[i], _points[i + 1], color, 3.0)
 		draw_line(_points[i], _points[i + 1], core_color, 1.0)

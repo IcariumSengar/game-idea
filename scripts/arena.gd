@@ -88,7 +88,7 @@ const PHASE_4_SHRINK_DURATION: float = 30.0
 const PHASE_4_SAFE_ZONE_SIZE: Vector2 = Vector2(640.0, 360.0)
 ## Reuses BackpackGrid's own red danger-color language rather than
 ## inventing new color vocabulary for this second "danger" signal.
-const PHASE_4_DANGER_COLOR: Color = Color(0.9, 0.25, 0.2, 0.35)
+const PHASE_4_DANGER_COLOR: Color = Palette.DANGER_HIGH
 const PHASE_4_EDGE_WIDTH: float = 4.0
 ## Altar (DESIGN.md's "Altar," 2026-08-17): spawns at each existing phase
 ## boundary (reusing the 20s/40s pacing beats already gating Phase 2/3,

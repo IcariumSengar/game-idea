@@ -28,7 +28,6 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.
 const AFFIX_CHANCE_BY_TIER: Dictionary = {&"epic": 0.15, &"mythic": 0.25, &"legendary": 0.4}
 const AFFIX_VALUE_MULTIPLIER: float = 0.5
 const AFFIX_PULSE_SCALE_AMOUNT: float = 0.4
-const AFFIX_COLOR: Color = Color(1.0, 0.85, 0.3)
 ## Leaden (Depth Pass Group C, DESIGN.md 2026-08-17): Blessed's dark mirror
 ## -- more value, but folds extra "ballast" weight into the player's real
 ## slot count even though it's still one item, so a high-value pickup can
@@ -40,12 +39,10 @@ const LEADEN_VALUE_MULTIPLIER: float = 0.8
 const LEADEN_BALLAST_SLOTS: int = 1
 const LEADEN_PULSE_SCALE_AMOUNT: float = 0.12
 const LEADEN_PULSE_SPEED: float = 2.0
-const LEADEN_COLOR: Color = Color(0.35, 0.32, 0.3)
 ## A Magpie (Depth Pass Group C) that dies after eating drops everything
 ## it stole back at its death position, at a bonus -- the reward for
 ## catching it in time rather than a straight refund.
 const RECOVERED_VALUE_BONUS_MULTIPLIER: float = 0.5
-const RECOVERED_COLOR: Color = Color(0.4, 0.85, 0.6)
 const DISCARD_FADE_DURATION: float = 0.22
 ## Scatter (Depth Pass Group C): rarity scales how far a drop skitters from
 ## its kill site -- Common lands ~in place, Legendary skitters toward the
@@ -75,7 +72,6 @@ const CAST_OFF_SPIN_TURNS: float = 1.0
 const BEACON_PULSE_SCALE_MULTIPLIER: float = 2.0
 const BEACON_GLOW_LAYERS: int = 4
 const BEACON_GLOW_SPACING: float = 6.0
-const BEACON_GLOW_COLOR: Color = Color(0.95, 0.15, 0.15, 1.0)
 const BEACON_GLOW_PULSE_SPEED: float = 2.5
 
 ## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
@@ -122,12 +118,12 @@ func _ready() -> void:
 	if randf() < float(AFFIX_CHANCE_BY_TIER.get(type_id, 0.0)):
 		if randf() < AFFIX_LEADEN_CHANCE:
 			_is_leaden = true
-			_color = _color.lerp(LEADEN_COLOR, 0.6)
+			_color = _color.lerp(Palette.LOOT_LEADEN, 0.6)
 			_pulse_scale_amount = LEADEN_PULSE_SCALE_AMOUNT
 			_pulse_speed = LEADEN_PULSE_SPEED
 		else:
 			_is_affixed = true
-			_color = _color.lerp(AFFIX_COLOR, 0.5)
+			_color = _color.lerp(Palette.LOOT_AFFIX, 0.5)
 			_pulse_scale_amount = AFFIX_PULSE_SCALE_AMOUNT
 	# Applied after the affix roll above so a beacon's stronger pulse
 	# always wins regardless of whether an affix also fired and reset
@@ -166,10 +162,9 @@ func _draw() -> void:
 		var layer_t: float = float(layer + 1) / float(BEACON_GLOW_LAYERS)
 		var layer_radius: float = BEACON_GLOW_SPACING * float(layer + 1) * (1.0 + pulse * 0.4)
 		var layer_alpha: float = (0.25 + pulse * 0.25) * (1.0 - layer_t) * (1.0 - layer_t)
+		var glow_color := Palette.LOOT_BEACON_GLOW
 		draw_circle(
-			Vector2.ZERO,
-			layer_radius,
-			Color(BEACON_GLOW_COLOR.r, BEACON_GLOW_COLOR.g, BEACON_GLOW_COLOR.b, layer_alpha)
+			Vector2.ZERO, layer_radius, Color(glow_color.r, glow_color.g, glow_color.b, layer_alpha)
 		)
 
 
@@ -298,11 +293,11 @@ func _spawn_value_text() -> void:
 	if _is_recovered:
 		bonus += _recovered_bonus_value()
 	if _is_affixed:
-		text.setup("+%d Blessed!" % (value + bonus), AFFIX_COLOR, 20)
+		text.setup("+%d Blessed!" % (value + bonus), Palette.LOOT_AFFIX, 20)
 	elif _is_leaden:
-		text.setup("+%d, Leaden" % (value + bonus), LEADEN_COLOR, 20)
+		text.setup("+%d, Leaden" % (value + bonus), Palette.LOOT_LEADEN, 20)
 	elif _is_recovered:
-		text.setup("+%d, Recovered!" % (value + bonus), RECOVERED_COLOR, 20)
+		text.setup("+%d, Recovered!" % (value + bonus), Palette.LOOT_RECOVERED, 20)
 	else:
 		text.setup("+%d" % value, _color, 18)
 

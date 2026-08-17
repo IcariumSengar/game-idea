@@ -6,13 +6,13 @@ extends Button
 ## underline persist after the click via set_active(), so the current
 ## page stays visually distinct once the mouse moves away.
 
-const INACTIVE_COLOR: Color = Color(0.6, 0.6, 0.63, 1.0)
+const INACTIVE_COLOR: Color = Palette.TAB_INACTIVE
 const HOVER_SCALE: float = 1.05
 const TWEEN_DURATION: float = 0.15
 const UNDERLINE_HEIGHT: float = 2.5
 const UNDERLINE_MARGIN: float = 4.0
 
-@export var accent_color: Color = Color(0.85, 0.7, 0.35, 1.0)
+@export var accent_color: Color = Palette.ALTAR_ACCENT
 
 var is_active: bool = false
 

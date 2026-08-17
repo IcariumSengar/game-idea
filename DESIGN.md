@@ -1497,78 +1497,179 @@ established split. Technical: extends `meta_progression.gd`'s existing
 
 ## Art Direction
 
-**Decided 2026-08-17: Painted Hoard.** Every sprite in the game has been
-procedural/placeholder since day one (player, enemies, spells, loot
-pips) -- this is the first real art-direction call, chosen from three
-pitched options each anchored to a real Godot-built game rather than a
-mood word: chunky flat pixel art (Brotato), dim glowing dungeon pixel
-art (Halls of Torment), and hand-painted fantasy illustration (Backpack
-Battles, Sovereign Tower). Painted Hoard won as the closest thematic
-match available -- Backpack Battles is, like this game, a backpack-
-inventory game built in Godot, and Sovereign Tower demonstrates the
-same painterly approach is viable as a solo/small-team Godot art
-pipeline, not just a AAA-budget technique.
+**Decided 2026-08-17: Abyssal Dive -- supersedes Painted Hoard, same
+day.** The first art-direction pass (below, preserved in the decision
+log) only reconsidered *how* the existing wizard-and-gems premise gets
+drawn. On direct feedback that this "was nowhere near the scope
+wanted," round two reconsidered the premise itself: three full
+setting-and-style packages, each pairing a world with the visual style
+that world actually demands, pitched from a live artifact rather than
+described in prose. **Abyssal Dive won** -- a descent into a lightless
+deep where glowing relics are the only color in the frame. This is a
+full replacement of Painted Hoard's soft-painterly/warm-ink language,
+not a layer on top of it -- Abyssal Dive's own visual style is dark,
+high-contrast, and glow-driven, a different rendering technique
+entirely, not just a different subject painted the same way.
 
-**Visual language:** soft painterly shading (gradient-based, light-to-
-dark across a form) instead of flat pixel-block fills; warm ink outlines
-(dark brown, not black) instead of hard black strokes; illustrated-
-manuscript treatment for UI chrome -- the Grimoire in particular should
-read as an actual illuminated page, not a UI panel with a spell list on
-it. Environment/UI neutrals lean warm parchment and muted forest/gold
-rather than the flat dark grays "Visual System (Shared)" above
-currently specs for panels -- that section's colors were written before
-this decision and need reconciling once real screens get built, not
-silently treated as still-correct.
+**The premise.** The player is **the Diver** -- someone who went too
+deep chasing treasure and came back changed, channeling something
+found down there rather than "arcane magic." Loot is bioluminescent
+salvage and drowned relics, not gems in the fantasy sense (the rarity
+*mechanic* is unchanged -- see "What stays locked" below). Darkness is
+the default state; anything saturated on screen is meaningful, because
+color itself is scarce. Tone: this sharpens "Dark & Desperate" (already
+one of TEXT_FLAVOR.md's two confirmed tone pillars) rather than
+introducing a new one -- "Mystical & Determined" bends toward something
+closer to "eldritch and resolved" under this premise, not abandoned.
 
-**What stays locked, explicitly:** the six rarity hex colors themselves
-(`loot_registry.gd`'s white/green/blue/purple/orange/red) are unchanged
--- they're read by the HUD, `BackpackGrid`, the Grimoire, and Streak/
-Attunement's tier-index math, so changing the *hues* is a balance/
-legibility question this pass isn't touching. Painted Hoard changes
-*how* those six colors get rendered (soft jewel-toned gradient shading
-instead of a flat fill), not what they are.
+### Naming cascade
 
-**Production method -- a real fork, flagged rather than silently
-assumed:** "hand-painted" can mean two very different scopes. (A)
-**Procedural approximation**, extending the exact technique
-`loot_gem.gd` already uses (`_draw()` calls, no image assets at all) --
-swap its flat `draw_colored_polygon()` facets for gradient fills and a
-warm-ink stroke. Zero new asset pipeline, zero new tooling, immediately
-buildable by the same process that's built every other visual system in
-this game so far. (B) **Real illustrated sprite assets** -- actual
-painted artwork (AI-generated sprite sheets, a purchased asset pack, or
-commissioned art), which is asset *sourcing*, not code, and isn't
-something the implementing process can originate on its own the way it
-built `loot_gem.gd`. **Recommendation, not a unilateral lock:** start
-with (A). It's consistent with the project's entire existing art
-pipeline, costs nothing to try, and if the procedural approximation
-doesn't actually read as "painted" once it's on screen, that's a cheap,
-fast finding -- far cheaper than discovering the same thing after
-sourcing real assets. Override this if real assets are actually wanted
-from the start; the two paths aren't a small difference in effort.
+Full rename, not partial -- every proper noun tied to the old fantasy
+framing moves. Two categories were deliberately **not** touched, per
+TEXT_FLAVOR.md's own already-locked calls, not revisited without new
+reason: enemy tier names (Minion/Bruiser/Elite/Boss) and rarity tier
+names (Common through Legendary) -- both already decided as genre-
+convention Function text that reskinning would cost clarity for no
+payoff, and nothing about a setting change is new reason to reopen
+either.
 
-**Phasing, not a full-game re-skin in one pass:** the surface area is
-large -- player, 6+ enemy variants (Minion/Fast/Tanky, Bruiser, Elite,
-Boss, Magpie), 8 spells' VFX, loot gems, and UI chrome across the
-Sanctum/Grimoire/HUD/run-prep screens. Same "ship one thing, see how it
-plays" discipline this doc has used everywhere else (Group A shipping
-Streak before Rampage/Ascension, Phase 4 shipping the closing-arena
-shape before going-dark/drop-zones): **start with the loot gems.**
-Smallest surface area, a direct existing precedent to extend
-(`loot_gem.gd`), and it's the one piece already validated -- the pitch
-artifact rendered this exact gem, in this exact style, at the game's
-real Legendary red. Expand outward (player -> enemies -> spell VFX ->
-UI chrome) only once the technique reads correctly in that one place.
+| Old | New | Note |
+|---|---|---|
+| HOARD SURVIVORS (title) | **ABYSSAL HOARD** | keeps "Hoard" as the brand anchor -- the mechanic's name, not just flavor |
+| "Hoard what you can. Survive what you must." | "Hoard what you can. Surface while you still can." | same two-imperative structure, Survive -> Surface |
+| Sanctum (shop) | **the Cove** | |
+| Grimoire (reference screen) | **the Ship's Log** | |
+| EMBARK? (run-prep title) | **DESCEND?** | |
+| "Your Hoard" (run-prep panel) | **"Your Haul"** | |
+| Essence (loot-value currency) | **Glow** | bioluminescence harvested from what's taken -- keeps Essence's own "power distilled from what you took" logic intact |
+| Stardust (survival-time currency) | **Depth** | reward for enduring, parallels the old "sky grants it" logic with "the deep grants it" |
+| Bearing (backpack capacity) | **Hold** | ship's cargo hold |
+| Gleam (pickup/magnet range) | *unchanged* | bioluminescent gleam in true darkness already fits this setting better than the old one -- no rename needed, not everything has to move |
+| Swiftness (move speed) | **Current** | swimming with/against it |
+| Spellpower (damage) | **Fathom** | double meaning kept on purpose -- a depth unit, and "to fathom" as grasping something vast and half-understood |
+| Discard (backpack stat) | *unchanged* | plain Function text already, no fantasy coding to remove |
+| Magpie (loot-stealing enemy) | **the Angler** | an anglerfish's lure is the exact inversion of "creatures drawn to your glow" -- strongest single rename in this table, most other names are direct translations, this one's a real upgrade |
+| Altar | *unchanged* | drowned shrines are their own nautical-horror convention, not exclusively fantasy-coded |
+| Trophy Hall | **the Reliquary** | |
+| The Forge (rarity-shift node) | **the Lure** | forges don't survive underwater at all; "the Lure" reuses the Angler's own logic -- you're attracting better salvage, not smithing it |
+| Facets | *unchanged* | cut-gem faceting is not fantasy-exclusive vocabulary |
 
-**Technical, for the loot-gem starting point specifically:**
-`loot_gem.gd`'s three `draw_colored_polygon()` calls (flat top-left-
-bottom, top-right-bottom, top-left-right facets) become gradient fills
--- e.g. `Gradient`/`GradientTexture2D` or a manual multi-stop polygon
-fill approximating light-to-dark across each facet -- plus a stroke
-pass in a warm dark brown (not `Color(0,0,0)`-derived) instead of the
-current unstroked flat polygons. Tint source stays exactly as-is
-(`modulate`, set by `loot.gd` from the rarity color) -- only the
-facet-fill and outline technique changes, not the tinting mechanism.
+**Spells** (mechanics -- power, cooldown, range, every number -- stay
+byte-for-byte identical; only name/flavor/VFX color change):
+
+| Old | New | What carries the identity |
+|---|---|---|
+| Arcane Bolt | **Luminous Dart** | a shard of harvested bioluminescence, fired |
+| Inferno Blade | **The Undertow** | omnidirectional pull/crush instead of a blade swing; its burn DoT becomes **the Bends** -- decompression sickness as a damage-over-time, the single most on-theme reflavor in this table |
+| Frost Nova | **Deep Chill** | cold already fits the abyss natively -- smallest rewrite of the eight |
+| Meteor Strike | **Trench Collapse** | the seafloor implodes under crushing pressure at the impact point; the existing telegraph ring becomes a visible pressure-crack spreading before it lands |
+| Lightning Chain | **Eel Current** | electric eels are real -- the chain-hop mechanic needs no justification once the source is an eel instead of a lightning bolt |
+| Time Warp | **Crushing Depths** | a wide pressure field, low damage/high CC exactly like today -- pressure crushes, it doesn't have to kill |
+| Teleport Pulse | **Ink Jet** | jet-propulsion + an ink-cloud burst at both ends, same blink-with-AOE-at-both-ends shape as today |
+| Summon Familiar | **Anglerling** | a small tamed anglerfish companion -- deliberate mirrored naming against the Angler enemy above |
+
+### Visual language
+
+Dark, high-contrast, glow-driven -- extends the "Grim Hoard" direction
+from round one's pitch (itself anchored to Halls of Torment) rather
+than Painted Hoard's soft painterly gradients. Color is scarce by
+default; anything saturated on screen (loot, spell VFX, the Angler's
+lure) reads as meaningful *because* the environment around it is
+desaturated near-black, not despite it. Outlines and shading favor a
+cold, wet-look palette over Painted Hoard's warm ink. A scanline/
+dither texture pass over environment layers (not UI text) nods to the
+underwater-murk feel without needing a real refraction shader.
+
+**What stays locked, unchanged from the previous pass:** the six rarity
+hex colors themselves (`loot_registry.gd`'s white/green/blue/purple/
+orange/red) are still untouched -- read by the HUD, `BackpackGrid`, the
+Ship's Log, and Streak/Attunement's tier-index math, so this remains a
+render-technique question, not a balance/legibility one. What changes
+is the *treatment* around those six colors (glow + dark ground instead
+of gradient-shaded facets on a warm ground), not the hues.
+
+**Loot-gem starting point, concretely:** `loot_gem.gd`'s three flat
+`draw_colored_polygon()` facets get a desaturated/darkened base fill (a
+dimmer version of the rarity tint, not the flat bright tint used today)
+plus 2-3 layered low-alpha glow circles drawn behind the gem at the
+rarity color, and a cool-toned stroke (not Painted Hoard's warm brown)
+-- the exact technique already prototyped live in the pitch artifact's
+canvas renderer, just needs porting from JS canvas calls to Godot
+`_draw()` calls (`draw_circle` with alpha for the glow layers,
+`draw_colored_polygon` kept for the facets themselves with darker
+fill values, `draw_polyline` for the cool stroke).
+
+**Shared background, one asset touching five screens at once:** every
+non-arena screen (`main_menu`, `save_slot_selector`, `run_prep`,
+`shop`, `settings_menu`) already shares a single `night_sky_background.gd`
+backdrop per TEXT_FLAVOR.md's own audit -- replacing that one script
+with an abyss-water equivalent (dark gradient + slow-drifting
+particulate/bubble layer instead of stars) re-themes five screens'
+ambient backdrop in one change, not five separate ones.
+
+### Asset scope
+
+Everything, per direct instruction -- not phased down to "gems only"
+like the previous pass. Full surface area: the Diver (player sprite +
+animations), enemy visual redesigns for all six tiers/variants (Minion/
+Fast/Tanky, Bruiser, Elite, Boss, the Angler), all 8 spells' VFX (color/
+particle-shape only -- see the naming table above, no mechanical
+changes), the loot gems, and UI chrome across the Cove/Ship's Log/HUD/
+Descend screens. **Enemy silhouette direction, illustrative:** Minion ->
+small bioluminescent fish-swarm shapes, Bruiser -> armored crustacean/
+lobster-like chargers, Elite -> a siphonophore/jellyfish firing stinging
+projectiles at range (its existing kite-and-shoot pattern already
+matches a jellyfish better than the current sprite), Boss -> a
+leviathan-scale hybrid that both closes distance and fires spread
+volleys (matches its existing hybrid attack pattern).
+
+### Technical risks, flagged rather than discovered mid-build
+
+- **Save compatibility is fine, but only if this is done correctly.**
+  Every `StatDef`/`PactDef`-style identifier (`STAT_BACKPACK_CAPACITY`,
+  `STAT_PICKUP_RANGE`, etc.) is an internal `StringName` separate from
+  its `display_name` -- renaming Bearing to "Hold" means changing the
+  `display_name` string only, not the id. Save files key on ids, not
+  display names, so existing saves are unaffected *if* only display
+  strings move. Flagged explicitly so it doesn't get done the other way
+  by accident.
+- **The Magpie -> Angler rename is a real file-rename, not just a
+  string change**, and CLAUDE.md already documents the exact trap:
+  renaming `enemy_magpie.gd`/`.tscn` (and the `EnemyMagpie` class name,
+  `MetaProgression.magpie_encountered` field) leaves Godot's
+  `global_script_class_cache.cfg` stale, which produces cascading
+  "Could not find type X" errors project-wide even though every actual
+  reference is correct -- needs the documented headless-editor-rescan
+  fix (`Godot.exe --headless --editor --quit --path .`) before trusting
+  a boot check after the rename, not a plain `--quit`.
+- **The project title itself changes** -- `project.godot`'s
+  `application/config/name` and `main_menu.tscn`'s title label both
+  need updating to ABYSSAL HOARD, not just in-fiction text.
+
+### Build order
+
+Sequenced by dependency and risk, same reasoning as the mechanics build
+order earlier this project -- not a rigid mandate, a sensible default:
+
+1. **Naming/text pass first.** Every rename in the table above is a
+   string change to existing code (`display_name` fields, UI labels,
+   the title/tagline) -- zero art dependency, fastest to verify, and
+   everything built after this point can be checked against final names
+   instead of placeholders.
+2. **Loot gems.** Smallest visual surface area, direct technique
+   already prototyped in the pitch artifact, validates the core "dark
+   ground, glow reads as meaning" premise before it's expanded anywhere
+   else.
+3. **Shared background + UI chrome.** One asset (the abyss backdrop)
+   touching five screens at once, plus the Cove/Ship's Log panel
+   treatment -- confirms the mood holds across real UI, not just one
+   small canvas.
+4. **The Diver + all six enemy tiers.** The single biggest content
+   item -- gated behind steps 2-3 actually reading correctly first,
+   since a wrong call here is the most expensive to redo.
+5. **Spell VFX**, last -- 8 individual reflavors, least blocking to
+   validating "does this feel like the new setting," most numerous
+   individual line items.
 
 ## Later Bucket: First Spec Pass (2026-08-17)
 
@@ -1579,6 +1680,13 @@ Pass groups above so they're actually buildable, not just named. Six of
 seven are ready to hand to the other process as-is; one (Hoard should be
 losable) still needs a shape confirmed first — flagged clearly below,
 not silently decided.
+
+**Naming note, added after "Art Direction" was rewritten same day:**
+Trophy Hall and The Forge below are renamed to **the Reliquary** and
+**the Lure** under Abyssal Dive (see "Art Direction"'s naming cascade)
+— left un-renamed in the section headings/bodies below since the
+mechanics they describe are unaffected by the rename; use the new
+names when actually building either.
 
 ### Altar
 
@@ -1756,7 +1864,8 @@ personal stat), growth ×1.2/lvl, cap 10 levels (20% max shift).
 
 **Scope decision, since "every stat" is too broad for a first pass**
 (same "ship one thing" discipline used throughout this pass): two
-stats, not all of them -- **Swiftness** (Face A: current, +move speed;
+stats, not all of them -- **Swiftness** (renamed **Current** under
+Abyssal Dive; Face A: current, +move speed;
 Face B: trades some move speed for +dash cooldown reduction -- a
 mobility-*shape* choice, not a strict upgrade) and **Gleam** (Face A:
 current, +pickup range; Face B: trades range for +Cast Off damage,
@@ -3448,3 +3557,50 @@ Short dated entries when a design decision is made and worth remembering
   spells unlocked, high damage) with zero errors, and windowed
   screenshots of the Grimoire and Settings confirming the warmer panel
   reads consistently with text still fully legible.
+- 2026-08-17 — Art direction reconsidered and replaced, at direct
+  instruction that the first pass ("nowhere near the scope wanted") was
+  too narrow on two axes: it only changed rendering technique on the
+  existing premise, and it phased down to "loot gems only." Round two
+  pitched three full setting-and-style packages (a creature-hoarder
+  reframe, an abyssal-dive reframe, a sci-fi salvager reframe), each
+  from a live artifact, each honest about its own rename-cascade cost.
+  **Abyssal Dive won.** New "## Art Direction" section above fully
+  replaces the Painted Hoard content from earlier today -- full rename
+  cascade (title, both currencies, three stats, the Magpie enemy, three
+  of the four newly-specced Later Bucket mechanics), all 8 spells
+  renamed/reflavored (mechanics unchanged), a dark/glow visual language
+  superseding Painted Hoard's warm-painterly one, and a five-step build
+  order (naming pass first, since it's zero-art-dependency and unblocks
+  verifying everything after against real names). Two locked decisions
+  carried forward unchanged, not revisited: enemy tier names (Minion/
+  Bruiser/Elite/Boss) and rarity tier names, both already-closed
+  TEXT_FLAVOR.md questions with no new reason to reopen. **Real
+  conflict with in-flight work, flagged explicitly:** the entry directly
+  above this one already shipped `resources/panel_dark.tres`'s warm-
+  umber/gold Painted Hoard treatment -- that now needs redoing under
+  Abyssal Dive's cold/dark-water palette, not left as-is or treated as
+  a head start. See TODO.md for the concrete follow-up.
+- 2026-08-17 — Codebase prepped for a full re-skin, ahead of the Abyssal
+  Dive pass above: every hardcoded `Color` in scripts (~55, across 22
+  files -- spell VFX, HUD, loot, skill tree, backpack grid, enemy/player
+  flash colors, structures, buttons, background decor) now reads from a
+  new `Palette` autoload (`scripts/palette.gd`) instead of being
+  duplicated at each call site; every `.tscn`-baked Label `font_color`
+  (~23 across 8 scenes) now reads from a new `resources/game_theme.tres`
+  Theme resource's named type variations instead. Pure refactor -- no
+  colors changed, only where they live. Means Abyssal Dive's actual
+  palette swap (and the already-flagged `panel_dark.tres` redo) is now a
+  matter of editing these two files' values, not hunting through 30
+  files by hand. Two names in `Palette` (`PAINTED_INK_GEM`,
+  `PAINTED_INK_PROJECTILE`) still carry the superseded Painted Hoard
+  name -- harmless (their values just need updating like every other
+  const when Abyssal Dive's actual pass lands), left as-is rather than
+  renamed speculatively. Verified: 290/290 unit tests, a clean 5-run
+  playtest batch, and a windowed screenshot of `grimoire.tscn` (the
+  Theme migration's proof-of-concept scene) confirming the refactor is
+  visually silent -- the remaining 7 scenes followed the identical,
+  already-proven pattern. Windowed screenshots of the other migrated
+  scenes were not captured this session: the host hit a repeated Intel
+  GPU driver crash (`igc64.dll`, confirmed via Windows Event Log) under
+  the default Vulkan renderer, and the GLES3 fallback rendered but
+  produced blank captures -- an environment issue, not a code one.

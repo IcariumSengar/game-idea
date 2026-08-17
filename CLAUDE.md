@@ -103,7 +103,7 @@ Keep this pairing as the project grows: a scene's primary script lives in
 enemy tiers, enemy projectiles), `loot/` (drops), `fx/` (procedural
 visual effects: bursts, projectiles, background decor), `ui/` (HUD, shop,
 skill tree, menus, save-slot screen). Autoloads (`MetaProgression`,
-`SaveManager`, `LootTypes`, `SceneTransition`,
+`SaveManager`, `LootTypes`, `Palette`, `SceneTransition`,
 `AudioManager`, `Settings`, `PlaytestHarness`, `UnitTests`) and the
 root-flow scene/script (`arena`, the run itself -- the project's actual
 entry point, `main_menu`, lives in `ui/` alongside the other menu

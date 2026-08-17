@@ -22,15 +22,15 @@ const ZIGZAG_AMOUNT: float = 15.0
 const MAX_CHILDREN_PER_ROW: int = 4
 const PULSE_DECAY_PER_SEC: float = 2.5
 const PULSE_SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
-const LOCKED_BORDER: Color = Color(0.32, 0.32, 0.34, 1.0)
-const LOCKED_FILL: Color = Color(0.14, 0.14, 0.16, 1.0)
-const NO_CURRENCY_TINT: Color = Color(0.9, 0.35, 0.3, 1.0)
-const ICON_DIM: Color = Color(0.5, 0.5, 0.52, 1.0)
-const TOOLTIP_GOLD: Color = Color(0.92, 0.82, 0.4, 1.0)
-const TOOLTIP_CYAN: Color = Color(0.3, 0.75, 0.9, 1.0)
-const STATUS_GREEN: Color = Color(0.3, 0.72, 0.32, 1.0)
-const STATUS_RED: Color = Color(0.85, 0.3, 0.28, 1.0)
-const STATUS_MUTED: Color = Color(0.6, 0.6, 0.62, 1.0)
+const LOCKED_BORDER: Color = Palette.SKILL_TREE_LOCKED_BORDER
+const LOCKED_FILL: Color = Palette.SKILL_TREE_LOCKED_FILL
+const NO_CURRENCY_TINT: Color = Palette.SKILL_TREE_NO_CURRENCY_TINT
+const ICON_DIM: Color = Palette.SKILL_TREE_ICON_DIM
+const TOOLTIP_GOLD: Color = Palette.SKILL_TREE_TOOLTIP_GOLD
+const TOOLTIP_CYAN: Color = Palette.SKILL_TREE_TOOLTIP_CYAN
+const STATUS_GREEN: Color = Palette.STATUS_GREEN
+const STATUS_RED: Color = Palette.STATUS_RED
+const STATUS_MUTED: Color = Palette.STATUS_MUTED
 ## Sanctum UX (DESIGN.md 2026-08-17), point 1: a partial ring outside the
 ## node showing progress toward its next level's cost.
 const CURRENCY_RING_GAP: float = 6.0
@@ -43,7 +43,7 @@ const LEVEL_ARC_WIDTH: float = 3.5
 ## Point 4: a maxed node's sealed state needs to read as clearly distinct
 ## from "just leveled," not a barely-different alpha (the old 0.9 vs 0.7
 ## locked-alpha was functionally invisible at a glance).
-const SEALED_RING_COLOR: Color = Color(1.0, 1.0, 1.0, 0.9)
+const SEALED_RING_COLOR: Color = Palette.SKILL_TREE_SEALED_RING
 const SEALED_RING_WIDTH: float = 2.0
 ## Denied-click shake (point 4) -- same tween-driven juice technique
 ## juicy_button.gd uses for its own press feedback, applied to this

@@ -7,7 +7,6 @@ extends Control
 ## texture asset is used.
 
 const RING_STEPS: int = 28
-const VIGNETTE_COLOR: Color = Color(0.05, 0.02, 0.1)
 const MAX_ALPHA: float = 0.5
 
 
@@ -26,12 +25,13 @@ func _draw() -> void:
 		var t: float = float(i) / (RING_STEPS - 1)
 		var radius: float = max_radius * t
 		var alpha: float = MAX_ALPHA * pow(t, 2.5)
+		var vignette := Palette.VIGNETTE
 		draw_arc(
 			center,
 			radius,
 			0.0,
 			TAU,
 			64,
-			Color(VIGNETTE_COLOR.r, VIGNETTE_COLOR.g, VIGNETTE_COLOR.b, alpha),
+			Color(vignette.r, vignette.g, vignette.b, alpha),
 			ring_width
 		)

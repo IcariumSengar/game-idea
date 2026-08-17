@@ -1,5 +1,6 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
+[ext_resource type="Theme" path="res://resources/game_theme.tres" id="0_theme"]
 [ext_resource type="Script" path="res://scripts/arena.gd" id="1_arena"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/ui/stat_bar.gd" id="5_statbar"]
@@ -79,6 +80,7 @@ offset_left = 16.0
 offset_top = 12.0
 offset_right = 320.0
 offset_bottom = 296.0
+theme = ExtResource("0_theme")
 theme_override_styles/panel = ExtResource("6_panel_dark")
 
 [node name="Margin" type="MarginContainer" parent="HUD/StatsPanel"]
@@ -117,7 +119,7 @@ stretch_mode = 4
 [node name="EssenceValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/EssenceRow"]
 unique_name_in_owner = true
 theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0.9, 0.8, 0.3, 1)
+theme_type_variation = &"EssenceLabel"
 text = "0"
 vertical_alignment = 1
 
@@ -133,13 +135,13 @@ icon_color = Color(0.3, 0.75, 0.9, 1)
 [node name="StardustValue" type="Label" parent="HUD/StatsPanel/Margin/VBox/StardustRow"]
 unique_name_in_owner = true
 theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0.3, 0.75, 0.9, 1)
+theme_type_variation = &"StardustLabel"
 text = "0.0"
 vertical_alignment = 1
 
 [node name="StardustRateLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox/StardustRow"]
 theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+theme_type_variation = &"HintLabel"
 text = "(+0.05/sec)"
 vertical_alignment = 1
 
@@ -205,7 +207,7 @@ script = ExtResource("5_statbar")
 
 [node name="MetaStatsLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
+theme_type_variation = &"MutedLabel"
 text = "Swiftness: 250   Gleam: 60   Bearing: 20"
 
 [node name="GameOverCircle" type="Control" parent="HUD"]
@@ -300,6 +302,7 @@ offset_right = 140.0
 offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("0_theme")
 theme_override_styles/panel = SubResource("StyleBoxFlat_gameover")
 
 [node name="PauseMargin" type="MarginContainer" parent="HUD/PausePanel"]
@@ -314,7 +317,7 @@ alignment = 1
 
 [node name="PauseLabel" type="Label" parent="HUD/PausePanel/PauseMargin/PauseVBox"]
 theme_override_font_sizes/font_size = 28
-theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_type_variation = &"BrightLabel"
 theme_override_constants/outline_size = 3
 theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
 text = "PAUSED"

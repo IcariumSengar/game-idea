@@ -1,8 +1,5 @@
 extends CanvasLayer
 
-const HP_COLOR_HIGH: Color = Color(0.3, 0.85, 0.4)
-const HP_COLOR_MID: Color = Color(0.9, 0.8, 0.2)
-const HP_COLOR_LOW: Color = Color(0.9, 0.25, 0.25)
 const STARDUST_UPDATE_INTERVAL: float = 0.1
 const TIER_ORDER: Array[StringName] = [
 	&"common", &"uncommon", &"rare", &"epic", &"mythic", &"legendary"
@@ -22,17 +19,12 @@ const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.
 ## actually starts.
 const PHASE_LABELS: Dictionary = {2: "BRUISERS!", 3: "ELITES!", 4: "THE ARENA CLOSES IN!"}
 const PHASE_LABEL_COLORS: Dictionary = {
-	2: Color(0.9, 0.55, 0.25), 3: Color(0.85, 0.3, 0.85), 4: Color(0.9, 0.25, 0.2)
+	2: Palette.PHASE_2_LABEL, 3: Palette.PHASE_3_LABEL, 4: Palette.PHASE_4_LABEL
 }
 const BOSS_LABEL: String = "BOSS!"
-const BOSS_LABEL_COLOR: Color = Color(0.95, 0.2, 0.25)
+const BOSS_LABEL_COLOR: Color = Palette.PHASE_BOSS_LABEL
 const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
 const PHASE_LABEL_FONT_SIZE: int = 24
-## Attunement gauge (DESIGN.md's HUD + death-summary rework, 2026-08-17):
-## cooler at Low, warmer at High, reusing Group D's spell-VFX tint
-## language for the same gauge rather than inventing separate colors.
-const ATTUNEMENT_COLOR_LOW: Color = Color(0.3, 0.75, 0.9, 1.0)
-const ATTUNEMENT_COLOR_HIGH: Color = Color(0.95, 0.45, 0.2, 1.0)
 
 var _backpack_capacity: int
 var _player: Player
@@ -145,7 +137,9 @@ func _on_loot_changed(backpack: Dictionary) -> void:
 	_essence_value.text = "%d" % _player.get_total_loot_value()
 
 	var attunement: float = _player.get_attunement()
-	_attunement_bar.update(attunement, ATTUNEMENT_COLOR_LOW.lerp(ATTUNEMENT_COLOR_HIGH, attunement))
+	_attunement_bar.update(
+		attunement, Palette.ATTUNEMENT_LOW.lerp(Palette.ATTUNEMENT_HIGH, attunement)
+	)
 
 
 func _on_player_died() -> void:
@@ -306,8 +300,8 @@ func _show_game_over_panel() -> void:
 
 func _hp_color(fraction: float) -> Color:
 	if fraction >= 0.5:
-		return HP_COLOR_MID.lerp(HP_COLOR_HIGH, (fraction - 0.5) * 2.0)
-	return HP_COLOR_LOW.lerp(HP_COLOR_MID, fraction * 2.0)
+		return Palette.HP_MID.lerp(Palette.HP_HIGH, (fraction - 0.5) * 2.0)
+	return Palette.HP_LOW.lerp(Palette.HP_MID, fraction * 2.0)
 
 
 func _on_continue_button_pressed() -> void:
