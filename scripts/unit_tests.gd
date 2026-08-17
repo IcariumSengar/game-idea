@@ -36,6 +36,8 @@ func _ready() -> void:
 	_test_manual_triage_queue()
 	_test_queue_pressure()
 	_test_collect_denied_when_full()
+	_test_cast_off_damage()
+	_test_gleam_pending_weight_reduction()
 	_test_combo_discovery_save_round_trip()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
@@ -347,6 +349,12 @@ func _test_manual_triage_queue() -> void:
 ## contract a full backpack relies on (see player.gd's _check_triage_input()
 ## -- a denied Keep must leave the gem queued, not silently orphan it).
 func _test_queue_pressure() -> void:
+	# Group B paired Gleam's level to the pending-slot weight itself -- pin
+	# it to 0 so this test's expected values (written against the base
+	# PENDING_SLOT_WEIGHT) hold regardless of what other tests leave behind.
+	var original_gleam_level := MetaProgression.get_level(MetaProgression.STAT_PICKUP_RANGE)
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, 0)
+
 	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
 	add_child(player)
 	player.backpack_capacity = 4
@@ -393,6 +401,7 @@ func _test_queue_pressure() -> void:
 	)
 
 	player.queue_free()
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, original_gleam_level)
 
 
 ## A full backpack must refuse collect() (returns false) rather than
@@ -417,6 +426,55 @@ func _test_collect_denied_when_full() -> void:
 
 	gem.queue_free()
 	player.queue_free()
+
+
+## Depth Pass Group B "Re-point Discard" (DESIGN.md 2026-08-17): Discard's
+## level must add flat bonus damage to Cast Off on top of the tier-scaled
+## base, read generically via get_stat() (STAT_PURGE's per_level_gain now
+## *is* that bonus).
+func _test_cast_off_damage() -> void:
+	var original_purge_level := MetaProgression.get_level(MetaProgression.STAT_PURGE)
+	MetaProgression.debug_set_level(MetaProgression.STAT_PURGE, 2)
+
+	var gem: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
+	gem.type_id = &"rare"
+	add_child(gem)
+	var tier_index := 2
+	var expected: float = (
+		Loot.CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
+		+ MetaProgression.get_stat(MetaProgression.STAT_PURGE)
+	)
+	_assert(
+		_almost_eq(gem._cast_off_damage(), expected),
+		"Cast Off damage is tier-scaled base plus Discard's flat bonus"
+	)
+
+	gem.queue_free()
+	MetaProgression.debug_set_level(MetaProgression.STAT_PURGE, original_purge_level)
+
+
+## Depth Pass Group B "Re-point Gleam": each Gleam level trims the pending-
+## slot weight, floored at MIN_PENDING_SLOT_WEIGHT so queue pressure never
+## fully disappears.
+func _test_gleam_pending_weight_reduction() -> void:
+	var original_gleam_level := MetaProgression.get_level(MetaProgression.STAT_PICKUP_RANGE)
+	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
+	add_child(player)
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, 0)
+	_assert(
+		_almost_eq(player._pending_slot_weight(), Player.PENDING_SLOT_WEIGHT),
+		"zero Gleam levels leaves the base pending weight untouched"
+	)
+
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, 15)
+	_assert(
+		_almost_eq(player._pending_slot_weight(), Player.MIN_PENDING_SLOT_WEIGHT),
+		"max Gleam level reaches the pending-weight floor"
+	)
+
+	player.queue_free()
+	MetaProgression.debug_set_level(MetaProgression.STAT_PICKUP_RANGE, original_gleam_level)
 
 
 ## Verifies the Grimoire's progressive-discovery tracking round-trips

@@ -2309,3 +2309,23 @@ Short dated entries when a design decision is made and worth remembering
   queue entirely by design, so Cast Off/queue-pressure/rarity-cues still
   need a human `playdev` pass to verify feel, same caveat as the rest of
   Manual Triage.
+- 2026-08-17 — Depth Pass Group B (Re-point Discard and Gleam)
+  implemented. Discard: no longer auto-purges at a fill threshold
+  (`_try_purge()`/`_get_purge_threshold()`/`_find_lowest_rarity_type()`
+  deleted from `player.gd` outright, not just disabled); each level now
+  adds flat bonus damage to Cast Off instead, expressed through
+  `STAT_PURGE`'s own `per_level_gain` (0.0 -> 4.0) so it reads generically
+  via `get_stat()` like every other stat's effect rather than a shadow
+  constant -- this also means the shop's existing before/after tooltip
+  now shows a real number for Discard for the first time. Gleam: paired
+  its range increase with a per-level reduction to the pending-slot
+  weight itself (Group A's `PENDING_SLOT_WEIGHT`), floored at 0.25 so
+  queue pressure never fully disappears -- implementer's call on the
+  exact mechanism, since the spec flagged this as "worth flagging, not
+  obviously the only right one"; tuned so the floor lands right around
+  Gleam's own level cap (15), not sooner. Updated `skill_tree_view.gd`'s
+  Discard/Gleam tooltip descriptions, which still described the old
+  auto-purge/pure-downside behavior. Verified via 4 new unit-test cases
+  (206 passing) plus a playtest batch with Discard/Gleam maxed and
+  Bearing at its floor (1 slot) to stress the full-backpack path
+  heavily -- zero errors.

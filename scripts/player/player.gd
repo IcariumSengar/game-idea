@@ -49,6 +49,17 @@ const QUEUE_STACK_SCALE: float = 0.7
 ## incrementally, so resolving a gem (Keep -> full slot weight, Discard ->
 ## zero) transitions cleanly with no separate bookkeeping to desync.
 const PENDING_SLOT_WEIGHT: float = 0.5
+## Depth Pass Group B "Re-point Gleam" (DESIGN.md 2026-08-17): more Gleam
+## range pulls in more incoming volume, which was a pure downside once
+## queue pressure landed (more gems arriving = more fill % from nothing
+## but waiting). Paired bonus: each Gleam level trims the pending-slot
+## weight itself, so a higher-Gleam player's queue stays roughly as
+## processable per unit of incoming volume instead of just piling up
+## faster. Floored, not zeroed -- queue pressure should never fully
+## disappear. Tuned so the floor lands right around Gleam's own level cap
+## (15), not sooner.
+const MIN_PENDING_SLOT_WEIGHT: float = 0.25
+const PENDING_WEIGHT_REDUCTION_PER_GLEAM_LEVEL: float = 0.0167
 ## Keep/discard gesture, on the same sprite. No "throw"/"interact" pose
 ## exists in the wizzard_m sheet (idle/run/hit are the only animations
 ## shipped in this asset pack) and there's no way to draw new frames --
@@ -213,11 +224,8 @@ func is_bot_controlled() -> bool:
 func collect_loot(type_id: StringName) -> bool:
 	var count: int = backpack.get(type_id, 0)
 	var stack_size: int = LootTypes.get_effective_stack_size(type_id)
-	if _needs_new_slot(count, stack_size):
-		if _slots_used() >= backpack_capacity:
-			_try_purge()
-			if _slots_used() >= backpack_capacity:
-				return false
+	if _needs_new_slot(count, stack_size) and _slots_used() >= backpack_capacity:
+		return false
 	backpack[type_id] = count + 1
 	_update_fill_effects()
 	loot_changed.emit(backpack)
@@ -377,47 +385,9 @@ func _slots_used() -> int:
 
 
 ## Public wrapper for HUD/UI callers -- _slots_used() stays private-by-
-## convention for internal use (fill ratio, purge threshold, etc.).
+## convention for internal use (fill ratio, etc.).
 func get_slots_used() -> int:
 	return _slots_used()
-
-
-func _try_purge() -> void:
-	var purge_level := MetaProgression.get_level(MetaProgression.STAT_PURGE)
-	if purge_level == 0:
-		return
-	var fill_ratio := float(_slots_used()) / float(backpack_capacity)
-	var threshold := _get_purge_threshold(purge_level)
-	if fill_ratio < threshold:
-		return
-	var lowest_tier := _find_lowest_rarity_type()
-	if lowest_tier != StringName():
-		var count: int = backpack.get(lowest_tier, 0)
-		if count > 0:
-			backpack[lowest_tier] = count - 1
-			if backpack[lowest_tier] == 0:
-				backpack.erase(lowest_tier)
-
-
-func _get_purge_threshold(level: int) -> float:
-	match level:
-		1:
-			return 0.90
-		2:
-			return 0.85
-		3:
-			return 0.80
-		4:
-			return 0.70
-	return 0.90
-
-
-func _find_lowest_rarity_type() -> StringName:
-	var tiers := [&"legendary", &"mythic", &"epic", &"rare", &"uncommon", &"common"]
-	for tier in tiers:
-		if tier in backpack:
-			return tier
-	return StringName()
 
 
 ## Number of gems currently pending a keep/discard decision (active + queued
@@ -428,6 +398,16 @@ func _pending_queue_size() -> int:
 	return (1 if _pending_gem != null else 0) + _gem_queue.size()
 
 
+## Depth Pass Group B: Gleam's paired queue-processability bonus -- see the
+## PENDING_WEIGHT_REDUCTION_PER_GLEAM_LEVEL const above.
+func _pending_slot_weight() -> float:
+	var gleam_level: int = MetaProgression.get_level(MetaProgression.STAT_PICKUP_RANGE)
+	return maxf(
+		MIN_PENDING_SLOT_WEIGHT,
+		PENDING_SLOT_WEIGHT - float(gleam_level) * PENDING_WEIGHT_REDUCTION_PER_GLEAM_LEVEL
+	)
+
+
 ## Backpack fill no longer touches max_hp (Tweak 4) -- it scales speed
 ## down and the player's visual/physical size up instead. Renamed from
 ## _update_hp_from_backpack to match what it actually drives now. Also
@@ -436,7 +416,7 @@ func _pending_queue_size() -> int:
 ## means pending gems already weigh on fill % before they're resolved.
 func _update_fill_effects() -> void:
 	var effective_slots: float = (
-		float(_slots_used()) + float(_pending_queue_size()) * PENDING_SLOT_WEIGHT
+		float(_slots_used()) + float(_pending_queue_size()) * _pending_slot_weight()
 	)
 	var fill_ratio: float = clampf(effective_slots / float(backpack_capacity), 0.0, 1.0)
 	_max_fill_ratio = max(_max_fill_ratio, fill_ratio)

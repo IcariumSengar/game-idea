@@ -245,9 +245,13 @@ func _impact(impact_position: Vector2) -> void:
 	fade_tween.chain().tween_callback(queue_free)
 
 
+## Discard's level (Depth Pass Group B, DESIGN.md 2026-08-17) adds flat
+## bonus damage on top of the tier-scaled base -- read generically via
+## get_stat() since STAT_PURGE's per_level_gain now *is* that bonus.
 func _cast_off_damage() -> float:
 	var tier_index: int = maxi(CAST_OFF_TIER_ORDER.find(type_id), 0)
-	return CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
+	var base: float = CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
+	return base + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
 
 
 func _affix_bonus_value() -> int:

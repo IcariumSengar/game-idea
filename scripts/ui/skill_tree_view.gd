@@ -31,9 +31,9 @@ const STATUS_MUTED: Color = Color(0.6, 0.6, 0.62, 1.0)
 const STAT_DESCRIPTIONS: Dictionary = {
 	&"damage": "Your spells crackle with arcane power, striking harder.",
 	&"move_speed": "Swift feet carry you through the void.",
-	&"pickup_range": "Widens your arcane pull, drawing loot in from farther away.",
+	&"pickup_range": "Widens your arcane pull and keeps a fuller triage queue processable.",
 	&"backpack_capacity": "Stitches an extra pocket into your satchel.",
-	&"purge": "Automatically discards your lowest-rarity loot once your hoard nears its limit.",
+	&"purge": "Sharpens what you throw away -- boosts Cast Off's damage when you discard a gem.",
 }
 
 var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)

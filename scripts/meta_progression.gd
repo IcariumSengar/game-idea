@@ -87,7 +87,11 @@ func _ready() -> void:
 	_register_stat(
 		STAT_MOVE_SPEED, "Swiftness", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
-	_register_stat(STAT_PURGE, "Discard", 0.0, 0.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
+	# Depth Pass Group B (DESIGN.md 2026-08-17): Discard no longer auto-purges
+	# at a fill threshold -- each level now adds flat bonus damage to Cast
+	# Off instead, read generically via get_stat() like every other stat's
+	# effect (loot.gd's _cast_off_damage()).
+	_register_stat(STAT_PURGE, "Discard", 0.0, 4.0, 100, 1.30, 4, 0, StatDef.Currency.BACKPACK)
 	# Cap raised 5->7 for v11's five new spells (L3-L7) on top of Inferno/Frost
 	# (L1/L2) -- same base cost/growth as originally locked in, just extended.
 	_register_stat(
