@@ -2806,3 +2806,64 @@ Short dated entries when a design decision is made and worth remembering
   global-class-cache gotcha applies both directions), the full unit-test
   suite (252 passing, unaffected), and a playtest batch exercising the
   death-screen path (every run ends in death) with zero errors.
+- 2026-08-17 — Sanctum UX (node language, feedback, previews) implemented
+  -- all 5 points from DESIGN.md's own spec, layered onto the Shop tree
+  rework rather than left as a separate follow-up. **Point 1** (currency
+  ring): `StatDef`-driven partial ring outside each non-maxed node
+  showing `current_currency / next_level_cost`, fed by
+  `set_tree_data()`'s new `current_currency` param; a "welcome back"
+  shimmer for nodes that crossed into affordable since the shop was last
+  closed, via new `MetaProgression.last_shop_close_*_currency` snapshots
+  saved on `_on_back_pressed()`/`_on_start_run_button_pressed()` and
+  compared once at `_ready()` -- deliberately a one-shot check, not baked
+  into every `set_tree_data()` call, so it stays a "welcome back" cue
+  rather than re-triggering on ordinary in-session spending. **Point 2**
+  (node shape/size): new `StatDef.is_milestone` (set on Spell Unlock and
+  Discard only) replaces the old "capstone if no children" inference,
+  which had it backwards -- a flat leaf stat with nothing branching off
+  it rendered *larger* than Spell Unlock. Removed `_chain_remaining_roots()`
+  entirely after tracing `_calculate_positions()`'s root-stacking logic
+  by hand first, confirming it already positions multiple disconnected
+  roots correctly (each gets its own vertically-stacked band) without
+  needing the cosmetic-chain hack -- verified before deleting, per the
+  item's own flagged risk, not assumed. **Point 3** (level/cap arc):
+  replaces the old level-pip row (drew `level_cap` pips at 7px each, so a
+  20-level stat overlapped its neighbors) with a partial arc on the
+  node's own border; closes to a full ring at cap. Freed space also fits
+  a per-tab "N affordable" count, appended directly to each `TabButton`'s
+  text rather than a new badge component. **Point 4** (purchase-moment
+  feedback): purchase tone now steps pitch with post-purchase level
+  (`AudioManager.play()` gained a `pitch_override` param); maxed nodes
+  get a distinct bright sealed ring instead of the old barely-different
+  0.9-vs-0.7 alpha; denied clicks (can't afford, or gated) get a shake +
+  shortfall/"LOCKED" text via a new `SkillTreeView.flash_denied()`,
+  decaying through the same tween-driven technique `juicy_button.gd`
+  uses for its own feedback, applied to the node's draw offset since tree
+  nodes aren't individual Button instances that script could target
+  directly. **A real, previously-invisible bug found and fixed while
+  building this, not cosmetic:** `MetaProgression.buy_upgrade()` never
+  checked gating at all -- only `is_maxed`/currency -- so a click landing
+  on a visually-locked node's position went through anyway if the player
+  could afford it, silently bypassing the intended unlock order. Fixed
+  by routing every purchase through a new shared `shop.gd::_try_buy()`
+  that checks `_is_stat_gated()` first. **Point 5** (previews): Bearing's
+  hover now ghost-previews the slot it would add, via a new
+  `SkillTreeView.node_hovered` signal and a second `BackpackGrid`
+  instance embedded in the Backpack tab -- `BackpackGrid` gained a thin
+  `update_preview(capacity)` entry point (`update({}, capacity)`, since
+  an empty backpack already renders exactly "capacity outline + ghost
+  slot" through the existing path, no new drawing code needed). Gleam/
+  Discard previews deliberately not built -- explicitly scoped as
+  separable follow-on work in the spec itself, not bundled into this
+  estimate. Verified via the full unit-test suite (252 passing,
+  unaffected -- this pass is presentation-only, no stat/cost/gate values
+  changed) and a direct `shop.tscn` boot check with zero script errors.
+  **Explicitly NOT verified, per the spec's own stated caution:** how the
+  five stacked encodings (ring, arc, sealed state, border tint, shortfall
+  text) actually read together in a real window -- flagged in the spec as
+  a real risk of "legible" tipping back into "busy," not asserted as fine
+  because each piece made sense individually on paper. Needs a `playdev`
+  pass before trusting it. Also noted, not acted on: `skill_tree_view.gd`
+  is now 725 lines, well past CLAUDE.md's soft ceiling -- a candidate for
+  extracting its icon-drawing functions into a separate file in a future
+  pass, not attempted here to avoid restructuring a file mid-feature.

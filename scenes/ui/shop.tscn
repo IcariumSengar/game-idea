@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/shop.gd" id="1_shop"]
 [ext_resource type="Script" path="res://scripts/ui/skill_tree_view.gd" id="1_skill_tree"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/fx/night_sky_background.gd" id="6_sky"]
 [ext_resource type="Script" path="res://scripts/ui/menu_link_button.gd" id="7_link"]
 [ext_resource type="Script" path="res://scripts/ui/tab_button.gd" id="8_tab"]
+[ext_resource type="Script" path="res://scripts/ui/backpack_grid.gd" id="9_backpackgrid"]
 
 [node name="Shop" type="Control"]
 layout_mode = 3
@@ -183,6 +184,15 @@ unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("1_skill_tree")
 size_flags_vertical = 3
+
+[node name="BearingPreviewCenter" type="CenterContainer" parent="ShopPanel/Margin/VBox/BackpackScroll/BackpackColumn"]
+layout_mode = 2
+
+[node name="BearingPreviewGrid" type="Control" parent="ShopPanel/Margin/VBox/BackpackScroll/BackpackColumn/BearingPreviewCenter"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+script = ExtResource("9_backpackgrid")
 
 [node name="ButtonContainer" type="VBoxContainer" parent="."]
 anchors_preset = 8

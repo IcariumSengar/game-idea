@@ -7,6 +7,10 @@ extends Control
 ## of each chain.
 
 signal node_clicked(stat_id: StringName)
+## Sanctum UX point 5 (DESIGN.md 2026-08-17): lets shop.gd react to
+## hovering a specific node (e.g. Bearing's ghost-slot preview) without
+## polling -- fired on every hover change, including to/from "none".
+signal node_hovered(stat_id: StringName)
 
 const NODE_RADIUS: float = 24.0
 const CAPSTONE_RADIUS: float = 30.0
@@ -27,6 +31,31 @@ const TOOLTIP_CYAN: Color = Color(0.3, 0.75, 0.9, 1.0)
 const STATUS_GREEN: Color = Color(0.3, 0.72, 0.32, 1.0)
 const STATUS_RED: Color = Color(0.85, 0.3, 0.28, 1.0)
 const STATUS_MUTED: Color = Color(0.6, 0.6, 0.62, 1.0)
+## Sanctum UX (DESIGN.md 2026-08-17), point 1: a partial ring outside the
+## node showing progress toward its next level's cost.
+const CURRENCY_RING_GAP: float = 6.0
+const CURRENCY_RING_WIDTH: float = 2.5
+const CURRENCY_RING_COLOR_ALPHA: float = 0.65
+## Point 3: a partial arc on the node's own border showing level/cap --
+## replaces the old pip row, which overlapped neighboring nodes on any
+## stat with a double-digit level cap.
+const LEVEL_ARC_WIDTH: float = 3.5
+## Point 4: a maxed node's sealed state needs to read as clearly distinct
+## from "just leveled," not a barely-different alpha (the old 0.9 vs 0.7
+## locked-alpha was functionally invisible at a glance).
+const SEALED_RING_COLOR: Color = Color(1.0, 1.0, 1.0, 0.9)
+const SEALED_RING_WIDTH: float = 2.0
+## Denied-click shake (point 4) -- same tween-driven juice technique
+## juicy_button.gd uses for its own press feedback, applied to this
+## node's draw offset instead of a separate Button's scale, since tree
+## nodes aren't individual Button instances here.
+const DENIED_SHAKE_DURATION: float = 0.3
+const DENIED_SHAKE_MAGNITUDE: float = 6.0
+## Shimmer (point 1): a node crossing into affordable since the shop was
+## last closed gets a one-off glow -- reuses the exact same _pulse_amount
+## mechanism a purchase pulse already uses, just triggered by a different
+## cause, so there's one glow language instead of two.
+const SHIMMER_PULSE_AMOUNT: float = 0.7
 
 const STAT_DESCRIPTIONS: Dictionary = {
 	&"damage": "Your spells crackle with arcane power, striking harder.",
@@ -41,6 +70,16 @@ var _node_positions: Dictionary = {}
 var _nodes: Array[TreeNode] = []
 var _hovered_node: StringName = StringName()
 var _pulse_amount: Dictionary = {}
+## Sanctum UX point 1: this tree's current/previous-close currency, used
+## to draw each node's progress-to-next-level ring and to detect which
+## nodes crossed into affordable since the shop was last closed (shimmer).
+var _current_currency: int = 0
+## Denied-click shake offsets (point 4), decaying like _pulse_amount but
+## a separate map since a node can be mid-shake independent of pulsing.
+var _shake_amount: Dictionary = {}
+## The message shown alongside an active shake (shortfall amount, or
+## "LOCKED") -- keyed the same as _shake_amount, cleared together.
+var _denied_message: Dictionary = {}
 
 
 class TreeNode:
@@ -94,19 +133,36 @@ func _process(delta: float) -> void:
 			finished.append(stat_id)
 	for stat_id in finished:
 		_pulse_amount.erase(stat_id)
-	if _pulse_amount.is_empty():
+
+	var shake_finished: Array[StringName] = []
+	var shake_decay_per_sec: float = 1.0 / DENIED_SHAKE_DURATION
+	for stat_id: StringName in _shake_amount:
+		_shake_amount[stat_id] = max(_shake_amount[stat_id] - delta * shake_decay_per_sec, 0.0)
+		if _shake_amount[stat_id] <= 0.0:
+			shake_finished.append(stat_id)
+	for stat_id in shake_finished:
+		_shake_amount.erase(stat_id)
+		_denied_message.erase(stat_id)
+
+	if _pulse_amount.is_empty() and _shake_amount.is_empty():
 		set_process(false)
 	queue_redraw()
 
 
+## current_currency (Sanctum UX point 1, DESIGN.md 2026-08-17): feeds each
+## node's progress-to-next-level ring -- every stat in a given tree call
+## shares one currency (Player/Spell Tree both spend Essence, Backpack
+## Tree spends Stardust), so one value per call suffices.
 func set_tree_data(
 	stats: Array[StatDef],
 	level_getter: Callable,
 	gating_checker: Callable,
 	currency_checker: Callable,
-	accent_color: Color
+	accent_color: Color,
+	current_currency: int
 ) -> void:
 	_accent_color = accent_color
+	_current_currency = current_currency
 	_nodes.clear()
 	_node_positions.clear()
 
@@ -124,7 +180,6 @@ func set_tree_data(
 		_nodes.append(node)
 
 	_build_tree_relationships(nodes_by_id)
-	_chain_remaining_roots()
 	_calculate_positions()
 	queue_redraw()
 
@@ -184,19 +239,6 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 			parent.children.append(child)
 
 
-## Stats with no real prerequisite (e.g. the flat Player Tree) still get
-## chained into a single visual line, drawn with a thin cosmetic link
-## instead of a solid gate line, so every tree reads as one flowing branch.
-func _chain_remaining_roots() -> void:
-	var previous_root: TreeNode = null
-	for node in _nodes:
-		if node.parent == null:
-			if previous_root != null:
-				node.parent = previous_root
-				previous_root.children.append(node)
-			previous_root = node
-
-
 func _calculate_positions() -> void:
 	var roots: Array[TreeNode] = []
 	for node in _nodes:
@@ -253,8 +295,12 @@ func _get_subtree_height(node: TreeNode) -> float:
 	return NODE_RADIUS * 2.0 + NODE_SPACING.y * num_rows + max_child_height
 
 
+## Sanctum UX point 2 (DESIGN.md 2026-08-17): asserted via StatDef.is_milestone,
+## not inferred from "has no children" -- that inference drew flat leaf
+## stats larger than real capstones like Spell Unlock, an accident of tree
+## topology rather than a design choice.
 func _get_node_radius(node: TreeNode) -> float:
-	return CAPSTONE_RADIUS if node.children.is_empty() else NODE_RADIUS
+	return CAPSTONE_RADIUS if node.def.is_milestone else NODE_RADIUS
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -276,7 +322,24 @@ func _gui_input(event: InputEvent) -> void:
 		if hovered_id != _hovered_node:
 			_hovered_node = hovered_id
 			tooltip_text = _build_tooltip_text(hovered) if hovered != null else ""
+			node_hovered.emit(_hovered_node)
 			queue_redraw()
+
+
+## Sanctum UX point 4: a denied click (can't afford, or gated) answers
+## with a short shake instead of doing nothing. Reuses the same
+## tween-driven decay technique as a purchase pulse (_shake_amount decays
+## in _process() below), applied to the node's own draw offset since tree
+## nodes aren't individual Button instances juicy_button.gd could target
+## directly. message is drawn alongside the shake (e.g. a shortfall
+## amount, or "LOCKED") rather than spawning a separate floating-text
+## node -- this Control already does all its own rendering via _draw(),
+## so staying in that same custom-draw world keeps one rendering path
+## instead of mixing in the arena's Node2D floating-text scene.
+func flash_denied(stat_id: StringName, message: String) -> void:
+	_shake_amount[stat_id] = 1.0
+	_denied_message[stat_id] = message
+	set_process(true)
 
 
 func _build_tooltip_text(node: TreeNode) -> String:
@@ -430,10 +493,17 @@ func _draw_dashed_line(from: Vector2, to: Vector2, color: Color) -> void:
 
 
 func _draw_node(node: TreeNode) -> void:
-	var center: Vector2 = _node_positions[node.stat_id]
+	var base_center: Vector2 = _node_positions[node.stat_id]
 	var radius: float = _get_node_radius(node)
 	var is_hovered: bool = node.stat_id == _hovered_node
 	var pulse: float = _pulse_amount.get(node.stat_id, 0.0)
+	# Sanctum UX point 4: denied-click shake -- a decaying sideways jitter,
+	# applied to the draw position only (hit-testing in _gui_input() still
+	# uses the node's real, un-shaken position).
+	var shake: float = _shake_amount.get(node.stat_id, 0.0)
+	var center: Vector2 = base_center
+	if shake > 0.0:
+		center += Vector2(sin(shake * PI * 6.0) * DENIED_SHAKE_MAGNITUDE * shake, 0.0)
 
 	if node.level > 0 or pulse > 0.0:
 		var glow_alpha: float = (0.18 if node.is_maxed else 0.1) + pulse * 0.35
@@ -469,21 +539,81 @@ func _draw_node(node: TreeNode) -> void:
 	if is_hovered and not node.is_gated:
 		draw_arc(center, radius + 3.0, 0.0, TAU, 28, Color.WHITE, 1.5)
 
+	# Sanctum UX point 4: sealed state -- a maxed node needs to read as
+	# clearly distinct from "just leveled," not the old barely-different
+	# 0.9-vs-0.7 fill alpha.
+	if node.is_maxed:
+		draw_arc(center, radius + 4.0, 0.0, TAU, 28, SEALED_RING_COLOR, SEALED_RING_WIDTH)
+
 	_draw_stat_icon(node.stat_id, center, radius * 0.62, icon_color)
-	_draw_level_pips(node, center, radius)
+	_draw_level_arc(node, center, radius)
+	if not node.is_maxed:
+		_draw_currency_ring(node, center, radius)
+	if shake > 0.0 and _denied_message.has(node.stat_id):
+		_draw_denied_message(_denied_message[node.stat_id], center, radius, shake)
 
 
-func _draw_level_pips(node: TreeNode, center: Vector2, radius: float) -> void:
+## Sanctum UX point 3: replaces the old pip row (drew level_cap pips at
+## 7px each, so a 20-level stat drew a 140px-wide row against ~66px of
+## node spacing -- overlapped its neighbors) with a partial arc on the
+## node's own border. Distinct from the currency ring below: this shows
+## overall progress toward the *cap* (level ÷ level_cap); the ring shows
+## progress toward the *next* level's cost -- a node can be simultaneously
+## "3 of 20 levels bought" (this arc) and "60% of the way to affording
+## level 4" (the ring), so both coexist rather than one replacing the
+## other.
+func _draw_level_arc(node: TreeNode, center: Vector2, radius: float) -> void:
 	var cap: int = node.def.level_cap
-	if cap <= 1:
+	if cap <= 1 or node.level <= 0:
 		return
-	var pip_radius: float = 2.0
-	var pip_spacing: float = 7.0
-	var row_y: float = center.y + radius + 8.0
-	var start_x: float = center.x - (cap * pip_spacing) / 2.0 + pip_spacing / 2.0
-	for i in range(cap):
-		var pip_color: Color = _accent_color if i < node.level else Color(0.3, 0.3, 0.32, 0.6)
-		draw_circle(Vector2(start_x + i * pip_spacing, row_y), pip_radius, pip_color)
+	var fraction: float = float(node.level) / float(cap)
+	draw_arc(
+		center,
+		radius - 1.5,
+		-PI / 2.0,
+		-PI / 2.0 + TAU * fraction,
+		28,
+		_accent_color.lightened(0.4),
+		LEVEL_ARC_WIDTH
+	)
+
+
+## Sanctum UX point 1: partial ring outside the node showing progress
+## toward its next level's cost. The locked geometric cost curve means
+## late-game nodes take many runs to afford -- a 60-second run earns ~3
+## Stardust against Bearing's first level costing 100 -- so most Sanctum
+## visits currently show no visible change at all on an unaffordable node
+## beyond a static red-tinted border. Disappears once maxed (nothing left
+## to save toward -- see the sealed ring in _draw_node() instead).
+func _draw_currency_ring(node: TreeNode, center: Vector2, radius: float) -> void:
+	var cost: int = MetaProgression.get_cost(node.stat_id)
+	if cost <= 0:
+		return
+	var fraction: float = clampf(float(_current_currency) / float(cost), 0.0, 1.0)
+	if fraction <= 0.0:
+		return
+	var ring_color: Color = Color(
+		_accent_color.r, _accent_color.g, _accent_color.b, CURRENCY_RING_COLOR_ALPHA
+	)
+	draw_arc(
+		center,
+		radius + CURRENCY_RING_GAP,
+		-PI / 2.0,
+		-PI / 2.0 + TAU * fraction,
+		28,
+		ring_color,
+		CURRENCY_RING_WIDTH
+	)
+
+
+## Sanctum UX point 4: the shortfall (or "LOCKED") that goes with a denied
+## click's shake -- fades out at the same rate the shake itself decays,
+## so the two read as one gesture rather than two independent effects.
+func _draw_denied_message(message: String, center: Vector2, radius: float, shake: float) -> void:
+	var font := ThemeDB.fallback_font
+	var text_pos: Vector2 = center + Vector2(0.0, -radius - 14.0)
+	var color := Color(NO_CURRENCY_TINT.r, NO_CURRENCY_TINT.g, NO_CURRENCY_TINT.b, shake)
+	draw_string(font, text_pos, message, HORIZONTAL_ALIGNMENT_CENTER, -1, 13, color)
 
 
 func _draw_stat_icon(stat_id: StringName, center: Vector2, s: float, color: Color) -> void:

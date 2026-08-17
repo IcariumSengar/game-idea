@@ -16,3 +16,8 @@ enum Currency { PLAYER, BACKPACK }
 @export var level_cap: int = 999
 @export var decimals: int = 0
 @export var currency: Currency = Currency.PLAYER
+## Sanctum UX (DESIGN.md 2026-08-17): node shape/size in the skill tree
+## must be asserted, not inferred from "happens to have no children" --
+## that inference drew a flat leaf stat larger than a real capstone like
+## Spell Unlock, an accident of tree topology, not a design choice.
+@export var is_milestone: bool = false

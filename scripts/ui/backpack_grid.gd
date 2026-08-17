@@ -54,6 +54,16 @@ func update(backpack: Dictionary, capacity: int, ballast_slots: int = 0) -> void
 	queue_redraw()
 
 
+## Sanctum UX point 5 (DESIGN.md 2026-08-17): shop preview for hovering
+## Bearing -- just the capacity outline + ghost slot, no real backpack
+## contents, since there's no live Player between runs. An empty
+## backpack already renders exactly that through the normal update()
+## path, so this is a thin, explicit entry point rather than new drawing
+## code.
+func update_preview(capacity: int) -> void:
+	update({}, capacity)
+
+
 func _update_min_size() -> void:
 	if _capacity <= 0:
 		custom_minimum_size = Vector2.ZERO

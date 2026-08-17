@@ -57,14 +57,26 @@ func _ready() -> void:
 		_players.append(player)
 
 
-func play(cue: String, volume_db: float = 0.0, pitch_variance: float = 0.08) -> void:
+## pitch_override (Sanctum UX, DESIGN.md 2026-08-17): a fixed pitch that
+## replaces the usual random variance -- lets a caller step a cue's pitch
+## deterministically (e.g. shop.gd stepping the purchase tone by level)
+## rather than only ever randomizing it. -1.0 (default) means "no
+## override, use the normal random variance" -- 0.0 is a valid real pitch
+## scale, so this can't just be a falsy/zero check.
+func play(
+	cue: String, volume_db: float = 0.0, pitch_variance: float = 0.08, pitch_override: float = -1.0
+) -> void:
 	if cue not in _streams:
 		return
 	var player := _players[_next_player]
 	_next_player = (_next_player + 1) % _players.size()
 	player.stream = _streams[cue]
 	player.volume_db = volume_db
-	player.pitch_scale = 1.0 + randf_range(-pitch_variance, pitch_variance)
+	player.pitch_scale = (
+		pitch_override
+		if pitch_override >= 0.0
+		else 1.0 + randf_range(-pitch_variance, pitch_variance)
+	)
 	player.play()
 
 

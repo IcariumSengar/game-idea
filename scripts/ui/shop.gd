@@ -27,6 +27,13 @@ const SPELL_DISPLAY_NAMES: Dictionary = {
 	MetaProgression.SPELL_TELEPORT_PULSE: "Teleport Pulse",
 	MetaProgression.SPELL_SUMMON_FAMILIAR: "Summon Familiar",
 }
+## Sanctum UX (DESIGN.md 2026-08-17), point 4: steps the purchase tone's
+## pitch with the node's post-purchase level, so level 1 and a maxed
+## level 20 no longer sound identical. Capped well short of "chipmunk" --
+## the highest realistic level cap (Bearing/Gleam, 10-15) still lands
+## under 1.8x.
+const PURCHASE_PITCH_STEP: float = 0.04
+const PURCHASE_PITCH_MAX: float = 1.8
 
 var _last_player_currency: int = -1
 var _last_backpack_currency: int = -1
@@ -48,6 +55,7 @@ var _active_tab: StringName = &"player"
 @onready var _backpack_scroll: ScrollContainer = %BackpackScroll
 @onready var _spell_choice_panel: PanelContainer = %SpellChoicePanel
 @onready var _spell_choice_option_row: HBoxContainer = %OptionRow
+@onready var _bearing_preview_grid: BackpackGrid = %BearingPreviewGrid
 
 
 func _ready() -> void:
@@ -56,9 +64,57 @@ func _ready() -> void:
 	_player_tab.pressed.connect(_set_active_tab.bind(&"player"))
 	_spell_tab.pressed.connect(_set_active_tab.bind(&"spell"))
 	_backpack_tab.pressed.connect(_set_active_tab.bind(&"backpack"))
+	_backpack_tree.node_hovered.connect(_on_backpack_node_hovered)
 	_update_trees()
 	_refresh_currency()
+	_show_newly_affordable_shimmer()
 	_set_active_tab(_active_tab)
+
+
+## Sanctum UX point 1: a node that crossed into affordable since the shop
+## was last closed gets a one-off shimmer -- a "welcome back" cue, not a
+## live effect, so this runs once here rather than being folded into
+## _update_trees()'s per-call logic (which would also fire it on every
+## in-session currency change, e.g. right after buying something else).
+func _show_newly_affordable_shimmer() -> void:
+	for def: StatDef in MetaProgression.get_stat_defs():
+		if MetaProgression.is_maxed(def.id) or _is_stat_gated(def.id):
+			continue
+		var cost: int = MetaProgression.get_cost(def.id)
+		var current: int = (
+			MetaProgression.player_currency
+			if def.currency == StatDef.Currency.PLAYER
+			else MetaProgression.backpack_currency
+		)
+		var previous: int = (
+			MetaProgression.last_shop_close_player_currency
+			if def.currency == StatDef.Currency.PLAYER
+			else MetaProgression.last_shop_close_backpack_currency
+		)
+		if current >= cost and previous < cost:
+			_tree_for_stat(def.id).pulse(def.id)
+
+
+func _tree_for_stat(stat_id: StringName) -> SkillTreeView:
+	if stat_id in PLAYER_TREE_STAT_IDS:
+		return _player_tree
+	var def := MetaProgression.get_stat_def(stat_id)
+	if def != null and def.currency == StatDef.Currency.BACKPACK:
+		return _backpack_tree
+	return _spell_tree
+
+
+## Sanctum UX point 5: hovering Bearing ghost-previews the slot it would
+## add, reusing the exact ghost-slot concept already built for the in-run
+## HUD (backpack_grid.gd) -- this is a separate instance embedded here
+## rather than an existing one carried over, since the in-run one lives in
+## arena.tscn's HUD, a different scene. Gleam/Discard previews are real,
+## separable follow-on scope per the spec, not built here.
+func _on_backpack_node_hovered(stat_id: StringName) -> void:
+	_bearing_preview_grid.visible = stat_id == MetaProgression.STAT_BACKPACK_CAPACITY
+	if _bearing_preview_grid.visible:
+		var capacity: int = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
+		_bearing_preview_grid.update_preview(capacity)
 
 
 ## Only one tree is visible at a time -- all three used to be considered
@@ -97,21 +153,35 @@ func _update_trees() -> void:
 		MetaProgression.get_level,
 		_is_stat_gated,
 		_is_locked_by_currency,
-		BACKPACK_ACCENT
+		BACKPACK_ACCENT,
+		MetaProgression.backpack_currency
 	)
 	_player_tree.set_tree_data(
 		player_stats,
 		MetaProgression.get_level,
 		_is_stat_gated,
 		_is_locked_by_currency,
-		PLAYER_ACCENT
+		PLAYER_ACCENT,
+		MetaProgression.player_currency
 	)
 	_spell_tree.set_tree_data(
-		spell_stats, MetaProgression.get_level, _is_stat_gated, _is_locked_by_currency, SPELL_ACCENT
+		spell_stats,
+		MetaProgression.get_level,
+		_is_stat_gated,
+		_is_locked_by_currency,
+		SPELL_ACCENT,
+		MetaProgression.player_currency
 	)
 	_backpack_header.text = "STARDUST TREE\n%d levels bought" % _total_levels(backpack_stats)
 	_player_header.text = "ESSENCE TREE\n%d levels bought" % _total_levels(player_stats)
 	_spell_header.text = "SPELL TREE\n%d levels bought" % _total_levels(spell_stats)
+
+	# Sanctum UX point 3: a per-tab "N affordable" count so a player can
+	# tell which tab is worth entering before entering it -- freed up by
+	# the level pip row moving onto the node itself as an arc.
+	_player_tab.text = _tab_label("PLAYER", player_stats)
+	_spell_tab.text = _tab_label("SPELLS", spell_stats)
+	_backpack_tab.text = _tab_label("BACKPACK", backpack_stats)
 
 	# Disconnect old signals to avoid duplicates
 	if _backpack_tree.node_clicked.is_connected(_on_backpack_node_clicked):
@@ -126,6 +196,15 @@ func _update_trees() -> void:
 	_spell_tree.node_clicked.connect(_on_spell_node_clicked)
 
 
+func _tab_label(base_text: String, stats: Array[StatDef]) -> String:
+	var affordable := 0
+	for def in stats:
+		if not MetaProgression.is_maxed(def.id) and not _is_stat_gated(def.id):
+			if not _is_locked_by_currency(def.id):
+				affordable += 1
+	return "%s (%d)" % [base_text, affordable] if affordable > 0 else base_text
+
+
 func _total_levels(stats: Array[StatDef]) -> int:
 	var total := 0
 	for def in stats:
@@ -134,15 +213,11 @@ func _total_levels(stats: Array[StatDef]) -> int:
 
 
 func _on_backpack_node_clicked(stat_id: StringName) -> void:
-	if MetaProgression.buy_upgrade(stat_id):
-		_backpack_tree.pulse(stat_id)
-		AudioManager.play("purchase")
+	_try_buy(stat_id, _backpack_tree)
 
 
 func _on_player_node_clicked(stat_id: StringName) -> void:
-	if MetaProgression.buy_upgrade(stat_id):
-		_player_tree.pulse(stat_id)
-		AudioManager.play("purchase")
+	_try_buy(stat_id, _player_tree)
 
 
 ## Spell Choice (DESIGN.md 2026-08-17): buying Spell Unlock is now a
@@ -155,11 +230,41 @@ func _on_spell_node_clicked(stat_id: StringName) -> void:
 	if stat_id == MetaProgression.STAT_SPELL_UNLOCK and MetaProgression.has_pending_spell_choice():
 		_show_spell_choice_panel()
 		return
-	if MetaProgression.buy_upgrade(stat_id):
-		_spell_tree.pulse(stat_id)
-		AudioManager.play("purchase")
-		if stat_id == MetaProgression.STAT_SPELL_UNLOCK:
-			_show_spell_choice_panel()
+	if _try_buy(stat_id, _spell_tree) and stat_id == MetaProgression.STAT_SPELL_UNLOCK:
+		_show_spell_choice_panel()
+
+
+## Shared by all three trees' click handlers. Enforces gating -- a real
+## bug this Sanctum UX pass surfaced, not a cosmetic gap:
+## MetaProgression.buy_upgrade() itself has no gating check at all, so a
+## click on a visually-locked node went through anyway if the player could
+## afford it, bypassing the intended unlock order entirely. Also gives
+## every denied click real feedback (shake + reason) instead of doing
+## nothing, per Sanctum UX point 4. Returns whether the purchase actually
+## went through, so callers (Spell Choice) can layer a follow-up only when
+## it did.
+func _try_buy(stat_id: StringName, tree: SkillTreeView) -> bool:
+	if _is_stat_gated(stat_id):
+		tree.flash_denied(stat_id, "LOCKED")
+		return false
+	if _is_locked_by_currency(stat_id):
+		var def := MetaProgression.get_stat_def(stat_id)
+		var cost := MetaProgression.get_cost(stat_id)
+		var owned: int = (
+			MetaProgression.player_currency
+			if def.currency == StatDef.Currency.PLAYER
+			else MetaProgression.backpack_currency
+		)
+		tree.flash_denied(stat_id, "-%d" % (cost - owned))
+		return false
+	if not MetaProgression.buy_upgrade(stat_id):
+		return false
+	var pitch: float = minf(
+		1.0 + float(MetaProgression.get_level(stat_id)) * PURCHASE_PITCH_STEP, PURCHASE_PITCH_MAX
+	)
+	tree.pulse(stat_id)
+	AudioManager.play("purchase", 0.0, 0.0, pitch)
+	return true
 
 
 func _show_spell_choice_panel() -> void:
@@ -196,7 +301,16 @@ func _on_stat_changed(_stat_id: StringName, _level: int) -> void:
 
 
 func _on_start_run_button_pressed() -> void:
+	_save_shop_close_snapshot()
 	SceneTransition.goto_scene("res://scenes/arena.tscn")
+
+
+## Sanctum UX point 1: snapshots currency on the way out so the *next*
+## shop visit can tell which nodes crossed into affordable while away
+## (see _show_newly_affordable_shimmer()).
+func _save_shop_close_snapshot() -> void:
+	MetaProgression.last_shop_close_player_currency = MetaProgression.player_currency
+	MetaProgression.last_shop_close_backpack_currency = MetaProgression.backpack_currency
 
 
 func _refresh_currency() -> void:
@@ -274,4 +388,5 @@ func _is_locked_by_currency(stat_id: StringName) -> bool:
 
 
 func _on_back_pressed() -> void:
+	_save_shop_close_snapshot()
 	SceneTransition.goto_scene("res://scenes/ui/run_prep.tscn")

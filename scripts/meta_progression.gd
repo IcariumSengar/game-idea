@@ -95,6 +95,14 @@ const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
 var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
+## Sanctum UX point 1 (DESIGN.md 2026-08-17): currency as of the last time
+## the shop was closed -- shop.gd compares this against current currency
+## on open to find nodes that crossed into affordable since the last
+## visit (a one-off "welcome back" shimmer, not a live effect). Session-
+## only, not persisted to a save file -- it's a presentation cue, not
+## progress.
+var last_shop_close_player_currency: int = 0
+var last_shop_close_backpack_currency: int = 0
 ## Combo id -> true, once ever triggered on this save. Codex-only state --
 ## nothing in actual gameplay reads this, combos work identically whether
 ## discovered or not.
@@ -256,6 +264,12 @@ func _ready() -> void:
 		"Fragile Bearing",
 		"Start the run with less backpack capacity, for a flat Essence bonus."
 	)
+
+	# Sanctum UX (DESIGN.md 2026-08-17): asserted milestone status, not
+	# inferred from tree topology -- Spell Unlock is the gated trunk,
+	# Discard is Backpack Tree's own capstone.
+	get_stat_def(STAT_SPELL_UNLOCK).is_milestone = true
+	get_stat_def(STAT_PURGE).is_milestone = true
 
 
 func get_stat_defs() -> Array[StatDef]:
