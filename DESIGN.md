@@ -3405,3 +3405,46 @@ Short dated entries when a design decision is made and worth remembering
   outline read clearly and rarity tinting is unaffected. 290/290 unit
   tests and a 10-run playtest batch pass (pure `_draw()` change, no
   gameplay logic touched).
+- 2026-08-17 — Painted Hoard's rollout continued into spell VFX and UI
+  chrome, with one correction to this section's own premise found along
+  the way: **player and every enemy variant are not procedural** --
+  `player.tscn` and `enemy*.tscn` all use `AnimatedSprite2D` with real
+  `SpriteFrames` from the 0x72 DungeonTilesetII pack
+  (`assets/dungeon_tileset/`), from a sprite-art pass days before this
+  Art Direction decision was written. "Painting" a pre-made pixel-art
+  sheet isn't the same kind of change as swapping a `_draw()` call --
+  pixel art's whole look is flat/limited-palette, so painterly gradients
+  would clash with it, not extend it. Direct instruction: skip player/
+  enemies for now (pixel art stays), continue with what's genuinely
+  procedural. **Spell VFX** (6 of 8 spells' dedicated FX scripts --
+  Teleport Pulse and Summon Familiar have no dedicated procedural visual
+  of their own, see below): `spell_projectile.gd` (Arcane Bolt) gained
+  the same layered warm-glow technique as the skill tree's node glow and
+  the Legendary beacon; `inferno_burst.gd`/`frost_burst.gd`/
+  `time_warp_burst.gd`'s single flat-color rings gained a brighter
+  warm/cool core arc alongside the outer one, approximating a
+  light-to-dark gradient across a stroke (a true fill gradient doesn't
+  apply to a ring shape the way it did the gem's solid facets);
+  `meteor_strike_fx.gd`'s impact flash (the one genuinely filled shape
+  in this set) got a real two-layer radial gradient; `lightning_bolt_fx.gd`
+  already had a layered treatment, just warmed its white highlight to
+  match this pass's language. Teleport Pulse reuses the shared
+  `spark_burst.tscn` particle (no dedicated script to touch); Summon
+  Familiar's pet is an `AnimatedSprite2D`, same category as player/
+  enemies, skipped for the same reason. **UI chrome**: reconciling every
+  hardcoded gray `Color` literal across every UI script (settings,
+  shop, run-prep, Grimoire, Trophy Hall, save-slot selector, main menu)
+  to warm parchment is real, larger follow-on scope than this pass --
+  flagged rather than attempted wholesale. Took the single highest-
+  leverage step instead: `resources/panel_dark.tres` (the one shared
+  `StyleBoxFlat` nearly every panel in the game already draws from) went
+  from flat near-black gray-green to a warm dark umber background with
+  a muted-gold border, updating every screen at once from one file.
+  Deliberately stayed dark (not literal light parchment) so existing
+  light-colored text across dozens of screens didn't need touching too
+  -- a full light-parchment/dark-ink flip is the real "illuminated
+  manuscript" version of this idea but is its own, much larger pass.
+  Verified: 290/290 unit tests, a spell-heavy playtest batch (all 7
+  spells unlocked, high damage) with zero errors, and windowed
+  screenshots of the Grimoire and Settings confirming the warmer panel
+  reads consistently with text still fully legible.
