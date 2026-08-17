@@ -1,304 +1,178 @@
 # TODO
 
-Lightweight backlog. Not every idea needs to live here — just things worth
-not forgetting between sessions. Check items off or delete them once done;
-this file should stay short enough to skim.
+Now/Next/Later backlog — consolidated from the old TODO.md + IDEAS.md
+into one doc, 2026-08-17, since both had grown large and the split
+between "short-term backlog" and "free-form ideas" had stopped paying
+for itself. Lower rigor than DESIGN.md on purpose: **Now**/**Next**
+items get an explicit In scope/Out of scope line once they're real work
+items about to be picked up; **Later** stays free-form, no spec
+required, until something graduates up into Next.
 
-## Staged major tweaks
-
-A run of several big, structural changes is starting — the skill-tree
-rework below is the first. `v0.1.1` was deliberately cut as the stable
-rollback point right before this phase (see the Process item below), so
-each tweak should build on a known-good baseline, not on top of an
-in-flight one. To keep that true and avoid blurry scope between changes:
-
-- **One tweak in flight at a time.** Don't start the next tweak's work
-  until the current one is finished, playtest-verified, and landed.
-- **Each tweak gets an explicit In scope / Out of scope line** below —
-  implementation should stick to it rather than opportunistically
-  touching adjacent systems while in there.
-- **Milestone-sized tweaks get their own version tag** per
-  [VERSIONING.md](VERSIONING.md) rather than landing bundled with the
-  next tweak's commits — that's what keeps rollback granular if one of
-  these turns out wrong.
-- Further tweaks in this set get added here in the same format as
-  they're scoped, one at a time — this list isn't meant to be
-  pre-filled with placeholders for tweaks that aren't designed yet.
-
-- [ ] **Tweak 1 — Shop skill-tree rework.** Split spells out of Player
-      Tree into their own Spell Tree tab (three tabs total: Player /
-      Spells / Backpack), replacing the static read-only spell-lock
-      sidebar with a real interactive tree. See DESIGN.md's "Shop
-      structure: skill tree" section for the full target spec.
-      - **In scope:** the new Spell Tree tab and its trunk/branch
-        layout, moving the 18 spell stat defs' tree membership,
-        removing the old sidebar, the three tab labels (Player /
-        Spells / Backpack).
-      - **Out of scope:** any stat ID, cost curve, or gate value change;
-        renaming Player Tree/Backpack Tree's existing header text
-        beyond the tab label itself; anything in Backpack Tree; balance
-        numbers anywhere.
-- [ ] **Tweak 2 — Player-facing text overhaul.** Fix the specific tone/
-      casing inconsistencies found in a full text audit -- see
-      [TEXT_FLAVOR.md](TEXT_FLAVOR.md) for the complete spec and
-      rationale. Start only once Tweak 1 has landed and been verified.
-      - **In scope:** delete the death screen's redundant "RUN SUMMARY"
-        static header (let "Lost to the Void" carry the title);
-        standardize the Sanctum's "Start Run" button to ALL-CAPS "START
-        RUN" to match run_prep's; fix `arena.tscn`'s stale "Speed/Pickup
-        Range/Capacity" placeholder text to the current Swiftness/Gleam/
-        Bearing names; resolve the unused `main.tscn`'s hardcoded
-        "game-idea v1" (delete the scene once confirmed dead, or at
-        minimum drop the hardcoded string).
-      - **Out of scope:** any currency/stat/spell/enemy/rarity renames
-        (none were called for -- see TEXT_FLAVOR.md's "Closed
-        questions"); flavor text on skill-tree nodes; DESIGN.md's own
-        internal "shop" terminology; anything from Tweak 1.
-- [ ] **Tweak 3 — Backpack rework: fix fill % + add Gem Combos.** The
-      core "hoard vs. survive" tension has drifted from its original
-      intent -- see DESIGN.md's decision log (2026-08-16, backpack
-      audit) for the full diagnosis. Start only once Tweak 2 has landed
-      and been verified.
-      - **In scope:**
-        - Fix fill % to be driven by real slot count (one slot = one
-          stack instance of a tier, capped by that tier's Compacting
-          stack size; a tier can span multiple slots once a stack is
-          full) instead of the current "distinct tiers touched" count
-          (hard-capped at 6, decoupled from Compacting/Bearing above
-          level 6). Same HP/speed-shrink formula in `player.gd`, only
-          what counts as a slot changes.
-        - Add the Gem Combo system: holding one of each of the six
-          rarity tiers simultaneously (order-agnostic) triggers a
-          one-time-per-run "Full Set" AOE clear of enemies on screen,
-          reusing Meteor Strike's telegraph/impact visual. Purely
-          in-run, no currency, no meta-progression, available from run
-          1 -- resets to nothing at the start of every run.
-        - Re-tune Compacting's per-tier stack-size numbers via the
-          playtest harness once fill % actually responds to them (they
-          were tuned assuming zero effect on survival risk, which is no
-          longer true).
-      - **Out of scope:** the separate Stardust-income question raised
-        during design (whether backpack currency should relate to how
-        much was hoarded, not just time survived) -- flagged but not
-        decided, left for its own future tweak; the "Streak" combo idea
-        (3-of-a-tier buff) -- possible v2 addition once Full Set is
-        proven, not required for this pass; any change to the rarity
-        value table or loot→currency conversion.
-- [ ] **Tweak 4 — Player size/hitbox as the fill-risk signal.** Replaces
-      HP-shrink-on-fill with visible, mechanical size growth on the
-      player itself -- see DESIGN.md's decision log (2026-08-16) for the
-      full rationale. Start only once Tweak 3 has landed and been
-      verified (needs its corrected fill % first, or size scaling
-      inherits the same hard-capped-at-6-tiers bug).
-      - **In scope:** remove HP-shrink-on-fill entirely
-        (`MIN_HP_FRACTION` / `_update_hp_from_backpack()`'s `max_hp`
-        lerp in `player.gd`) -- max_hp stops responding to backpack fill;
-        scale the player sprite up with fill % as the primary "how full
-        am I" signal, since the top-left HUD panel is hard to track
-        mid-action; scale the player's actual `CollisionShape2D` radius
-        alongside the sprite, so a fuller bag is a mechanically bigger,
-        easier-to-hit target, not just a visual cue; keep the existing
-        speed-shrink-on-fill (`MIN_SPEED_FRACTION`) formula unchanged.
-      - **Out of scope:** any change to the speed-shrink curve/floor;
-        gems rendered as separate stacked/orbiting sprites (sprite-scale
-        only for this pass, not a gem-stacking visual); removing or
-        resizing the HUD backpack panel (left open -- still shown,
-        deprioritized as the primary signal, not yet decided whether it
-        goes away); anything from Tweak 3's scope.
-
-## Process (from the 2026-08-16 engineering-practices pass)
-
-- [x] Add a lightweight headless unit-test runner for pure logic (cost
-      curves, drop weights, stat formulas) — `scripts/unit_tests.gd`
-      (autoload `UnitTests`), same self-contained, no-external-framework
-      style as `playtest_harness.gd`. See TESTING.md's "Headless
-      pure-logic unit tests" section. Covers `MetaProgression` cost/level
-      math (generically, against each `StatDef`'s own fields, not
-      hardcoded numbers), `buy_upgrade`/level-cap behavior,
-      `LootTypes.pick_random_weighted`/`get_effective_stack_size`, and the
-      backpack fill-ratio HP/speed lerp in `player.gd` (driven through the
-      real `collect_loot`/`consume_loot` API). `Godot.exe --headless
-      --path . -- --unit-test`; 191 assertions, all passing.
-- [x] Cut the next version tag once the incoming stable build is
-      confirmed clean — done as `v0.1.1` (PATCH, not MINOR: Backpack
-      Ability/v11 spells/Boss/Settings were already in `v0.1.0`'s tag;
-      the only things added after it were the shop-tab reorg and
-      tooling/docs, no new content, so PATCH per VERSIONING.md's own
-      definitions). This is the intended stable rollback point before
-      the next round of bigger overhauls.
+Completed work isn't tracked here — git history and DESIGN.md's decision
+log are the permanent record of what shipped and why (same reasoning
+CLAUDE.md already gives for archiving DESIGN.md's own old entries: "Git
+already preserves full history; the file doesn't need to").
 
 ## Now
 
-- [x] All DESIGN.md features implemented and tested
-  - [x] Core gameplay: movement, combat, loot, backpack, death/run cycle
-  - [x] Rarity tiers (6 tiers with correct drop weights, stack sizes, values)
-  - [x] Two currencies with correct income streams
-  - [x] Upgrade curves (geometric cost, hard caps) for all stats
-  - [x] Compacting per-tier (stack size multipliers)
-  - [x] Purge (auto-discard at thresholds)
-  - [x] Skill tree shop (two-tree layout with gating)
-  - [x] 4-slot save system with metadata tracking and persistence
-  - [x] Startup menu system (Main Menu → New Game / Load Game)
-  - [x] Backpack currency rate aligned with DESIGN.md (0.05/sec, v6 balance)
-  - [x] Backpack Ability: pre-run Condense/Clear choice (`backpack_ability.gd`),
-        picked in `run_prep.tscn`, new Alchemy upgrade stat -- see
-        DESIGN.md's Backpack Ability section for the full spec
+Nothing is actively blocking implementation right now — everything
+spec'd and ready shipped in one continuous pass on 2026-08-17 (Depth Pass
+Groups A-E, Spell Choice, the Shop skill-tree rework, Sanctum UX, the
+Text overhaul). What's actually pending:
 
-## In Progress / Lower Priority
+- **Human verification pass.** Everything shipped 2026-08-17 is
+  functionally verified (unit tests + the headless playtest harness) but
+  none of it has been seen in a real window — per CLAUDE.md's testing
+  tiers, visual/feel work can't be checked headless. Priority order:
+  - **Sanctum UX first** — the spec itself flags real risk of the
+    stacked node encodings (currency ring, level arc, sealed state,
+    border tint, per-tab count) reading as "busy" rather than legible,
+    not asserted as fine just because each piece made sense on paper.
+  - **Pacts' run-prep selection UI** — never seen in a window; also the
+    "2-option toggle vs. a longer list" question was resolved as a row
+    of `TabButton`s, worth confirming that reads well with 4 options
+    (None + 3 Pacts).
+  - **Spell Choice's buy-then-choose panel** — a new interaction pattern
+    for this shop, first time seeing it live.
+  - **General feel** — Manual Triage's queued-gem visuals in motion,
+    Cast Off's throw arc, Magpie's tint/silhouette, Attunement's spell
+    VFX at each end of the spectrum.
 
-- [ ] Cloud-sync backend: infrastructure exists (cloud_sync.gd) but server
-      integration not implemented (placeholder only) -- **blocked**: needs
-      an actual backend/hosting decision (Firebase, Supabase, custom
-      server, ...), not something to pick unilaterally
-- [x] Settings menu: real screen now (`settings_menu.tscn`/`.gd`) with a
-      master volume slider and fullscreen toggle, persisted to
-      `user://settings.json` via a new `Settings` autoload (device-level
-      prefs, separate from per-save-slot MetaProgression data)
+## Next
 
-## Future Content (Locked Design, Post-v8)
+Understood and mostly spec'd, but each needs a real decision before
+code — not guessed at, per this project's own established discipline.
 
-### Magic Spells (v9/v10/v11) follow-up
+- **Burden.** Depth Pass Group E's follow-up — a single running number
+  summing active Pacts' drawbacks (Hades' Heat precedent), scaling the
+  run's payout. Two open decisions, not implementation gaps:
+  - Multi-pact selection (`active_pact` → `active_pacts`) or does Burden
+    apply against the current single-pact model as-is?
+  - The actual payout formula. Unlike everything shipped 2026-08-17,
+    there's no existing number to anchor this to (Spell Choice's math,
+    Narrow Queue's cap, etc. all had a derivable correct answer) — this
+    one is a real design call.
+- **HUD + death-summary rework.** Needs its own design pass — the in-run
+  overlay and death screen predate Gem Combos, phase callouts, the
+  size/hitbox risk signal, Active Pickup's queue, Attunement, and Pacts.
+  Absorbs a few loose threads once scoped: the "pips brighten as a combo
+  nears completion" cue, new-run scoring (personal bests for
+  Richest/Leanest/Most Refused), Burden's own readout, whether the
+  meta-stats line (`Swiftness: X  Gleam: Y  Bearing: Z`) still makes
+  sense given how much Bearing/Gleam's roles have shifted.
 
-- [x] Verify *functional* correctness with all 3 spells firing together:
-      10-run playtest batches (moderate and heavy stat seeding) show zero
-      runtime errors with Arcane/Inferno/Frost all active and casting on
-      independent cooldowns simultaneously -- confirms no signal
-      conflicts or performance blowup.
-- [ ] Verify *visual/audio* feel (whether 3 simultaneous cast effects
-      read as clutter or chaos) -- genuinely can't check this headless,
-      no way to see frames or hear audio output from the playtest
-      harness. Needs actual human eyes/ears.
-- [x] Real spell visuals/SFX -- Inferno Blade (flame-burst) and Frost Nova
-      (ice-ring, sized to its radius stat) both have dedicated procedural
-      visuals now; Arcane Bolt's projectile already had one from the
-      start. All still procedural vector shapes, not sprite art.
-- [x] Inferno Blade's 200px knockback -- Enemy now has a decaying
-      `_knockback` velocity (mirrors Player's own)
+## Later
 
+Blue-sky, no limits, anything that fits the game's essence/fun even if
+it's a long way off or half-formed — carried over from IDEAS.md's own
+Later bucket verbatim. No in-scope/out-of-scope required here; that gets
+written once something's ready to move up into Next.
 
-- [x] Loot affixes (`loot.gd`): Epic+ drops can roll "Blessed" (+50%
-      value, distinct gold color/pulse/floating text). Scoped as a
-      one-time bonus banked to `Player.bonus_loot_value` rather than a
-      persistent per-item modifier, since the backpack only tracks a
-      count per tier, not item instances -- see DESIGN.md's Loot
-      Affixes section for why a true instance-level version is a
-      bigger architecture change, left as a future direction.
-- [x] v11 Additional Spells: Meteor Strike, Lightning Chain, Time Warp,
-      Teleport Pulse, Summon Familiar all implemented and gated behind
-      Spell Unlock L3-L7 (cap raised 5->7). See DESIGN.md's Magic Spells
-      section for full specs and the decision log for scope notes
-      (each got 1 upgrade stat instead of 2-3, Familiar's "mana-limited"
-      flavor stood in for by duration+cooldown rather than a new mana
-      resource). Functional correctness verified via the playtest
-      harness with all 8 spells active; visual/audio feel has the same
-      "needs a human" caveat as the original three above.
+- **Spend the hoard mid-run** *(working name: "the Altar")*. Loot is
+  inert until death — the only way it leaves the bag is being
+  auto-discarded. An altar that appears periodically in the arena and
+  takes an offering (N of a tier) for a run-scoped boon would give the
+  hoard an active outlet, add the in-run choice point the game has none
+  of, and cost positioning to reach. Deckbuilder-shaped: your bag
+  becomes a hand you can play, not a score you accumulate.
 
-### Enemy Types follow-up (not blocking v7)
+- **The hoard should be losable.** Death is currently the cash-out
+  button — everything banks in full on death, quitting early banks
+  nothing, so there is no way to lose a hoard and no reason not to die
+  holding it. A voluntary exit that pays a bonus, a partial loss on
+  death, or a small always-safe pocket (The Cycle's safe pockets, RoR2's
+  Obliterate) would make "hoard vs. survive" actually bite instead of
+  resolving to "hoard, then die." Big economy change and a genuine
+  philosophy call — but this is the softest spot in the whole design.
+  Sharpest lesson from genre precedent (Dredge's cargo-damage attrition,
+  Incan Gold's per-round wipe, vs. DRG/Tarkov's clean binary loss):
+  partial, repeated loss can be more agonizing than a single all-or-
+  nothing moment — it keeps you gambling instead of letting you accept
+  a stop/start point. Worth weighing against a single voluntary-exit
+  mechanic before picking a shape.
 
-- [x] Visuals: Bruiser/Elite/Boss now use their own distinct sprite sheets
-      (orc_warrior/orc_shaman/big_demon from the existing DungeonTilesetII
-      pack, already imported but previously unused) instead of a tinted
-      reuse of the Minion's goblin frames. Audio (distinct hit/cast
-      sounds per tier) still not done.
-- [ ] Verify progression: early runs (Phase 1 only) feel accessible,
-      reaching Phase 3 feels like milestone -- needs real playtesting.
-      Playtest harness data so far: a heavily-seeded bot reaches Phase 3
-      consistently (~44-52s avg survival); a moderately-seeded one (all 3
-      spells + a handful of stat levels, standing in for "several runs
-      in") lands solidly in Phase 2 (~30s avg, max 37.6s across 10 runs)
-      without reaching it; a fresh/zero-upgrade one never does --
-      consistent with "milestone," not yet confirmed as *feeling* like
-      one to an actual player (the bot doesn't reposition/plan the way a
-      human would, so this reads real difficulty but isn't the full
-      picture).
-- [x] Tier 4 Boss -- unique, spawns once at 55+ sec, hybrid pursuit +
-      3-shot projectile spread, guaranteed Mythic+ drop
-- [x] Enemy variants within tiers -- Fast/Tanky Minion, same loot table,
-      70/15/15 split of each phase's existing Minion spawn weight
+- **A Legendary is a set piece, not a drop** *(no proper noun needed —
+  it's a behavior on the existing Legendary tier, not new content)*. At
+  0.5% base weight the top tier is effectively Boss-only, and when it
+  finally appears it magnetizes in like everything else. Let it *not*
+  magnetize: it lands, it glows, it pulls every enemy on screen toward
+  it. The prize is bait. Turns the rarest thing in the game into an
+  event you fight for rather than a free keypress, using nothing but
+  positioning.
 
-## v6 Balance (Implemented, Pending Playtest)
+- **Phase 4: the arena becomes the antagonist** *(name already fits —
+  continues the existing Phase 1/2/3 convention, no new term needed)*.
+  Nothing new happens after the Boss at 55s — past that it's the same
+  featureless 1280x720 box with bigger numbers. The arena is completely
+  inert, which is a lot to leave on the table in a game where
+  positioning is half the pitch. A late phase where the space itself
+  turns hostile (closing in, going dark, drops landing only where you
+  don't want to go) would give long runs a reason to exist beyond stat
+  scaling.
 
-See [DESIGN.md — v6 Balance](DESIGN.md#v6-balance-locked-ready-for-implementation) for all numbers and rationale.
+- **A hoard you can actually see** *(working name: "the Trophy Hall,"
+  keeping "Sanctum" itself free for the shop screen it already names)*.
+  The game is called Hoard Survivors and nothing is ever hoarded — loot
+  converts to currency and vanishes. A room in the Sanctum that
+  accumulates your best finds across every run, in the Grimoire's
+  progressive-discovery spirit, would give the title something to point
+  at and add a long-term pull that isn't another number going up.
 
-- [x] Implement all v6 balance values (1 slot start, 0.05/sec, Capacity cost 100, etc.)
-- [ ] Playtest & verify: player upgrades feel rewarding early, Compacting accessible run 5–10, Capacity feels like prestige late-game
+- **Pacts are the endgame the caps already imply.** Every stat has a
+  hard level cap by design, which means the trees genuinely *finish* —
+  and there is currently nothing on the other side of that. Slay the
+  Spire's answer is Ascension: once the collection stops growing, the
+  difficulty ladder becomes the progression. If Burden (see Next above)
+  is a real number, it can carry that weight — best-run records tracked
+  *per Burden level*, heavier Pacts only offered once lighter ones have
+  been cleared. Reframes Pacts from "a third category of thing to buy"
+  into the layer that outlives the trees, which is a far better answer
+  to "what is the Sanctum for at 100%" than more nodes would be.
 
-## Later (Completed this session)
+- **Buy the right to carry more Pacts** *(working name: "Resolve")*.
+  Hades 2's Grasp is a budget capping how many Arcana you can run at
+  once, raised with a separate permanent currency — a permanent
+  purchase whose entire payoff is per-run freedom. A Stardust node whose
+  only job is raising how many Pacts stack would tie the two halves of
+  the shop together so Pacts don't sit isolated on another screen. It
+  also supplies the one thing a fully-maxable tree structurally can't:
+  with hard caps and no exclusive branches, spending is only ever a
+  tempo question, never an exclusivity one — a budget on simultaneous
+  *use* is where the real decision lives (Hollow Knight's notches,
+  Arcana's Grasp). Steal overcharm as the risk valve while you're there:
+  let players exceed the budget for a flat penalty rather than
+  hard-blocking them.
 
-- [x] Fix Backpack Capacity's upgrade curve — now uses ×1.20/lvl, 12-level cap
-- [x] Skill-tree shop UI — two-tree layout with gating and visual improvements
-- [x] Compacting (per-tier) + Purge — full gameplay mechanics implemented
-- [x] Compacting gameplay: stack sizes increase per tier based on Compactor level
-- [x] Purge gameplay: auto-discard lowest-rarity items at threshold 90/85/80/70%
-- [x] HUD & UI Design (see DESIGN.md) — live stats overlay (Time/Essence/
-      Stardust), full death summary screen (rewards, loot breakdown, run
-      stats, previous best), and skill tree tooltips (colored border,
-      before/after values, affordability status)
-- [x] Enemy Types (v7) — Bruiser (pause/charge) and Elite (kite +
-      projectile) added alongside Minion, phase-gated spawn mix, and
-      per-tier loot weighting (`Enemy.loot_weights` +
-      `LootTypes.pick_random_weighted`)
-- [x] Post-v7 audit — verified every DESIGN.md number (loot table, stat
-      curves, enemy stats/loot weights, spawn-phase mix, skill-tree
-      gating) against the actual code line by line; fixed everything
-      found broken:
-      - Difficulty ramp only scaled `speed`/`max_hp`, silently missing
-        Bruiser's `charge_speed` and Elite's `projectile_speed` even
-        though DESIGN.md calls both out explicitly — added an
-        overridable `Enemy.apply_difficulty_scale()` hook
-      - Save/load: "New Game" hardcoded slot 0 and wiped all 4 slots'
-        metadata via a stray `_initialize_slots()` call; there was no
-        way to start a fresh game in slots 2-4 (Load was disabled on
-        empty slots) and no "Overwrite" action existed despite
-        DESIGN.md requiring both
-      - `last_played` was stored via engine uptime (`Time.get_ticks_msec`),
-        so it read as garbage ("20680 days ago") after any restart;
-        switched to a real Unix timestamp
-      - `playtime_hours` was hardcoded to reset to 0.0 on every save
-        instead of accumulating — now tracks real elapsed session time
-      - Switching to an empty slot silently kept whatever was in memory
-        from the previously loaded slot instead of resetting to defaults
-- [x] Backpack-fill speed penalty — a full bag now also slows movement
-      (floor 70% of base speed) alongside the existing max-HP shrink
-      (floor 20%), reusing the same fill-ratio lerp in `player.gd`
-- [x] Magic Spells (v9) — single-active-spell casting system replacing
-      the old flat weapon: Arcane Bolt (ranged projectile, always
-      available), Inferno Blade (melee arc + burn DOT, unlocks at Spell
-      Unlock L1), Frost Nova (AOE damage + slow, unlocks at L2). New
-      Spell Unlock skill-tree node plus 8 per-spell upgrade stats (cost
-      curves invented -- DESIGN.md only gave effect shape/caps, not
-      costs). Spell switching + tier unlocking done in the shop's new
-      "Active Spell" panel. Also fixed a skill-tree layout bug this
-      surfaced: nodes with more than 4 children (Spell Unlock has 6)
-      overflowed past the tree column instead of wrapping to a new row.
-- [x] Multi-Spell Casting (v10) — replaced v9's single-active-spell
-      switching: every unlocked spell now fires simultaneously and
-      independently (own cooldown per spell), no slots or manual
-      switching. Shop's spell panel is now a read-only unlock-status list.
-- [x] Headless auto-playtest harness — `scripts/playtest_harness.gd` +
-      `scripts/playtest_bot_ai.gd`, see CLAUDE.md's Testing section for
-      usage. Runs N bot-played runs back to back, sandboxed save slot,
-      prints an aggregate report; found and fixed two latent physics-flush
-      bugs (`loot.gd`, `arena.gd`'s `_on_enemy_died`) along the way.
-- [x] Early-game rebalance from playtest harness data — fixed Minion's
-      HP/speed (120/30 code vs 100/20 documented spec) and eased
-      `CONTACT_DAMAGE` 10→8; 20-run baseline went 10.1s/1.8 kills avg →
-      12.2s/4.7 kills avg, zero-loot runs 10/20 → 3/20. See DESIGN.md's
-      decision log for the full before/after numbers.
+- **Buy odds, not numbers** *(working name: "the Forge," after Dead
+  Cells' Legendary Forge)*. Every node in the shop raises a number. Dead
+  Cells sells *probability* instead — you invest cells into the drop
+  rate of each gear quality, gated so you can't invest in a rank until
+  the previous is full, which is the same chain-gate this shop already
+  uses everywhere. A node that shifts the rarity table toward the top
+  tiers is the most on-theme upgrade a game called Hoard Survivors could
+  possibly sell, and it's qualitatively a different *kind* of node from
+  +2 Spellpower — which is what the tree is actually short of. Flagged
+  honestly: this is real balance work on the rarity table (DESIGN.md
+  already calls drop weights "a lever to pull later"), not a
+  presentation change.
 
-## Done
+- **Every stat gets a second facet** *(working name: "Facets")*.
+  DESIGN.md deliberately leaves the door open to mutually-exclusive
+  branches and correctly notes they'd be a scope addition — new stat
+  types, and real tension with "everything is eventually maxable."
+  Hades' Mirror is the cheap version that dodges both: each upgrade has
+  two faces, one that purely adds and one that trades something away,
+  switched freely at any time for no cost. No new nodes, no new
+  currency, no new cost curve, caps untouched — the same purchased
+  levels just point at a different effect. The smallest possible thing
+  that lets a maxed-out tree still express a build, and it reuses the
+  game's own gem/facet language.
 
-- [x] Godot 4 project scaffold, versioning workflow, engineering practices (v1)
-- [x] Dev environment: Godot Tools VS Code extension, gdformat/gdlint
-- [x] Core concept + initial scope decided (see DESIGN.md)
-- [x] Core loop built end-to-end: movement, one enemy, auto-attack combat,
-      HP/death, proximity loot pickup, backpack fill/HP-shrink, difficulty
-      ramp, run summary, currency + shop (capacity/pickup range), run
-      restart with carried-over upgrades (v2)
-- [x] Data-driven `StatDef`/`MetaProgression`, styled HUD with stat
-      readouts and color-graded bars, shared button/panel style
-      resources, magnet-style loot pickup (v3)
-- [x] Rarity tiers + slot-grid backpack, two-currency split with
-      geometric-cost/capped upgrades, Damage + Move Speed upgradeable,
-      player dash, real sprite art, `/play` `/close` `/editor` slash
-      commands (v4)
+## Reference
+
+- Headless unit-test runner: `Godot.exe --headless --path . -- --unit-test`
+- Headless playtest harness: `Godot.exe --headless --path . -- --playtest
+  [--playtest-runs=N] [--playtest-seed=stat_id:level,...]`
+- See CLAUDE.md's Testing section for the full three-tier verification
+  model this project uses (pure-logic unit tests, playtest-harness
+  balance signal, windowed visual/feel checks).

@@ -2867,3 +2867,18 @@ Short dated entries when a design decision is made and worth remembering
   is now 725 lines, well past CLAUDE.md's soft ceiling -- a candidate for
   extracting its icon-drawing functions into a separate file in a future
   pass, not attempted here to avoid restructuring a file mid-feature.
+- 2026-08-17 — TODO.md and IDEAS.md consolidated into a single Now/Next/
+  Later-format TODO.md, at direct request, once the entire 2026-08-17
+  implementation pass (Depth Pass A-E, Grimoire extension, Shop tree
+  rework, Spell Choice, Sanctum UX, Text overhaul) left both files
+  mostly full of stale checkboxes and an emptied-out IDEAS.md "Now-ish"
+  section. IDEAS.md deleted outright; its "Later" bucket carried over
+  verbatim into the new TODO.md's own Later section rather than
+  re-written, since none of those nine entries changed. The old TODO.md's
+  large "Done"/historical-log sections were dropped, not carried over --
+  git history and this decision log are already the permanent record,
+  same reasoning this doc already applies to archiving its own old
+  entries. This doc (DESIGN.md) is explicitly unaffected -- spec content
+  and the decision log don't fit a Now/Next backlog shape and stay in
+  their own file, per direct confirmation before this consolidation
+  started.
