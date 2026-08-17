@@ -707,18 +707,22 @@ func _test_attunement_spell_multipliers() -> void:
 ## through save/load correctly -- combos themselves stay purely in-run
 ## (DESIGN.md), but *whether one's ever been seen* has to survive across
 ## saves, which means it has to go through export_save_data()/
-## import_save_data() like everything else persistent.
+## import_save_data() like everything else persistent. Also covers
+## magpie_encountered, the same pattern extended to the Grimoire's new
+## THREATS section.
 func _test_combo_discovery_save_round_trip() -> void:
 	# reset_progress() (exercised below) touches more than discovered_combos --
 	# snapshot everything it can reach so this test can't leak state into
 	# whatever runs after it, not just the one field this test cares about.
 	var original_discovered: Dictionary = MetaProgression.discovered_combos.duplicate()
+	var original_magpie_encountered := MetaProgression.magpie_encountered
 	var original_player_currency := MetaProgression.player_currency
 	var original_backpack_currency := MetaProgression.backpack_currency
 	var original_best_run_time := MetaProgression.best_run_time
 	var original_levels: Dictionary = MetaProgression._stat_levels.duplicate()
 
 	MetaProgression.discovered_combos.clear()
+	MetaProgression.magpie_encountered = false
 	_assert(
 		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
 		"a combo starts undiscovered"
@@ -734,12 +738,20 @@ func _test_combo_discovery_save_round_trip() -> void:
 		"discovering one combo doesn't discover the other"
 	)
 
+	MetaProgression.mark_magpie_encountered()
+	_assert(MetaProgression.magpie_encountered, "marking Magpie encountered sets the flag")
+
 	var exported := MetaProgression.export_save_data()
 	MetaProgression.discovered_combos.clear()
+	MetaProgression.magpie_encountered = false
 	MetaProgression.import_save_data(exported)
 	_assert(
 		MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
 		"discovery survives an export/import round-trip"
+	)
+	_assert(
+		MetaProgression.magpie_encountered,
+		"magpie_encountered survives an export/import round-trip"
 	)
 
 	MetaProgression.reset_progress()
@@ -747,8 +759,12 @@ func _test_combo_discovery_save_round_trip() -> void:
 		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
 		"reset_progress() clears discovered combos along with everything else"
 	)
+	_assert(
+		not MetaProgression.magpie_encountered, "reset_progress() clears magpie_encountered too"
+	)
 
 	MetaProgression.discovered_combos = original_discovered
+	MetaProgression.magpie_encountered = original_magpie_encountered
 	MetaProgression.player_currency = original_player_currency
 	MetaProgression.backpack_currency = original_backpack_currency
 	MetaProgression.best_run_time = original_best_run_time

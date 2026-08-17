@@ -28,6 +28,7 @@ func _ready() -> void:
 	# "recoverable if you catch it in time," not "always guarantees loot."
 	loot_weights = {}
 	died.connect(_on_died)
+	MetaProgression.mark_magpie_encountered()
 
 
 func _update_behavior(delta: float) -> void:

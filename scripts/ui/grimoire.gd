@@ -57,7 +57,8 @@ const COMBOS: Array[Dictionary] = [
 	{
 		"id": &"full_set",
 		"name": "Full Set",
-		"desc": (
+		"desc":
+		(
 			"Hold one of each of the six rarity tiers at once. Clears every"
 			+ " enemy on screen. Once per run."
 		),
@@ -65,12 +66,27 @@ const COMBOS: Array[Dictionary] = [
 	{
 		"id": &"streak",
 		"name": "Streak",
-		"desc": (
+		"desc":
+		(
 			"Collect three of the same tier in a row. AOE damage burst,"
 			+ " stronger for rarer tiers. Repeatable."
 		),
 	},
 ]
+
+## Magpie (Depth Pass Group C): progressive discovery like Gem Combos
+## above, since it only spawns from Phase 2 on and a fresh run genuinely
+## hasn't seen one yet. Attunement/Pacts below are always shown instead --
+## nothing about either is a run-time surprise (Pacts are already visible
+## on the run-prep screen before every run; Attunement is a passive,
+## always-on mechanic from the moment a run starts) so hiding them behind
+## discovery would gate information the player already has access to,
+## not protect a real reveal.
+const MAGPIE_NAME: String = "Magpie"
+const MAGPIE_DESC: String = (
+	"Steals unclaimed loot off the ground and eats it. Kill it before"
+	+ " it gets away and it drops everything it ate, at a bonus."
+)
 
 @onready var _body: RichTextLabel = %GrimoireBody
 
@@ -103,9 +119,49 @@ func _build_bbcode() -> String:
 			lines.append("[color=%s]%s[/color]" % [DESC_COLOR, combo["desc"]])
 		else:
 			lines.append(
-				"[color=%s][b]???[/b]  (undiscovered -- trigger it to reveal)[/color]"
+				(
+					"[color=%s][b]???[/b]  (undiscovered -- trigger it to reveal)[/color]"
+					% LOCKED_COLOR
+				)
+			)
+		lines.append("")
+
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[color=%s][b]THREATS[/b][/color]" % HEADER_COLOR)
+	lines.append("")
+	if MetaProgression.magpie_encountered:
+		lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, MAGPIE_NAME])
+		lines.append("[color=%s]%s[/color]" % [DESC_COLOR, MAGPIE_DESC])
+	else:
+		lines.append(
+			(
+				"[color=%s][b]???[/b]  (undiscovered -- reaches the arena from Phase 2 on)[/color]"
 				% LOCKED_COLOR
 			)
+		)
+	lines.append("")
+
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[color=%s][b]ATTUNEMENT[/b][/color]" % HEADER_COLOR)
+	lines.append("")
+	lines.append(
+		(
+			(
+				"[color=%s]Your bag's composition tunes your spells, live. Lean and"
+				+ " common-heavy: faster casts, weaker hits. Hoarding rares: slower"
+				+ " casts, harder hits. An empty bag is worse than either end.[/color]"
+			)
+			% DESC_COLOR
+		)
+	)
+	lines.append("")
+
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[color=%s][b]PACTS[/b][/color]" % HEADER_COLOR)
+	lines.append("")
+	for pact: PactDef in MetaProgression.get_pact_defs():
+		lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, pact.display_name])
+		lines.append("[color=%s]%s[/color]" % [DESC_COLOR, pact.description])
 		lines.append("")
 
 	return "\n".join(lines)

@@ -87,6 +87,11 @@ var discovered_combos: Dictionary = {}
 ## Empty string means no Pact active -- the default, and always a valid
 ## choice (Pacts are opt-in, not mandatory).
 var active_pact: StringName = &""
+## Codex-only state for the Grimoire, same spirit as discovered_combos --
+## Magpie only spawns from Phase 2 on, so unlike Attunement/Pacts (always
+## visible in the Grimoire, since nothing about them is a run-time
+## surprise) it has real "hasn't happened yet" discovery value.
+var magpie_encountered: bool = false
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
@@ -292,6 +297,12 @@ func is_combo_discovered(combo_id: StringName) -> bool:
 	return discovered_combos.get(combo_id, false)
 
 
+## Called by EnemyMagpie the moment one spawns in. Harmless to call
+## repeatedly -- stays encountered forever once seen once.
+func mark_magpie_encountered() -> void:
+	magpie_encountered = true
+
+
 func buy_upgrade(id: StringName) -> bool:
 	var def := get_stat_def(id)
 	if def == null or is_maxed(id):
@@ -392,7 +403,8 @@ func export_save_data() -> Dictionary:
 		"best_run_time": best_run_time,
 		"stat_levels": _stat_levels,
 		"discovered_combos": discovered,
-		"active_pact": String(active_pact)
+		"active_pact": String(active_pact),
+		"magpie_encountered": magpie_encountered
 	}
 
 
@@ -413,6 +425,7 @@ func import_save_data(data: Dictionary) -> void:
 	for combo_id: String in saved_combos:
 		discovered_combos[StringName(combo_id)] = true
 	active_pact = StringName(data.get("active_pact", ""))
+	magpie_encountered = data.get("magpie_encountered", false)
 	currency_changed.emit()
 
 
@@ -429,4 +442,5 @@ func reset_progress() -> void:
 		_stat_levels[stat_id] = 0
 	discovered_combos.clear()
 	active_pact = &""
+	magpie_encountered = false
 	currency_changed.emit()

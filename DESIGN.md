@@ -2677,3 +2677,21 @@ Short dated entries when a design decision is made and worth remembering
   splitting 8 spells' casting logic into per-spell files is a real,
   independent refactor with its own risk, not something to rush alongside
   a balance-sensitive mechanic change in the same pass.
+- 2026-08-17 — Grimoire extended to cover Magpie, Attunement, and Pacts,
+  per the design chat's own suggested build order ("by now Magpie,
+  Attunement, and Pacts all exist, so the reference screen documents the
+  finished mechanics"). New THREATS section for Magpie, progressive
+  discovery like Gem Combos -- new `MetaProgression.magpie_encountered`
+  flag, marked in `EnemyMagpie._ready()` the moment one spawns in,
+  persisted through export/import/reset like `discovered_combos`.
+  ATTUNEMENT and PACTS sections are always shown, deliberately not
+  discovery-gated: neither is a run-time surprise the way an undiscovered
+  combo is -- Pacts are already visible on the run-prep screen before
+  every run, and Attunement is a passive, always-on mechanic from the
+  moment a run starts, so hiding either behind "???" would withhold
+  information the player already has, not protect a real reveal. Pacts'
+  entries are read live from `MetaProgression.get_pact_defs()` rather
+  than a second hardcoded list, so a future Pact shows up automatically.
+  Verified via 4 new/extended unit-test cases (235 passing, including the
+  encounter-flag's save round-trip alongside the existing combo-discovery
+  one), a direct scene boot check, and a playtest batch with zero errors.
