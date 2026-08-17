@@ -21,9 +21,15 @@ const BOSS_LABEL: String = "BOSS!"
 const BOSS_LABEL_COLOR: Color = Color(0.95, 0.2, 0.25)
 const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
 const PHASE_LABEL_FONT_SIZE: int = 24
+## Attunement gauge (DESIGN.md's HUD + death-summary rework, 2026-08-17):
+## cooler at Low, warmer at High, reusing Group D's spell-VFX tint
+## language for the same gauge rather than inventing separate colors.
+const ATTUNEMENT_COLOR_LOW: Color = Color(0.3, 0.75, 0.9, 1.0)
+const ATTUNEMENT_COLOR_HIGH: Color = Color(0.95, 0.45, 0.2, 1.0)
 
 var _backpack_capacity: int
 var _player: Player
+var _spell_caster: SpellCaster
 var _stardust_update_timer: float = 0.0
 var _last_phase: int = 1
 var _boss_announced: bool = false
@@ -36,6 +42,7 @@ var _boss_announced: bool = false
 @onready var _hp_value: Label = $StatsPanel/Margin/VBox/HPRow/HPValue
 @onready var _loot_grid: BackpackGrid = $StatsPanel/Margin/VBox/LootRow/LootGrid
 @onready var _loot_value: Label = $StatsPanel/Margin/VBox/LootRow/LootValue
+@onready var _attunement_bar: StatBar = $StatsPanel/Margin/VBox/AttunementRow/AttunementBar
 @onready var _stats_label: Label = $StatsPanel/Margin/VBox/MetaStatsLabel
 @onready var _game_over_panel: PanelContainer = $GameOverPanel
 @onready var _game_over_circle: Control = $GameOverCircle
@@ -45,6 +52,7 @@ var _boss_announced: bool = false
 
 func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player")
+	_spell_caster = _player.spell_caster
 	_backpack_capacity = _player.backpack_capacity
 	_player.hp_changed.connect(_on_hp_changed)
 	_player.loot_changed.connect(_on_loot_changed)
@@ -105,17 +113,45 @@ func _on_hp_changed(current: float, max_hp: float) -> void:
 	_hp_value.text = "%d/%d" % [roundi(current), roundi(max_hp)]
 
 
+## Combo-nearing pips (DESIGN.md's HUD + death-summary rework, 2026-08-17):
+## Streak progress comes straight off SpellCaster's own tracking; Full Set
+## nearness is just counting distinct tiers currently held (a tier's key
+## is erased from `backpack` the instant its count hits zero, so
+## `backpack.size()` already *is* that count) -- no new tracking either
+## way, both are read live off state that already exists.
 func _on_loot_changed(backpack: Dictionary) -> void:
-	_loot_grid.update(backpack, _backpack_capacity, _player.get_ballast_slots())
+	var streak_progress: float = clampf(
+		float(_spell_caster.get_streak_count() - 1) / float(SpellCaster.STREAK_THRESHOLD - 1),
+		0.0,
+		1.0
+	)
+	var full_set_near: bool = backpack.size() == LootTypes.get_tier_count() - 1
+	_loot_grid.update(
+		backpack,
+		_backpack_capacity,
+		_player.get_ballast_slots(),
+		_spell_caster.get_streak_tier(),
+		streak_progress,
+		full_set_near
+	)
 	_loot_value.text = "%d/%d" % [_player.get_slots_used(), _backpack_capacity]
 	_essence_value.text = "%d" % _player.get_total_loot_value()
+
+	var attunement: float = _player.get_attunement()
+	_attunement_bar.update(attunement, ATTUNEMENT_COLOR_LOW.lerp(ATTUNEMENT_COLOR_HIGH, attunement))
 
 
 func _on_player_died() -> void:
 	var total_value := _player.get_total_loot_value()
 	var seconds_survived := _arena.get_run_time()
 	var stardust_earned := roundi(seconds_survived * MetaProgression.BACKPACK_CURRENCY_PER_SECOND)
-	var previous_best := MetaProgression.update_best_run(seconds_survived)
+	var leanness := seconds_survived * (1.0 - _player.get_max_fill_ratio())
+	var discards := _player.get_discards_this_run()
+
+	var previous_time := MetaProgression.update_best_run(seconds_survived)
+	var previous_essence := MetaProgression.update_best_essence(total_value)
+	var previous_leanness := MetaProgression.update_best_leanness(leanness)
+	var previous_discards := MetaProgression.update_best_discards(discards)
 
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
 	SaveManager.save()
@@ -124,7 +160,15 @@ func _on_player_died() -> void:
 		return
 
 	_summary_body.text = _build_summary_bbcode(
-		total_value, stardust_earned, seconds_survived, previous_best
+		total_value,
+		stardust_earned,
+		seconds_survived,
+		leanness,
+		discards,
+		previous_time,
+		previous_essence,
+		previous_leanness,
+		previous_discards
 	)
 
 	AudioManager.play("player_death")
@@ -134,7 +178,15 @@ func _on_player_died() -> void:
 
 
 func _build_summary_bbcode(
-	total_value: int, stardust_earned: int, seconds_survived: float, previous_best: float
+	total_value: int,
+	stardust_earned: int,
+	seconds_survived: float,
+	leanness: float,
+	discards: int,
+	previous_time: float,
+	previous_essence: int,
+	previous_leanness: float,
+	previous_discards: int
 ) -> String:
 	var lines: Array[String] = []
 	lines.append("[color=#e066a3]Lost to the Void[/color]")
@@ -164,13 +216,35 @@ func _build_summary_bbcode(
 	)
 	lines.append("[color=#999999]Enemies Killed: %d[/color]" % _arena.get_enemies_killed())
 
-	if previous_best > 0.0:
-		lines.append("")
-		lines.append(
-			"[color=#888888]Highest Previous Run: %s[/color]" % _format_time(previous_best)
+	lines.append("")
+	lines.append("[color=#666666]────────────────────────[/color]")
+	lines.append("[b]PERSONAL BESTS[/b]")
+	lines.append(
+		_best_line("Survival Time", _format_time(seconds_survived), seconds_survived, previous_time)
+	)
+	lines.append(
+		_best_line(
+			"Richest", "%d Essence" % total_value, float(total_value), float(previous_essence)
 		)
+	)
+	lines.append(_best_line("Leanest", "%.1f" % leanness, leanness, previous_leanness))
+	lines.append(
+		_best_line("Most Refused", "%d" % discards, float(discards), float(previous_discards))
+	)
 
 	return "\n".join(lines)
+
+
+## One personal-best line, per DESIGN.md's "compare and show 'New Record!'
+## only for whichever ones a given run actually broke, rather than always
+## dumping all four." previous <= 0.0 means there's no real record yet
+## (this save's first-ever run in that category) -- the tag stays off
+## rather than trivially firing on a first attempt, same reasoning the
+## old survival-time-only comparison already used.
+func _best_line(label: String, display_value: String, current: float, previous: float) -> String:
+	var is_new_record: bool = previous > 0.0 and current > previous
+	var suffix: String = "  [color=#e6cc4d][b]NEW RECORD![/b][/color]" if is_new_record else ""
+	return "[color=#999999]%s: %s[/color]%s" % [label, display_value, suffix]
 
 
 func _build_loot_breakdown() -> Array[String]:

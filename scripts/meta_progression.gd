@@ -77,17 +77,6 @@ const UNLOCKABLE_SPELLS: Array[StringName] = [
 const COMBO_FULL_SET: StringName = &"full_set"
 const COMBO_STREAK: StringName = &"streak"
 
-## Pacts (Depth Pass Group E, DESIGN.md 2026-08-17): per-run rule
-## mutations chosen at run-prep, selling risk rather than permanent power
-## -- the direction Compacting's removal already pointed at. Re-selected
-## every run, not a one-time purchase; effects live where they apply
-## (player.gd's _apply_active_pact(), loot.gd's Cast Off damage), not here
-## -- this registry is identity/display data only, same split StatDef has
-## from its own effect application sites.
-const PACT_HEAVY_START: StringName = &"heavy_start"
-const PACT_NARROW_QUEUE: StringName = &"narrow_queue"
-const PACT_FRAGILE_BEARING: StringName = &"fragile_bearing"
-
 ## v6 balance: deliberately slow -- Bearing is a late-game prestige
 ## upgrade, not something funded within the first few runs.
 const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
@@ -95,6 +84,14 @@ const BACKPACK_CURRENCY_PER_SECOND: float = 0.05
 var player_currency: int = 0
 var backpack_currency: int = 0
 var best_run_time: float = 0.0
+## Personal-best categories (DESIGN.md's HUD + death-summary rework,
+## 2026-08-17), alongside best_run_time above. Richest: total Essence
+## earned in a run. Leanest: seconds_survived * (1.0 - max_fill_ratio) --
+## rewards surviving long while staying light, zero for either extreme.
+## Most Refused: total discards (L presses) in a run.
+var best_run_essence: int = 0
+var best_run_leanness: float = 0.0
+var best_run_discards: int = 0
 ## Sanctum UX point 1 (DESIGN.md 2026-08-17): currency as of the last time
 ## the shop was closed -- shop.gd compares this against current currency
 ## on open to find nodes that crossed into affordable since the last
@@ -107,12 +104,9 @@ var last_shop_close_backpack_currency: int = 0
 ## nothing in actual gameplay reads this, combos work identically whether
 ## discovered or not.
 var discovered_combos: Dictionary = {}
-## Empty string means no Pact active -- the default, and always a valid
-## choice (Pacts are opt-in, not mandatory).
-var active_pact: StringName = &""
 ## Codex-only state for the Grimoire, same spirit as discovered_combos --
-## Magpie only spawns from Phase 2 on, so unlike Attunement/Pacts (always
-## visible in the Grimoire, since nothing about them is a run-time
+## Magpie only spawns from Phase 2 on, so unlike Attunement (always
+## visible in the Grimoire, since nothing about it is a run-time
 ## surprise) it has real "hasn't happened yet" discovery value.
 var magpie_encountered: bool = false
 ## Spell Choice (DESIGN.md 2026-08-17): Spell Unlock level -> which spell
@@ -126,7 +120,6 @@ var chosen_spells: Dictionary = {}
 
 var _stat_defs: Array[StatDef] = []
 var _stat_levels: Dictionary = {}
-var _pact_defs: Array[PactDef] = []
 
 
 func _ready() -> void:
@@ -249,22 +242,6 @@ func _ready() -> void:
 		StatDef.Currency.PLAYER
 	)
 
-	_register_pact(
-		PACT_HEAVY_START,
-		"Heavy Start",
-		"Begin the run with your bag already part-full, for a flat Essence bonus."
-	)
-	_register_pact(
-		PACT_NARROW_QUEUE,
-		"Narrow Queue",
-		"Nothing queues behind the gem you're deciding on -- but Cast Off hits harder."
-	)
-	_register_pact(
-		PACT_FRAGILE_BEARING,
-		"Fragile Bearing",
-		"Start the run with less backpack capacity, for a flat Essence bonus."
-	)
-
 	# Sanctum UX (DESIGN.md 2026-08-17): asserted milestone status, not
 	# inferred from tree topology -- Spell Unlock is the gated trunk,
 	# Discard is Backpack Tree's own capstone.
@@ -314,6 +291,27 @@ func update_best_run(seconds_survived: float) -> float:
 	var previous_best := best_run_time
 	if seconds_survived > best_run_time:
 		best_run_time = seconds_survived
+	return previous_best
+
+
+func update_best_essence(total_value: int) -> int:
+	var previous_best := best_run_essence
+	if total_value > best_run_essence:
+		best_run_essence = total_value
+	return previous_best
+
+
+func update_best_leanness(leanness: float) -> float:
+	var previous_best := best_run_leanness
+	if leanness > best_run_leanness:
+		best_run_leanness = leanness
+	return previous_best
+
+
+func update_best_discards(discards: int) -> int:
+	var previous_best := best_run_discards
+	if discards > best_run_discards:
+		best_run_discards = discards
 	return previous_best
 
 
@@ -442,33 +440,6 @@ func get_stat_def(id: StringName) -> StatDef:
 	return null
 
 
-func get_pact_defs() -> Array[PactDef]:
-	return _pact_defs
-
-
-func get_pact_def(id: StringName) -> PactDef:
-	for def in _pact_defs:
-		if def.id == id:
-			return def
-	return null
-
-
-func set_active_pact(pact_id: StringName) -> void:
-	active_pact = pact_id
-
-
-func has_active_pact(pact_id: StringName) -> bool:
-	return active_pact == pact_id and pact_id != StringName()
-
-
-func _register_pact(id: StringName, display_name: String, description: String) -> void:
-	var def := PactDef.new()
-	def.id = id
-	def.display_name = display_name
-	def.description = description
-	_pact_defs.append(def)
-
-
 ## Directly sets a stat's level without spending currency -- used only to
 ## seed a playtest batch's starting loadout (e.g. unlocking a spell so the
 ## bot actually exercises it), never reachable from normal play. Setting
@@ -500,9 +471,11 @@ func export_save_data() -> Dictionary:
 		"player_currency": player_currency,
 		"backpack_currency": backpack_currency,
 		"best_run_time": best_run_time,
+		"best_run_essence": best_run_essence,
+		"best_run_leanness": best_run_leanness,
+		"best_run_discards": best_run_discards,
 		"stat_levels": _stat_levels,
 		"discovered_combos": discovered,
-		"active_pact": String(active_pact),
 		"magpie_encountered": magpie_encountered,
 		"chosen_spells": serialized_choices
 	}
@@ -517,6 +490,9 @@ func import_save_data(data: Dictionary) -> void:
 	player_currency = data.get("player_currency", 0)
 	backpack_currency = data.get("backpack_currency", 0)
 	best_run_time = data.get("best_run_time", 0.0)
+	best_run_essence = data.get("best_run_essence", 0)
+	best_run_leanness = data.get("best_run_leanness", 0.0)
+	best_run_discards = data.get("best_run_discards", 0)
 	var saved_levels: Dictionary = data.get("stat_levels", {})
 	for stat_id: String in saved_levels:
 		_stat_levels[StringName(stat_id)] = int(saved_levels[stat_id])
@@ -524,7 +500,6 @@ func import_save_data(data: Dictionary) -> void:
 	var saved_combos: Array = data.get("discovered_combos", [])
 	for combo_id: String in saved_combos:
 		discovered_combos[StringName(combo_id)] = true
-	active_pact = StringName(data.get("active_pact", ""))
 	magpie_encountered = data.get("magpie_encountered", false)
 	if data.has("chosen_spells"):
 		chosen_spells.clear()
@@ -561,10 +536,12 @@ func reset_progress() -> void:
 	player_currency = 0
 	backpack_currency = 0
 	best_run_time = 0.0
+	best_run_essence = 0
+	best_run_leanness = 0.0
+	best_run_discards = 0
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 	discovered_combos.clear()
-	active_pact = &""
 	magpie_encountered = false
 	chosen_spells.clear()
 	currency_changed.emit()

@@ -518,6 +518,18 @@ func _on_loot_collected(type_id: StringName) -> void:
 		_cast_streak_burst(type_id)
 
 
+## HUD combo-nearing pips (DESIGN.md's HUD + death-summary rework,
+## 2026-08-17): exposes state this already tracks internally, no new
+## tracking added -- hud.gd reads these to lerp the hot slot toward white
+## as a Streak nears STREAK_THRESHOLD.
+func get_streak_count() -> int:
+	return _streak_count
+
+
+func get_streak_tier() -> StringName:
+	return _streak_tier
+
+
 func _cast_streak_burst(tier_id: StringName) -> void:
 	MetaProgression.mark_combo_discovered(MetaProgression.COMBO_STREAK)
 	var tier_index: int = LootTypes.get_tier_index(tier_id)

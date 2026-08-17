@@ -76,12 +76,11 @@ const COMBOS: Array[Dictionary] = [
 
 ## Magpie (Depth Pass Group C): progressive discovery like Gem Combos
 ## above, since it only spawns from Phase 2 on and a fresh run genuinely
-## hasn't seen one yet. Attunement/Pacts below are always shown instead --
-## nothing about either is a run-time surprise (Pacts are already visible
-## on the run-prep screen before every run; Attunement is a passive,
-## always-on mechanic from the moment a run starts) so hiding them behind
-## discovery would gate information the player already has access to,
-## not protect a real reveal.
+## hasn't seen one yet. Attunement below is always shown instead --
+## nothing about it is a run-time surprise (it's a passive, always-on
+## mechanic from the moment a run starts) so hiding it behind discovery
+## would gate information the player already has access to, not protect
+## a real reveal.
 const MAGPIE_NAME: String = "Magpie"
 const MAGPIE_DESC: String = (
 	"Steals unclaimed loot off the ground and eats it. Kill it before"
@@ -157,14 +156,6 @@ func _build_bbcode() -> String:
 		)
 	)
 	lines.append("")
-
-	lines.append("[color=#666666]────────────────────────[/color]")
-	lines.append("[color=%s][b]PACTS[/b][/color]" % HEADER_COLOR)
-	lines.append("")
-	for pact: PactDef in MetaProgression.get_pact_defs():
-		lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, pact.display_name])
-		lines.append("[color=%s]%s[/color]" % [DESC_COLOR, pact.description])
-		lines.append("")
 
 	return "\n".join(lines)
 

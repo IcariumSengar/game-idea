@@ -100,6 +100,24 @@ text = "Fullscreen"
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="KeybindLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Keybindings"
+horizontal_alignment = 0
+
+[node name="KeybindContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ResetKeybindsButton" type="Button" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.7, 0.65, 1)
+text = "Reset to Defaults"
+script = ExtResource("4_link")
+
 [node name="ButtonContainer" type="VBoxContainer" parent="CenterContainer/OuterVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -113,4 +131,5 @@ script = ExtResource("4_link")
 
 [connection signal="value_changed" from="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer/VolumeRow/VolumeSlider" to="." method="_on_volume_slider_value_changed"]
 [connection signal="toggled" from="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer/FullscreenRow/FullscreenCheck" to="." method="_on_fullscreen_check_toggled"]
+[connection signal="pressed" from="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer/ResetKeybindsButton" to="." method="_on_reset_keybinds_pressed"]
 [connection signal="pressed" from="CenterContainer/OuterVBox/ButtonContainer/BackButton" to="." method="_on_back_pressed"]

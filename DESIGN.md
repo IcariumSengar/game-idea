@@ -260,32 +260,105 @@ All UI elements follow a consistent visual system to maintain cohesion across th
 
 ### In-Run Stats Overlay
 
-**Location:** Top-left corner (16px from edges), semi-transparent dark panel
+**Status quo (implemented, `hud.gd`/`arena.tscn`):** a top area showing
+Time (MM:SS), Essence, and Stardust (updated at
+`STARDUST_UPDATE_INTERVAL` = 0.1s so the live counter doesn't visibly
+stall between real currency awards), plus a StatsPanel lower-left
+holding the HP bar, the `BackpackGrid` slot grid + live Essence-from-
+loot value, and a single `MetaStatsLabel` text line: `Swiftness: X
+Gleam: Y   Bearing: Z`. This line predates Gem Combos and Attunement
+and is the specific thing this pass fixes -- not by replacing it, each
+of the three is still individually a correct, meaningful number, but
+the *set* is stale: it has no slot for Attunement, a constantly-
+changing, build-defining number every run now has. (Pacts/Burden would
+have needed a slot here too -- moot, Pacts was binned 2026-08-17, see
+"Group E: Pacts" above.)
 
-**Three stats displayed:**
-- ⏱️ **TIME** — Run duration (MM:SS format), white text
-- 💰 **PLAYER CURRENCY** — Loot value collected (gold color)
-- 🎒 **BACKPACK CURRENCY** — Time survived earning (~0.05/sec, cyan color)
-
-**Purpose:** Make the time → backpack currency connection visible. Shows rate (+0.05/sec) so players understand slow progression is intentional.
-
-**Styling:** Dark background (#1a1a1a, 80% opacity), small border, 12px padding, 8px spacing between rows.
+**Decided additions (2026-08-17):**
+- **Attunement gauge.** A small horizontal bar reusing `StatBar` (the
+  same component the HP bar already uses -- per CLAUDE.md's own
+  guidance against a second hand-rolled bar widget when one exists),
+  placed directly under the Loot row so cause (bag contents) and effect
+  (the gauge) sit together. Reads `Player.get_attunement()` live,
+  refreshed on the same `loot_changed` signal the panel already listens
+  to (fires on every pickup/discard, exactly when Attunement can move).
+  Low/High ends get the same cool/warm color language Group D's spec
+  already reserved for the optional spell-VFX tint, so the gauge and
+  the spell feel read as one concept, not two unrelated color systems.
+- **Combo-nearing pips, on `BackpackGrid`.** Two independent cues, since
+  Full Set and Streak already track independently (per
+  `spell_caster.gd`'s own comment: picking up a 6th distinct tier can
+  complete a Full Set *and* count toward a Streak in the same pickup):
+  - **Streak:** the single most-recently-filled slot (tier ==
+    `SpellCaster.get_streak_tier()`) lerps toward white as
+    `(get_streak_count() - 1) / (STREAK_THRESHOLD - 1)` climbs from 0.0
+    (first pickup of the streak) to 1.0 (one more pickup triggers it) --
+    only that one slot, so the cue points at *which* tier is hot, not
+    just that something's building.
+  - **Full Set:** once exactly `LootTypes.get_tier_count() - 1` (5 of 6)
+    distinct tiers are held, every currently-filled slot gets a shared,
+    slower pulse -- deliberately binary (on at 5/6, off otherwise), not
+    a gradient from 0/6, since anything earlier than "one pickup away"
+    isn't actually "nearing," it's just normal collection.
+  Technical: `BackpackGrid.update()` gains two new optional parameters
+  (streak tier + progress, full-set-near bool) computed by `hud.gd` in
+  its existing pickup-signal handlers, not inside `BackpackGrid` itself,
+  which stays a pure renderer with no combo knowledge of its own
+  (matches its current role -- it already has no idea what a "tier" or
+  "combo" means beyond colors and counts). `SpellCaster` needs two small
+  new getters over state it already tracks (`_streak_count`,
+  `_streak_tier`) -- `get_streak_count() -> int` and
+  `get_streak_tier() -> StringName` -- no new tracking, just exposure.
+  Full Set progress needs no `SpellCaster` getter at all: `hud.gd`
+  already receives the live `backpack: Dictionary` on every
+  `loot_changed` signal and can count non-zero tiers against
+  `LootTypes.get_tier_count()` directly.
 
 ### Death Summary Screen
 
-**Trigger:** Player dies, full-screen centered panel appears before shop
+**Status quo (implemented, `hud.gd`'s `_build_summary_bbcode()`):**
+title, Time Survived, Difficulty Reached (Phase), Rewards
+(Essence/Stardust), Loot Collected breakdown, Max Backpack Fill %,
+Enemies Killed, and a single "Highest Previous Run" line comparing only
+survival time. Same staleness as the in-run panel: one record tracked
+(time).
 
-**Content sections:**
-1. **Run Duration:** Time survived + Phase reached (Phase 1/2/3)
-2. **Rewards (highlighted):** Player currency earned (gold) + Backpack currency earned (cyan)
-3. **Loot Breakdown:** Items collected, color-coded by rarity
-4. **Run Stats:** Max backpack fill %, enemies killed
-5. **Previous Best:** Best time from prior runs (if exists)
-6. **Button:** "CONTINUE TO SHOP" (single action, no confusion)
+**Decided additions (2026-08-17):**
+- **Three new personal-best categories**, alongside the existing
+  survival-time record, each following `update_best_run()`'s existing
+  "return the previous value, then overwrite" pattern so `hud.gd` can
+  compare and show "New Record!" only for whichever ones a given run
+  actually broke, rather than always dumping all four:
+  - **Richest** -- `total_value` (Essence earned) at death.
+    `MetaProgression.update_best_essence(int) -> int`, new persisted
+    `best_run_essence: int`.
+  - **Leanest** -- not "died fast at low fill" (a non-achievement, not
+    skill), and not a raw fill percentage either (rewards suicide at
+    0%). Scored as `seconds_survived * (1.0 - max_fill_ratio)`: credits
+    surviving *long* while staying *light*, zero for either extreme (an
+    instant death scores ~0 regardless of fill; a long run at 100% fill
+    scores 0 regardless of duration). `get_max_fill_ratio()` already
+    exists and already feeds the current "Max Backpack Fill %" line, so
+    this is arithmetic over an existing number, not new tracking.
+    `MetaProgression.update_best_leanness(float) -> float`, new
+    persisted `best_run_leanness: float`.
+  - **Most Refused** -- total discards (L presses) in the run. No
+    existing counter: `Player` gains `_discards_this_run: int`,
+    incremented in `_check_triage_input()`'s existing discard branch
+    (right where `resolve_discard()` is already called), exposed via
+    `get_discards_this_run() -> int`.
+    `MetaProgression.update_best_discards(int) -> int`, new persisted
+    `best_run_discards: int`.
+  All three persist through the same save export/import/reset path
+  `best_run_time` already uses -- same category of value, same
+  treatment, no separate design needed.
 
-**Purpose:** Celebrate the run, make currency earning explicit, encourage replaying to beat personal best.
-
-**Styling:** Dark panel (#2a2a2a), gold header underline, section dividers (1px gray), white text with colored accents (gold/cyan for currency).
+Technical summary for this whole section: `hud.gd`'s `_on_player_died()`
+is the single call site touching all of the above -- it already computes
+`total_value`/`seconds_survived` and calls `update_best_run()` there, so
+the three new `update_best_*()` calls slot into the same function, then
+thread through into `_build_summary_bbcode()`'s existing parameter list
+rather than a parallel code path.
 
 ### Skill Tree Tooltips
 
@@ -336,9 +409,13 @@ All UI elements follow a consistent visual system to maintain cohesion across th
 - Before/after: Use arrow (30 → 32) or + notation (+2)
 - Currency: Always show icon (💰, 🎒)
 
-**Status:** Implemented — in-run overlay (`scripts/hud.gd`, `scripts/hud_stat_icon.gd`),
-death summary (`scripts/hud.gd`, `scenes/arena.tscn`), and skill tree tooltips
-(`scripts/skill_tree_view.gd`) all match the sections above.
+**Status:** Fully implemented -- skill tree tooltips
+(`scripts/ui/skill_tree_view.gd`), the in-run overlay and death summary
+(`scripts/ui/hud.gd`, `scenes/arena.tscn`) including combo-nearing pips,
+the Attunement gauge (`HUD/StatsPanel/.../AttunementRow`, a `StatBar`
+reused per the note above), and all three personal-best categories
+(`MetaProgression.update_best_essence()`/`update_best_leanness()`/
+`update_best_discards()`, `Player._discards_this_run`).
 
 ## Magic Spells & Attack Skills
 
@@ -1384,78 +1461,27 @@ wants one shared helper (e.g. `_attunement_multiplier(base, low_end,
 high_end)`) called from each of the 8 spells' existing calculations,
 not 8 duplicated lerps.
 
-### Group E: Pacts
+### Group E: Pacts — removed (2026-08-17)
 
-A new shop category, not a new stat tree -- sells *rule mutations* for
-a run instead of permanent numbers, matching the direction Compacting's
-removal already pointed at (fixed passives out, dynamic/skill-expressed
-systems in).
-
-**Shape:** a small set of per-run toggles, chosen before a run (likely
-folded into the run-prep/"Embark" screen, reusing the UI slot the
-deleted Backpack Ability picker used to occupy rather than adding a new
-screen). Each trades a real drawback for a real payout. Re-selected
-every run, not a permanent purchase -- that's the whole distinction from
-the old Compacting model.
-
-Starter roster (illustrative, like Rampage/Ratio's numbers -- a
-direction, not a locked menu):
-- **Heavy Start** -- begin the run with the bag already part-full
-  (baseline fill %/Attunement present) for a flat Essence/Stardust
-  bonus at run start.
-- **Narrow Queue** -- pickup queue capacity drops to holding only 1
-  pending gem at a time (must resolve before the next can even enter)
-  for a boosted Keep/Cast Off effect.
-- One correction to the idea's own illustrative list worth flagging:
-  "Legendaries don't stack" doesn't work as an example Pact -- Legendary
-  already never stacks, permanently, per the existing rarity table. A
-  coherent substitute in the same family: **Fragile Bearing** -- reduced
-  starting slot capacity for the run, in exchange for a bonus.
-
-Naming: **Pacts** -- directly cites the idea's own inspiration (Hades'
-Pact of Punishment), fits the dark/mystical register, and is distinct
-from Gem Combos (in-run, reactive) and the stat trees (permanent,
-currency-bought).
-
-**Confirmed by the 2026-08-17 Sanctum UX research pass: Pacts touch
-neither Essence nor Stardust at all.** No cost, no level, no cap -- none
-of the tree's vocabulary applies, so there's structurally nothing to
-compare a Pact against a stat node with. This is also the citable reason
-Pacts belong on run-prep/Embark rather than a fourth Sanctum tab (already
-this section's plan, now with the rationale made explicit): Pacts are
-the last thing decided before leaving on a run, the trees are what
-happens on the way back in.
-
-**Burden** (working name, "Toll" as the alternative) -- a single running
-number, mirroring Hades' Heat: sums the drawbacks of every active Pact
-into one scalar that both scales the run's payout and persists into the
-in-run HUD for the whole run, so the player is reminded what they signed
-up for, not just told once at selection. Pairs deliberately with
-Bearing -- Bearing is what the bag can carry, Burden is what the player
-chose to carry on top of it. Illustrative formula, needs playtest
-tuning like every other new number this session (Rampage/Ratio/
-Attunement all got the same treatment): final run reward multiplied by
-`(1 + Burden × k)` for some small constant `k`, not locked here.
-
-Technical: new `PactDef` resource mirroring `StatDef`'s existing shape
-(id, display name, description, the rule mutation(s) it applies, its
-Burden contribution). `run_prep.tscn`/`.gd` needs a new selection UI
-block -- open question, not fully specified here, whether it's a
-2-option toggle row like the deleted Backpack Ability picker or a
-longer selectable list, since Pacts likely wants more than 2 options.
-`MetaProgression` needs a new `active_pact`/`active_pacts` save-data
-field; each system a given Pact touches (queue cap in `player.gd`,
-starting fill in `player.gd`'s `_ready()`, etc.) checks it; a new
-`Player.burden` (or `Arena`-level) running total feeds both the payout
-formula and a new HUD readout -- the HUD element itself belongs with
-the already-queued HUD + death-summary rework, not built standalone
-ahead of it.
+Was designed and implemented as a new shop category selling per-run
+rule mutations (Heavy Start / Fragile Bearing / Narrow Queue), with
+Burden specced as its payout follow-up. Binned entirely on direct
+instruction -- not a balance call, a "don't like it" design-direction
+call, same category of decision as Compacting's removal. No replacement
+mechanic: the Sanctum stays at its three trees (Player/Spells/Backpack)
+plus nothing else, and run-prep/Embark has nothing new to show. Every
+piece of the Burden follow-up (the payout-multiplier formula, the
+appended HUD line, the death-screen readout) is removed along with it
+-- the "HUD & UI Design" section below no longer carries a Burden
+mention anywhere. See the decision log for the full history (designed,
+implemented, Burden specced, then removed).
 
 ### Group F: Score the run you played
 
-Folds into the already-queued **HUD + death-summary rework** TODO item
-rather than standing alone -- both are about what the death screen
-shows, no reason to spec them separately.
+Folded into the **HUD + death-summary rework** (see "## HUD & UI
+Design" below) rather than standing alone -- personal-best scoring
+(Richest/Leanest/Most Refused) is spec'd there alongside the rest of
+that pass, decided 2026-08-17.
 
 The death summary currently ranks time survived and loot value; nothing
 measures triage quality. Track additional per-run stats -- total value
@@ -2882,3 +2908,90 @@ Short dated entries when a design decision is made and worth remembering
   and the decision log don't fit a Now/Next backlog shape and stay in
   their own file, per direct confirmation before this consolidation
   started.
+- 2026-08-17 — HUD + death-summary rework fully scoped, closing the
+  loose threads TODO.md's Next list had flagged (pip-brightening combo
+  cue, new-run scoring, whether the meta-stats line still makes sense).
+  Rewrote "## HUD & UI Design"'s "In-Run Stats Overlay" and "Death
+  Summary Screen" subsections, which had gone stale enough to still
+  describe MVP-era 💰/🎒 emoji labeling and a fill-bar alternative
+  `BackpackGrid` already replaced -- verdict on the meta-stats line
+  specifically: `Swiftness`/`Gleam`/`Bearing` are each still
+  individually correct, the *set* is what's stale, missing a slot for
+  Attunement (live, every run). Decided: an Attunement gauge reusing the
+  existing `StatBar` component; combo-nearing pips on `BackpackGrid`
+  (Streak brightens the one active-tier slot as `_streak_count` climbs
+  toward `STREAK_THRESHOLD`, Full Set pulses every filled slot once
+  exactly 5 of 6 tiers are held); and three new personal-best categories
+  alongside the existing survival-time record -- Richest (`total_value`
+  at death), Leanest (`seconds_survived × (1.0 - max_fill_ratio)`,
+  deliberately rewarding neither instant death nor a full bag), Most
+  Refused (a new `Player._discards_this_run` counter, nothing tracked
+  this before). Not yet built -- see TODO.md; DESIGN.md's HUD & UI
+  Design section above now carries the full spec, this entry is the
+  decision record. (This entry originally also specced Burden's HUD/
+  death-screen readout -- removed along with the rest of Burden once
+  Pacts was binned, see the entry below.)
+- 2026-08-17 — Pacts (Depth Pass Group E), and its Burden follow-up,
+  removed entirely at direct instruction ("I don't like it") after
+  having been fully designed and implemented earlier the same day.
+  Design-direction call, not a balance finding -- same category of
+  decision as Compacting's removal, not a response to any playtest or
+  technical problem with what shipped. Scope of the removal: the whole
+  Group E spec (Heavy Start/Fragile Bearing/Narrow Queue, the run-prep
+  selection UI, `PactDef`/`active_pact`), Burden's payout-multiplier
+  formula (`award_run_end_currency`'s third parameter, `PactDef.burden`,
+  the ×1.00-1.45 curve), and Burden's two HUD additions (the appended
+  meta-stats line entry, the death-screen REWARDS readout) -- all struck
+  from DESIGN.md rather than left as dead spec text pointing at code
+  that no longer exists. No replacement mechanic; the Sanctum stays at
+  three trees plus nothing else. The two Later-bucket ideas that
+  presupposed Pacts existing ("Pacts are the endgame the caps already
+  imply," "Resolve") are removed from TODO.md for the same reason --
+  their entire premise depended on a mechanic that's now gone. What
+  stays as historical record, deliberately not rewritten: the earlier
+  2026-08-17 entries describing Pacts being designed, implemented, and
+  extended into the Grimoire -- those were true when written, same
+  treatment Cloud sync's removal got.
+- 2026-08-17 — Pacts removal implemented in code (all the systems named
+  in the entry above: `PactDef` deleted, the run-prep selection UI and
+  `MetaProgression`'s Pact registry/`active_pact` stripped, the Narrow
+  Queue overflow plumbing in `player.gd` simplified back to a plain
+  uncapped queue, Cast Off's multiplier removed from `loot.gd`). Combo-
+  nearing pips (this same pass's HUD + death-summary rework, "In-Run
+  Stats Overlay" above) also implemented: `SpellCaster` gained
+  `get_streak_count()`/`get_streak_tier()`, `BackpackGrid.update()` two
+  new optional params, `hud.gd` computes both live off state it already
+  had (no new tracking). Attunement gauge and the three personal-best
+  categories from the same HUD spec remain unbuilt. 241/241 unit tests
+  and an 8-run playtest batch pass; verified visually via windowed
+  screenshots of Settings/Embark/Sanctum (temporarily pointing
+  `main_scene` at each rather than clicking into the live window, per
+  this project's screenshot-tooling rules).
+- 2026-08-17 — Combo-nearing pips tuned after direct live-play feedback
+  ("too subtle to notice"): a flat fill-color lerp alone didn't read
+  during real combat. Fix was technique, not the underlying progress
+  formula (still `(get_streak_count() - 1) / (STREAK_THRESHOLD - 1)` per
+  the spec above) -- added an animated pulsing white ring on top of the
+  fill tint for both Streak's hot slot and Full Set's near-complete
+  slots (`BackpackGrid`'s `_draw_filled_slot()`), ring pulse speed
+  scaling up as Streak nears its threshold. Motion reads far better than
+  a static color shift at 20px slot size, same lesson `player.gd`'s
+  MAX_SIZE_FRACTION easing already learned from live-play once before.
+- 2026-08-17 — Attunement gauge and the three personal-best categories
+  (Richest/Leanest/Most Refused) implemented, completing the HUD +
+  death-summary rework. Gauge: new `AttunementRow` under the Loot row in
+  `arena.tscn`, reusing `StatBar` and a new `HudStatIcon.Kind.FLAME`,
+  colored via `ATTUNEMENT_COLOR_LOW`/`HIGH` lerped by
+  `Player.get_attunement()`. Personal bests: `MetaProgression` gained
+  `best_run_essence`/`best_run_leanness`/`best_run_discards` plus their
+  `update_best_*()` functions (same "return previous, then overwrite"
+  contract `update_best_run()` already used), `Player` gained
+  `_discards_this_run`, and the death screen's old unconditional
+  "Highest Previous Run" line was replaced with a "PERSONAL BESTS" block
+  showing all four categories, each tagged "NEW RECORD!" only when a
+  real previous best (> 0) was actually beaten. Verified: 259/259 unit
+  tests (new coverage for the three `update_best_*()` contracts and
+  their save round-trip), a 6-run playtest batch, and a windowed
+  Attunement-gauge + real-death-screen check (temporarily pointing
+  `main_scene` at `arena.tscn` and letting an unattended run play out to
+  a real death, rather than clicking into the window).

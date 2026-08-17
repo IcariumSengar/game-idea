@@ -65,9 +65,6 @@ const CAST_OFF_IMPACT_RADIUS: float = 40.0
 const CAST_OFF_KNOCKBACK_STRENGTH: float = 150.0
 const CAST_OFF_BASE_DAMAGE: float = 10.0
 const CAST_OFF_SPIN_TURNS: float = 1.0
-## Narrow Queue pact (Depth Pass Group E, DESIGN.md 2026-08-17): the trade
-## for capping the queue at one gem -- Cast Off hits noticeably harder.
-const NARROW_QUEUE_CAST_OFF_MULTIPLIER: float = 1.5
 
 ## Pull speed (px/s) at zero pickup range. Combined with pull_speed_per_range
 ## below to get the actual homing speed once magnetized.
@@ -340,16 +337,11 @@ func _impact(impact_position: Vector2) -> void:
 
 ## Discard's level (Depth Pass Group B, DESIGN.md 2026-08-17) adds flat
 ## bonus damage on top of the tier-scaled base -- read generically via
-## get_stat() since STAT_PURGE's per_level_gain now *is* that bonus. The
-## Narrow Queue pact (Group E) multiplies the total on top, as its trade
-## for capping the queue.
+## get_stat() since STAT_PURGE's per_level_gain now *is* that bonus.
 func _cast_off_damage() -> float:
 	var tier_index: int = LootTypes.get_tier_index(type_id)
 	var base: float = CAST_OFF_BASE_DAMAGE * float(tier_index + 1)
-	var damage: float = base + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
-	if MetaProgression.has_active_pact(MetaProgression.PACT_NARROW_QUEUE):
-		damage *= NARROW_QUEUE_CAST_OFF_MULTIPLIER
-	return damage
+	return base + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
 
 
 func _affix_bonus_value() -> int:

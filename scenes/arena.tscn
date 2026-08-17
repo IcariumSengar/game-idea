@@ -78,7 +78,7 @@ script = ExtResource("16_vignette")
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 320.0
-offset_bottom = 268.0
+offset_bottom = 296.0
 theme_override_styles/panel = ExtResource("6_panel_dark")
 
 [node name="Margin" type="MarginContainer" parent="HUD/StatsPanel"]
@@ -187,6 +187,21 @@ custom_minimum_size = Vector2(72, 0)
 theme_override_font_sizes/font_size = 16
 text = "0/20"
 vertical_alignment = 1
+
+[node name="AttunementRow" type="HBoxContainer" parent="HUD/StatsPanel/Margin/VBox"]
+theme_override_constants/separation = 8
+
+[node name="AttunementIcon" type="Control" parent="HUD/StatsPanel/Margin/VBox/AttunementRow"]
+custom_minimum_size = Vector2(20, 20)
+script = ExtResource("18_staticon")
+kind = 2
+icon_color = Color(0.7, 0.6, 0.85, 1)
+
+[node name="AttunementBar" type="Control" parent="HUD/StatsPanel/Margin/VBox/AttunementRow"]
+custom_minimum_size = Vector2(160, 16)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("5_statbar")
 
 [node name="MetaStatsLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_font_sizes/font_size = 13

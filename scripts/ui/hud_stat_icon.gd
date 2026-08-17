@@ -4,7 +4,7 @@ extends Control
 ## no matching sprite assets exist for these, so drawn as simple vector
 ## shapes matching the icon style used in the skill tree.
 
-enum Kind { CLOCK, SPARKLE }
+enum Kind { CLOCK, SPARKLE, FLAME }
 
 @export var kind: Kind = Kind.CLOCK
 @export var icon_color: Color = Color.WHITE
@@ -33,3 +33,19 @@ func _draw() -> void:
 				icon_color,
 				1.5
 			)
+		# Attunement's HUD gauge (DESIGN.md's HUD + death-summary rework,
+		# 2026-08-17) -- a simple flame silhouette fits the "cooler/thinner
+		# at low, warmer/thicker at high" language its spec already
+		# reserved for the gauge's color.
+		Kind.FLAME:
+			var flame := PackedVector2Array(
+				[
+					center + Vector2(0.0, -s),
+					center + Vector2(s * 0.55, -s * 0.1),
+					center + Vector2(s * 0.35, s * 0.4),
+					center + Vector2(0.0, s * 0.7),
+					center + Vector2(-s * 0.35, s * 0.4),
+					center + Vector2(-s * 0.55, -s * 0.1),
+				]
+			)
+			draw_colored_polygon(flame, icon_color)

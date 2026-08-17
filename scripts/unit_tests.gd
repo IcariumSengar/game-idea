@@ -39,15 +39,13 @@ func _ready() -> void:
 	_test_cast_off_damage()
 	_test_gleam_pending_weight_reduction()
 	_test_leaden_pickup()
-	_test_pact_heavy_start()
-	_test_pact_fragile_bearing()
-	_test_pact_narrow_queue()
 	_test_spell_choice_basic_flow()
 	_test_spell_choice_final_levels()
 	_test_spell_choice_migration()
 	_test_attunement_computation()
 	_test_attunement_spell_multipliers()
 	_test_combo_discovery_save_round_trip()
+	_test_personal_best_updates()
 	await _test_gem_combo_full_set()
 	print("=== %d passed, %d failed ===" % [_pass_count, _fail_count])
 	get_tree().quit(0 if _fail_count == 0 else 1)
@@ -525,118 +523,6 @@ func _test_leaden_pickup() -> void:
 	player.queue_free()
 
 
-## Depth Pass Group E "Pacts" (DESIGN.md 2026-08-17): Heavy Start must
-## pre-fill the bag and grant its currency bonus at run start, in one shot
-## via _ready() -> _apply_active_pact().
-func _test_pact_heavy_start() -> void:
-	var original_pact := MetaProgression.active_pact
-	var original_currency := MetaProgression.player_currency
-	MetaProgression.active_pact = MetaProgression.PACT_HEAVY_START
-	MetaProgression.player_currency = 0
-
-	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
-	add_child(player)
-
-	_assert(
-		player.backpack.get(&"common", 0) == Player.HEAVY_START_FILL_ITEMS,
-		"Heavy Start pre-fills the bag with common loot"
-	)
-	_assert(
-		MetaProgression.player_currency == Player.HEAVY_START_CURRENCY_BONUS,
-		"Heavy Start grants its currency bonus at run start"
-	)
-	_assert(
-		player._max_fill_ratio > 0.0, "the pre-fill is reflected in fill % immediately, not lazily"
-	)
-
-	player.queue_free()
-	MetaProgression.active_pact = original_pact
-	MetaProgression.player_currency = original_currency
-
-
-## Fragile Bearing must reduce starting capacity and grant its own
-## currency bonus, both applied once at run start.
-func _test_pact_fragile_bearing() -> void:
-	var original_pact := MetaProgression.active_pact
-	var original_currency := MetaProgression.player_currency
-	MetaProgression.active_pact = MetaProgression.PACT_FRAGILE_BEARING
-	MetaProgression.player_currency = 0
-	var base_capacity: int = int(MetaProgression.get_stat(MetaProgression.STAT_BACKPACK_CAPACITY))
-
-	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
-	add_child(player)
-
-	_assert(
-		player.backpack_capacity == base_capacity - Player.FRAGILE_BEARING_CAPACITY_REDUCTION,
-		"Fragile Bearing reduces starting capacity by its fixed amount"
-	)
-	_assert(
-		MetaProgression.player_currency == Player.FRAGILE_BEARING_CURRENCY_BONUS,
-		"Fragile Bearing grants its currency bonus at run start"
-	)
-
-	player.queue_free()
-	MetaProgression.active_pact = original_pact
-	MetaProgression.player_currency = original_currency
-
-
-## Narrow Queue must cap the queue at just the active gem (nothing waits
-## behind it), hold overflow arrivals outside the queue until room frees,
-## and boost Cast Off's damage as the trade.
-func _test_pact_narrow_queue() -> void:
-	var original_pact := MetaProgression.active_pact
-	MetaProgression.active_pact = MetaProgression.PACT_NARROW_QUEUE
-
-	var player: Player = preload("res://scenes/player/player.tscn").instantiate()
-	add_child(player)
-	player.backpack_capacity = 10
-	player.backpack.clear()
-
-	var gem_a: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
-	gem_a.type_id = &"common"
-	var gem_b: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
-	gem_b.type_id = &"common"
-	add_child(gem_a)
-	add_child(gem_b)
-
-	player.enqueue_loot(gem_a)
-	player.enqueue_loot(gem_b)
-	_assert(player._pending_gem == gem_a, "first gem still becomes active as normal")
-	_assert(
-		player._gem_queue.is_empty(), "Narrow Queue keeps nothing waiting behind the active gem"
-	)
-	_assert(
-		player._narrow_queue_overflow.size() == 1 and player._narrow_queue_overflow[0] == gem_b,
-		"a second arrival holds outside the queue instead of stacking behind the first"
-	)
-
-	gem_a.collect(player)
-	player._advance_queue()
-	player._promote_waiting_gems()
-	_assert(
-		player._pending_gem == gem_b,
-		"resolving the active gem promotes the waiting one immediately"
-	)
-	_assert(player._narrow_queue_overflow.is_empty(), "the overflow list drains once room frees up")
-
-	var cast_off_gem: Loot = preload("res://scenes/loot/loot.tscn").instantiate()
-	cast_off_gem.type_id = &"common"
-	add_child(cast_off_gem)
-	var base_damage: float = (
-		Loot.CAST_OFF_BASE_DAMAGE + MetaProgression.get_stat(MetaProgression.STAT_PURGE)
-	)
-	_assert(
-		_almost_eq(
-			cast_off_gem._cast_off_damage(), base_damage * Loot.NARROW_QUEUE_CAST_OFF_MULTIPLIER
-		),
-		"Narrow Queue multiplies Cast Off's damage as its trade"
-	)
-
-	cast_off_gem.queue_free()
-	player.queue_free()
-	MetaProgression.active_pact = original_pact
-
-
 ## Spell Choice (DESIGN.md 2026-08-17): buying a Spell Unlock level must
 ## leave the choice pending (not auto-grant a fixed spell), offer 2 real
 ## candidates, and resolve cleanly once one is picked.
@@ -837,10 +723,16 @@ func _test_combo_discovery_save_round_trip() -> void:
 	var original_player_currency := MetaProgression.player_currency
 	var original_backpack_currency := MetaProgression.backpack_currency
 	var original_best_run_time := MetaProgression.best_run_time
+	var original_best_run_essence := MetaProgression.best_run_essence
+	var original_best_run_leanness := MetaProgression.best_run_leanness
+	var original_best_run_discards := MetaProgression.best_run_discards
 	var original_levels: Dictionary = MetaProgression._stat_levels.duplicate()
 
 	MetaProgression.discovered_combos.clear()
 	MetaProgression.magpie_encountered = false
+	MetaProgression.best_run_essence = 250
+	MetaProgression.best_run_leanness = 42.5
+	MetaProgression.best_run_discards = 7
 	_assert(
 		not MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
 		"a combo starts undiscovered"
@@ -862,6 +754,9 @@ func _test_combo_discovery_save_round_trip() -> void:
 	var exported := MetaProgression.export_save_data()
 	MetaProgression.discovered_combos.clear()
 	MetaProgression.magpie_encountered = false
+	MetaProgression.best_run_essence = 0
+	MetaProgression.best_run_leanness = 0.0
+	MetaProgression.best_run_discards = 0
 	MetaProgression.import_save_data(exported)
 	_assert(
 		MetaProgression.is_combo_discovered(MetaProgression.COMBO_FULL_SET),
@@ -870,6 +765,18 @@ func _test_combo_discovery_save_round_trip() -> void:
 	_assert(
 		MetaProgression.magpie_encountered,
 		"magpie_encountered survives an export/import round-trip"
+	)
+	_assert(
+		MetaProgression.best_run_essence == 250,
+		"best_run_essence survives an export/import round-trip"
+	)
+	_assert(
+		_almost_eq(MetaProgression.best_run_leanness, 42.5),
+		"best_run_leanness survives an export/import round-trip"
+	)
+	_assert(
+		MetaProgression.best_run_discards == 7,
+		"best_run_discards survives an export/import round-trip"
 	)
 
 	MetaProgression.reset_progress()
@@ -880,13 +787,75 @@ func _test_combo_discovery_save_round_trip() -> void:
 	_assert(
 		not MetaProgression.magpie_encountered, "reset_progress() clears magpie_encountered too"
 	)
+	_assert(MetaProgression.best_run_essence == 0, "reset_progress() clears best_run_essence too")
+	_assert(
+		MetaProgression.best_run_leanness == 0.0, "reset_progress() clears best_run_leanness too"
+	)
+	_assert(MetaProgression.best_run_discards == 0, "reset_progress() clears best_run_discards too")
 
 	MetaProgression.discovered_combos = original_discovered
 	MetaProgression.magpie_encountered = original_magpie_encountered
 	MetaProgression.player_currency = original_player_currency
 	MetaProgression.backpack_currency = original_backpack_currency
 	MetaProgression.best_run_time = original_best_run_time
+	MetaProgression.best_run_essence = original_best_run_essence
+	MetaProgression.best_run_leanness = original_best_run_leanness
+	MetaProgression.best_run_discards = original_best_run_discards
 	MetaProgression._stat_levels = original_levels
+
+
+## Personal bests (DESIGN.md's HUD + death-summary rework, 2026-08-17):
+## each update_best_*() must return the previous value before overwriting,
+## and only overwrite on a strictly higher value -- the same "return
+## previous, then overwrite" contract update_best_run() already
+## established, now covered directly since hud.gd's death screen depends
+## on all three at once.
+func _test_personal_best_updates() -> void:
+	var original_essence := MetaProgression.best_run_essence
+	var original_leanness := MetaProgression.best_run_leanness
+	var original_discards := MetaProgression.best_run_discards
+	MetaProgression.best_run_essence = 100
+	MetaProgression.best_run_leanness = 10.0
+	MetaProgression.best_run_discards = 2
+
+	_assert(
+		MetaProgression.update_best_essence(50) == 100,
+		"a lower Essence value returns the previous best"
+	)
+	_assert(MetaProgression.best_run_essence == 100, "the lower value never overwrote the best")
+	_assert(
+		MetaProgression.update_best_essence(150) == 100,
+		"a higher Essence value still returns the previous best"
+	)
+	_assert(MetaProgression.best_run_essence == 150, "the higher value overwrote the best")
+
+	_assert(
+		_almost_eq(MetaProgression.update_best_leanness(5.0), 10.0),
+		"leanness follows the same return-previous contract"
+	)
+	_assert(
+		_almost_eq(MetaProgression.best_run_leanness, 10.0), "a lower leanness doesn't overwrite"
+	)
+	_assert(
+		_almost_eq(MetaProgression.update_best_leanness(20.0), 10.0),
+		"a higher leanness still returns the previous best"
+	)
+	_assert(
+		_almost_eq(MetaProgression.best_run_leanness, 20.0),
+		"the higher leanness overwrote the best"
+	)
+
+	_assert(MetaProgression.update_best_discards(1) == 2, "discards follows the same contract")
+	_assert(MetaProgression.best_run_discards == 2, "a lower discard count doesn't overwrite")
+	_assert(
+		MetaProgression.update_best_discards(5) == 2,
+		"a higher discard count still returns the previous best"
+	)
+	_assert(MetaProgression.best_run_discards == 5, "the higher discard count overwrote the best")
+
+	MetaProgression.best_run_essence = original_essence
+	MetaProgression.best_run_leanness = original_leanness
+	MetaProgression.best_run_discards = original_discards
 
 
 ## Verifies Gem Combos' "Full Set" (DESIGN.md's Tweak 3): holding one of

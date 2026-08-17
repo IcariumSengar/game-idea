@@ -33,15 +33,47 @@ const GHOST_DASH_LENGTH: float = 3.0
 ## bugfix (HUD and this grid must never read two different formulas).
 const BALLAST_COLOR: Color = Color(0.3, 0.28, 0.26)
 const BALLAST_BORDER_COLOR: Color = Color(0.5, 0.46, 0.42)
+## Combo-nearing pips (DESIGN.md's HUD + death-summary rework, 2026-08-17):
+## Streak lerps its one hot slot toward white as it nears
+## SpellCaster.STREAK_THRESHOLD; Full Set pulses every filled slot once
+## the bag is one tier away from completing a set. Two independent cues
+## since the two combos track independently.
+## First live-play pass (direct feedback, 2026-08-17): a flat fill-color
+## lerp alone was too subtle to catch mid-combat -- fixed with an
+## animated pulsing ring on top of it. Motion reads far better at this
+## slot size (20px) than a static color shift, especially against
+## already-colorful neighboring slots.
+const FULL_SET_PULSE_SPEED: float = 4.0
+const FULL_SET_PULSE_AMOUNT: float = 0.8
+const FULL_SET_RING_WIDTH: float = 2.0
+const STREAK_RING_WIDTH: float = 2.5
+const STREAK_RING_MIN_ALPHA: float = 0.55
+const STREAK_RING_MAX_ALPHA: float = 1.0
+## Ring pulse speeds urgency up as Streak nears its threshold instead of
+## a constant rate -- "one more pickup" should feel more insistent than
+## "just started."
+const STREAK_PULSE_SPEED_MIN: float = 4.0
+const STREAK_PULSE_SPEED_MAX: float = 9.0
 
 var _capacity: int = 0
 var _slot_ids: Array[StringName] = []
 var _slot_counts: Array[int] = []
 var _ballast_slots: int = 0
 var _show_ghost_slot: bool = false
+var _streak_tier: StringName = StringName()
+var _streak_progress: float = 0.0
+var _full_set_near: bool = false
+var _pulse_time: float = 0.0
 
 
-func update(backpack: Dictionary, capacity: int, ballast_slots: int = 0) -> void:
+func update(
+	backpack: Dictionary,
+	capacity: int,
+	ballast_slots: int = 0,
+	streak_tier: StringName = StringName(),
+	streak_progress: float = 0.0,
+	full_set_near: bool = false
+) -> void:
 	_capacity = capacity
 	_slot_ids.clear()
 	_slot_counts.clear()
@@ -50,7 +82,16 @@ func update(backpack: Dictionary, capacity: int, ballast_slots: int = 0) -> void
 		_slot_counts.append(slot[1])
 	_ballast_slots = ballast_slots
 	_show_ghost_slot = not MetaProgression.is_maxed(MetaProgression.STAT_BACKPACK_CAPACITY)
+	_streak_tier = streak_tier
+	_streak_progress = streak_progress
+	_full_set_near = full_set_near
+	set_process(full_set_near or streak_progress > 0.0)
 	_update_min_size()
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	_pulse_time += delta
 	queue_redraw()
 
 
@@ -93,6 +134,15 @@ func _draw() -> void:
 	)
 
 	var font := ThemeDB.fallback_font
+	# The hot Streak slot is the *last* slot belonging to that tier -- new
+	# pickups always land in a tier's most recent (or newly-opened) slot,
+	# so the highest matching index is the one that's actually "building."
+	var hot_streak_index := -1
+	if _streak_tier != StringName():
+		for i in _slot_ids.size():
+			if _slot_ids[i] == _streak_tier:
+				hot_streak_index = i
+
 	for i in _capacity:
 		var col := i % SLOTS_PER_ROW
 		var row := i / SLOTS_PER_ROW
@@ -101,7 +151,8 @@ func _draw() -> void:
 			Vector2(SLOT_SIZE, SLOT_SIZE)
 		)
 		if i < _slot_ids.size():
-			_draw_filled_slot(rect, font, _slot_ids[i], _slot_counts[i])
+			var lerp_to_white: float = _streak_progress if i == hot_streak_index else 0.0
+			_draw_filled_slot(rect, font, _slot_ids[i], _slot_counts[i], lerp_to_white)
 		elif i < filled_total:
 			_draw_ballast_slot(rect)
 		else:
@@ -141,11 +192,30 @@ func _draw_dashed_border(rect: Rect2, color: Color) -> void:
 		)
 
 
-func _draw_filled_slot(rect: Rect2, font: Font, type_id: StringName, count: int) -> void:
+func _draw_filled_slot(
+	rect: Rect2, font: Font, type_id: StringName, count: int, streak_lerp: float = 0.0
+) -> void:
 	var def := LootTypes.get_type(type_id)
 	var color: Color = def.color if def != null else Color.WHITE
+	if streak_lerp > 0.0:
+		color = color.lerp(Color.WHITE, streak_lerp * 0.5)
+	var full_set_pulse: float = 0.0
+	if _full_set_near:
+		full_set_pulse = sin(_pulse_time * FULL_SET_PULSE_SPEED) * 0.5 + 0.5
+		color = color.lerp(Color.WHITE, full_set_pulse * FULL_SET_PULSE_AMOUNT)
 	draw_rect(rect, color)
 	draw_rect(rect, color.darkened(FILLED_BORDER_DARKEN), false, 1.5)
+
+	var ring_rect: Rect2 = rect.grow(2.0)
+	if _full_set_near:
+		draw_rect(ring_rect, Color(1.0, 1.0, 1.0, full_set_pulse), false, FULL_SET_RING_WIDTH)
+	if streak_lerp > 0.0:
+		var pulse_speed: float = lerp(STREAK_PULSE_SPEED_MIN, STREAK_PULSE_SPEED_MAX, streak_lerp)
+		var pulse: float = sin(_pulse_time * pulse_speed) * 0.5 + 0.5
+		var ring_alpha: float = (
+			lerp(STREAK_RING_MIN_ALPHA, STREAK_RING_MAX_ALPHA, streak_lerp) * (0.5 + 0.5 * pulse)
+		)
+		draw_rect(ring_rect, Color(1.0, 1.0, 1.0, ring_alpha), false, STREAK_RING_WIDTH)
 
 	var count_text := str(count)
 	var text_size := font.get_string_size(

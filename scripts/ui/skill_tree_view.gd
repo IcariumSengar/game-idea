@@ -57,6 +57,26 @@ const DENIED_SHAKE_MAGNITUDE: float = 6.0
 ## cause, so there's one glow language instead of two.
 const SHIMMER_PULSE_AMOUNT: float = 0.7
 
+## Visual pass (direct feedback, 2026-08-17: "make use of Godot's ability
+## to render cool visuals" -- the flat single-circle glow/straight-line
+## tree read as flat). Layered soft glow instead of one low-alpha circle:
+## several concentric rings with quadratic falloff fake a bloom without a
+## shader or a second draw surface.
+const GLOW_LAYERS: int = 4
+const GLOW_LAYER_SPACING: float = 5.5
+## Real-gate connectors curve instead of drawing straight -- a cubic
+## Bezier that leaves each node vertically before bending toward the
+## other's x, the standard "flowchart connector" shape, reads as an
+## organic branch rather than a wiring diagram. Cosmetic (non-gate)
+## connections stay straight/dashed on purpose -- see _draw() -- so the
+## curve itself doubles as "this is a real dependency" signal.
+const CURVE_SEGMENTS: int = 16
+## Hover now eases in/out (scale + ring alpha) instead of snapping,
+## mirroring the shake/pulse tween-driven juice this file already uses
+## elsewhere rather than adding a new animation technique.
+const HOVER_SCALE_BUMP: float = 0.12
+const HOVER_LERP_SPEED: float = 10.0
+
 const STAT_DESCRIPTIONS: Dictionary = {
 	&"damage": "Your spells crackle with arcane power, striking harder.",
 	&"move_speed": "Swift feet carry you through the void.",
@@ -80,6 +100,10 @@ var _shake_amount: Dictionary = {}
 ## The message shown alongside an active shake (shortfall amount, or
 ## "LOCKED") -- keyed the same as _shake_amount, cleared together.
 var _denied_message: Dictionary = {}
+## Eases toward 1.0 while a node is hovered, back to 0.0 once it isn't --
+## drives both the hover scale bump and the hover ring's fade, see
+## HOVER_SCALE_BUMP/HOVER_LERP_SPEED above.
+var _hover_amount: Dictionary = {}
 
 
 class TreeNode:
@@ -144,7 +168,15 @@ func _process(delta: float) -> void:
 		_shake_amount.erase(stat_id)
 		_denied_message.erase(stat_id)
 
-	if _pulse_amount.is_empty() and _shake_amount.is_empty():
+	var hover_settled: bool = true
+	for node in _nodes:
+		var target: float = 1.0 if node.stat_id == _hovered_node else 0.0
+		var current: float = _hover_amount.get(node.stat_id, 0.0)
+		if not is_equal_approx(current, target):
+			_hover_amount[node.stat_id] = move_toward(current, target, HOVER_LERP_SPEED * delta)
+			hover_settled = false
+
+	if _pulse_amount.is_empty() and _shake_amount.is_empty() and hover_settled:
 		set_process(false)
 	queue_redraw()
 
@@ -323,6 +355,7 @@ func _gui_input(event: InputEvent) -> void:
 			_hovered_node = hovered_id
 			tooltip_text = _build_tooltip_text(hovered) if hovered != null else ""
 			node_hovered.emit(_hovered_node)
+			set_process(true)
 			queue_redraw()
 
 
@@ -472,12 +505,34 @@ func _draw() -> void:
 		var parent_pos: Vector2 = _node_positions[node.parent.stat_id]
 		var child_pos: Vector2 = _node_positions[node.stat_id]
 		if node.is_real_gate:
-			draw_line(parent_pos, child_pos, _accent_color.lerp(Color.BLACK, 0.15), 3.0)
+			_draw_branch_curve(parent_pos, child_pos, _accent_color.lerp(Color.BLACK, 0.15), 3.0)
 		else:
 			_draw_dashed_line(parent_pos, child_pos, _accent_color * Color(1, 1, 1, 0.35))
 
 	for node in _nodes:
 		_draw_node(node)
+
+
+## Cubic Bezier, control points pulled straight out of each endpoint
+## along y before bending toward the other's x -- see CURVE_SEGMENTS'
+## comment above for why this shape specifically (the standard flowchart-
+## connector curve) rather than a symmetric bow.
+func _draw_branch_curve(from: Vector2, to: Vector2, color: Color, width: float) -> void:
+	var vertical_reach: Vector2 = Vector2(0.0, (to.y - from.y) * 0.5)
+	var control_1: Vector2 = from + vertical_reach
+	var control_2: Vector2 = to - vertical_reach
+	var points := PackedVector2Array()
+	for i in CURVE_SEGMENTS + 1:
+		var t: float = float(i) / float(CURVE_SEGMENTS)
+		points.append(_cubic_bezier_point(from, control_1, control_2, to, t))
+	draw_polyline(points, color, width, true)
+
+
+func _cubic_bezier_point(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var a: Vector2 = p0.lerp(p1, t)
+	var b: Vector2 = p1.lerp(p2, t)
+	var c: Vector2 = p2.lerp(p3, t)
+	return a.lerp(b, t).lerp(b.lerp(c, t), t)
 
 
 func _draw_dashed_line(from: Vector2, to: Vector2, color: Color) -> void:
@@ -494,9 +549,12 @@ func _draw_dashed_line(from: Vector2, to: Vector2, color: Color) -> void:
 
 func _draw_node(node: TreeNode) -> void:
 	var base_center: Vector2 = _node_positions[node.stat_id]
-	var radius: float = _get_node_radius(node)
-	var is_hovered: bool = node.stat_id == _hovered_node
+	var base_radius: float = _get_node_radius(node)
 	var pulse: float = _pulse_amount.get(node.stat_id, 0.0)
+	var hover_amount: float = _hover_amount.get(node.stat_id, 0.0)
+	# Whole node (disc, border, icon, rings) scales together on hover --
+	# a coherent "pop," not just the old static outline ring.
+	var radius: float = base_radius * (1.0 + hover_amount * HOVER_SCALE_BUMP)
 	# Sanctum UX point 4: denied-click shake -- a decaying sideways jitter,
 	# applied to the draw position only (hit-testing in _gui_input() still
 	# uses the node's real, un-shaken position).
@@ -506,12 +564,7 @@ func _draw_node(node: TreeNode) -> void:
 		center += Vector2(sin(shake * PI * 6.0) * DENIED_SHAKE_MAGNITUDE * shake, 0.0)
 
 	if node.level > 0 or pulse > 0.0:
-		var glow_alpha: float = (0.18 if node.is_maxed else 0.1) + pulse * 0.35
-		draw_circle(
-			center,
-			radius + 6.0,
-			Color(_accent_color.r, _accent_color.g, _accent_color.b, glow_alpha)
-		)
+		_draw_glow(center, radius, pulse, node.is_maxed)
 
 	var fill_color: Color
 	var border_color: Color
@@ -536,8 +589,8 @@ func _draw_node(node: TreeNode) -> void:
 
 	draw_circle(center, radius, fill_color)
 	draw_arc(center, radius - 1.5, 0.0, TAU, 28, border_color, 3.0)
-	if is_hovered and not node.is_gated:
-		draw_arc(center, radius + 3.0, 0.0, TAU, 28, Color.WHITE, 1.5)
+	if hover_amount > 0.0 and not node.is_gated:
+		draw_arc(center, radius + 3.0, 0.0, TAU, 28, Color(1.0, 1.0, 1.0, hover_amount), 1.5)
 
 	# Sanctum UX point 4: sealed state -- a maxed node needs to read as
 	# clearly distinct from "just leveled," not the old barely-different
@@ -551,6 +604,24 @@ func _draw_node(node: TreeNode) -> void:
 		_draw_currency_ring(node, center, radius)
 	if shake > 0.0 and _denied_message.has(node.stat_id):
 		_draw_denied_message(_denied_message[node.stat_id], center, radius, shake)
+
+
+## Layered soft glow (see GLOW_LAYERS' comment above) -- several
+## concentric, low-alpha circles with quadratic falloff read as a bloom
+## without a shader or a second additive-blend draw surface.
+func _draw_glow(center: Vector2, radius: float, pulse: float, is_maxed: bool) -> void:
+	var glow_base_alpha: float = (0.16 if is_maxed else 0.09) + pulse * 0.3
+	for layer in GLOW_LAYERS:
+		var layer_t: float = float(layer + 1) / float(GLOW_LAYERS)
+		var layer_radius: float = (
+			radius + GLOW_LAYER_SPACING * float(layer + 1) * (1.0 + pulse * 0.6)
+		)
+		var layer_alpha: float = glow_base_alpha * (1.0 - layer_t) * (1.0 - layer_t)
+		draw_circle(
+			center,
+			layer_radius,
+			Color(_accent_color.r, _accent_color.g, _accent_color.b, layer_alpha)
+		)
 
 
 ## Sanctum UX point 3: replaces the old pip row (drew level_cap pips at
