@@ -56,15 +56,18 @@ Players see a "Load Game" screen on startup showing all 4 available slots. Each 
 
 Empty slots show "Empty — Start new run" and load defaults. Occupied slots show current progress and let players quickly switch between parallel save series (e.g., "speed-run focused" vs. "greedy loot-stacking" playstyles).
 
-### Cloud sync
+### Cloud sync — dropped (2026-08-17)
 
-**Scope:** Meta-progression only (upgrade levels, currencies, unlock state). Not run history or stats yet — those are nice-to-have later additions.
-
-**Sync point:** On run end (when shop screen appears) and on graceful quit. Saves work fully offline; sync is best-effort when connection returns.
-
-**Conflict resolution:** Last-write-wins. If two devices save simultaneously and conflict, the most recent by server timestamp overwrites the older one. Future: if conflicts become frequent, show a merge dialog letting players pick which device's version to keep.
-
-**Device binding:** Optional — player can link their email (icarium.sengar@gmail.com as default) to enable cloud sync. If unlinked, saves stay local-only.
+Was specced as meta-progression-only sync (upgrade levels, currencies,
+unlock state; not run history), on run end + graceful quit, last-write-
+wins conflict resolution, optional email-based device linking. A stub
+autoload (`cloud_sync.gd`) shipped implementing the local-side plumbing,
+but the actual server/backend was always a placeholder — see "Current
+implementation" and the decision log's 2026-08-15 entry for that history.
+Removed entirely on direct instruction rather than left blocked: not
+wanted for now. Local-only saves (`SaveManager`, 4 slots) are unaffected
+— this only removes the never-implemented cross-device sync layer. See
+the decision log for the removal itself.
 
 ## Current implementation
 
@@ -143,8 +146,9 @@ What's actually built and playable today:
   reflect Gem Combo activity, and some of its stat labels have drifted
   from what the game now actually tracks. Flagged as its own rework,
   not yet started — see TODO.md.
-- Persistence: 4 save slots with metadata; cloud-sync infrastructure
-  exists but the server side is still a placeholder.
+- Persistence: 4 save slots with metadata, local-only. Cloud sync was
+  specced and stubbed but never had a real backend, and was dropped
+  entirely 2026-08-17 rather than finished — see "Cloud sync" above.
 
 Not yet built: real spell/enemy sprite art (spells and Player are still
 procedural/placeholder); an in-game reference teaching any of the above
@@ -996,6 +1000,283 @@ Built: a ghost slot (`backpack_grid.gd`) previews the next Bearing
 purchase right in the HUD -- fainter and dashed rather than solid,
 appearing one slot past the real grid whenever Bearing isn't maxed, gone
 once it is.
+
+## Triage & Hoard Depth Pass
+
+Ten ideas came out of an IDEAS.md ideation pass (2026-08-16/17, see that
+file and the decision log below). Rather than spec each in isolation,
+they group into six mechanics that reinforce each other -- most touch
+the same handful of systems (Active Pickup's queue, the Discard/Gleam
+stats orphaned by the pickup pivot, the rarity/loot pipeline) and were
+clearly circling the same few problems from different angles. Grouped,
+not merged -- each is still independently buildable and gets its own
+In scope/Out of scope in TODO.md, per this project's usual discipline.
+
+Scope note: this covers IDEAS.md's **Now-ish** bucket only (candidates
+IDEAS.md itself already flags as "worth considering for TODO.md soon").
+The **Later** bucket (altar, losable hoard, Legendary set-piece, Phase 4,
+visible trophy room) stays blue-sky on purpose -- full technical specs
+for admittedly-half-formed ideas would be throwaway work and defeats
+the point of keeping a low-rigor bucket at all. They got a light naming
+pass in IDEAS.md instead, not a spec.
+
+### Group A: Triage Feel
+
+Deepens Active Pickup itself -- no new systems, just makes the existing
+queue and discard actually carry the weight DESIGN.md already claims
+they do.
+
+**Queue pressure** (no new name -- a refinement of the existing fill %
+formula, not new content). Pending (queued, undecided) gems currently
+cost nothing to ignore -- pure decoration floating over the player's
+head. Fix: count queued gems toward fill % at a reduced weight (e.g.
+`PENDING_SLOT_WEIGHT = 0.5` of a real slot) while they wait, so a
+backed-up queue makes the player bigger/slower *right now*, not just
+once resolved. No auto-timer, no forced resolution -- matches the
+already-locked "managing at scale is the fun" call. Technical: extend
+whatever computes real slots-used in `player.gd` to include a weighted
+`_pending_queue` contribution; must transition cleanly to full weight
+(Keep) or zero (Discard) on resolution, not jump.
+
+**Cast Off** (name locked -- reads well, ties "casting off" unwanted
+loot to the spellcaster fantasy). Discard (L) currently deletes a gem
+with a fade -- a no-op with a coat of paint. Make it *throw* the gem in
+the player's current facing direction: damage/knockback scaled by
+tier (reuse Streak's existing tier-scaled damage table rather than
+inventing a second one), no value banked, so "gone for good" still
+holds exactly as today. Splits K and L into genuinely different systems
+-- K feeds the economy, L feeds the fight -- instead of both being
+variations on "make the gem go away." Visual: redirect the pip's
+existing pop-and-fade tween into a launch-arc-then-impact instead of a
+fade-in-place; reuse the existing tier-tinted spark burst
+(`spark_burst.tscn`) on impact, same asset pickups already use. Audio:
+extend the existing discard descending-sweep cue with a hit-impact
+layer. Technical: the discard-resolution path in `player.gd` spawns a
+thrown-projectile node (a lightweight new script, or a stripped-down
+`Loot` variant) traveling along `_facing`, colliding via the same
+`take_damage()` path every other source of damage already uses.
+
+**Rarity cues** (Settings-facing name, e.g. "Rarity Cues" -- Function
+register, stays plain per TEXT_FLAVOR.md's established split). Reading
+a queued gem's tier currently requires *looking* at it, at exactly the
+moment a player can't afford to stop watching enemies. A distinct short
+pitched arrival tone per rarity (ascending pitch with rarity, reusing
+the existing procedural-tone approach in `audio_manager.gd`) lets a
+practiced player triage by ear. Cheap, and it directly raises the skill
+ceiling on the thing the game says it's about. Technical: one new
+`play_rarity_cue(tier)` call fired wherever a gem enters the queue
+(`Loot.enter_queue()`).
+
+### Group B: Re-point Discard and Gleam
+
+Not new mechanics -- two existing stats whose *purpose* the Active
+Pickup pivot quietly broke, surfaced by the same ideation pass. Small,
+should ship on its own, doesn't need Group A/C/D/E built first.
+
+**Discard** currently auto-removes the lowest-rarity item once fill %
+crosses a threshold -- precisely the "items vanish on their own"
+behavior Backpack Ability was deleted for ("undermines hoarding as a
+chosen risk"), and now the last auto-taking system left standing.
+Re-scope: instead of the game discarding *for* the player, Discard's
+levels boost the player's *own* manual discards -- e.g. each level adds
+flat bonus damage/rebate to Cast Off (Group A) rather than triggering
+on its own. Keeps the "late-game assist" spirit without reintroducing
+autonomous removal.
+
+**Gleam** now governs pickup-queue-eligibility range instead of
+auto-collect volume -- meaning more Gleam means strictly more triage
+*workload*, with no compensating benefit, an accidental double-edged
+stat nobody decided on purpose. Fix (a call worth flagging, not
+obviously the only right one): pair Gleam's range increase with a small
+queue-resolve-speed bonus, so more incoming volume stays processable at
+roughly the same net pace instead of just piling up faster.
+
+Technical: `meta_progression.gd`'s `StatDef` effects for both stats need
+re-wiring -- Discard's effect target moves from the auto-purge branch in
+`player.gd` to a multiplier read by Cast Off's damage/rebate calc;
+Gleam's `StatDef` gains a second effect field.
+
+### Group C: Loot Has Consequences
+
+Makes loot itself spatial and combat-relevant instead of a pure
+inventory abstraction -- three ideas, one theme.
+
+**Scatter** (mechanic term, no proper noun needed). Drops currently
+spawn exactly where the enemy died -- rarity costs nothing spatially.
+Scale scatter distance with tier (Common lands ~at the kill site,
+Legendary skitters 80-150px toward the edge), via a quick
+launch-and-settle hop rather than a teleport. Chasing the good stuff
+now costs a worse position -- puts the greed decision inside the one
+input the combat pillar actually has (movement). Technical: `arena.gd`'s
+`_on_enemy_died` gets a rarity-keyed scatter offset feeding a launch
+tween already-native to `loot.gd`'s bob/pulse tween pattern.
+
+**Leaden** (name locked -- pairs directly with the existing Blessed
+affix). Blessed already exists (Epic+ roll, +50% value, gold-shifted
+color/pulse). Leaden is its dark mirror: worth more, but folds extra
+"ballast" weight into slots-used even though it's still one item.
+Fixes a real hole in the existing rarity philosophy -- a Legendary is
+800 value in a single slot today, never actually the "space gamble" the
+rarity table's own rationale claims, so Keep is always trivially
+correct. A Leaden Legendary makes that a real question. Visual: mirror
+Blessed's exact code path (`_is_affixed`, `_pulse_scale_amount`) with
+inverted constants -- a leaden-grey color lerp, a slower/heavier pulse
+instead of Blessed's brighter one, a "+X, Leaden" floating text in that
+tone. Technical: `loot.gd`'s existing `AFFIX_CHANCE_BY_TIER` roll
+branches into Blessed vs. Leaden instead of just hit/miss; a new
+`_is_leaden` flag parallels `_is_affixed`; its ballast weight folds into
+whatever Group A's queue-pressure work ends up computing slots-used
+from, so they should land together or at least be aware of each other.
+
+**Magpie** (new enemy name -- plain, animal-descriptive, matches the
+existing Minion/Bruiser/Elite/Boss convention rather than a mystical
+name; magpies are the real-world animal famous for stealing shiny
+objects, so it reads immediately without needing flavor text).
+Nothing in the arena has ever reacted to loot -- enemies chase the
+player and ignore gems entirely, in a game called Hoard Survivors.
+Magpie eats unclaimed ground loot before the player reaches it, or
+preferentially targets a fuller bag -- giving size-as-risk a second,
+active consequence beyond hitbox area. **Must be built around a
+kill-it-back recovery window, not permanent theft** -- this is the
+single most consistent finding from the cross-game research behind this
+idea (Diablo's Treasure Goblin, DRG's Loot Bug, Dark Souls' Crystal
+Lizard are all loved *because* killing them fast enough gets the loot
+back, often at a bonus; Minecraft's Creeper and Rogue's original
+leprechaun are hated because the loss is final). Telegraphing matters
+as much as the mechanic: needs a distinct silhouette/tint and an
+audible alert cue so the threat reads before it's already happened.
+Visual: sprite pulled from the existing DungeonTilesetII pack if a
+fitting scavenger/bird-like frame exists, matching how Bruiser/Elite/
+Boss got real sprites rather than tinted reuse. Technical: new `Enemy`
+subclass overriding `_update_behavior()` (the established pattern),
+consumes nearby `Loot` nodes or overrides aggro-priority toward higher
+fill %, drops what it ate on death (at a bonus, per the recovery-window
+finding above).
+
+### Group D: Attunement
+
+The single biggest idea from this pass, and deliberately its own group
+-- touches all 8 spells, deserves the most careful spec and the most
+playtest scrutiny before it ships.
+
+**The problem, stated plainly:** there is currently zero in-run
+progression. The whole build (Spellpower, spells unlocked, stat levels)
+is locked before the run starts; Gem Combos are the only thing that
+happens mid-run, and they're occasional spikes, not a running state.
+Separately, greed is priced (bigger, slower, easier to hit) but caution
+is free -- the dominant strategy right now is discard everything under
+Epic, stay lean and fast, cherry-pick the rest, which makes four of six
+rarity tiers close to economically pointless.
+
+**The mechanic:** the backpack's *current composition* continuously
+biases spell behavior, recomputed live every time the bag changes (same
+`loot_changed`/pickup signals Gem Combos already listen to -- reuse, no
+new event needed). A single derived scalar -- **Attunement**, a
+weighted average tier-index of everything currently held, normalized
+0.0-1.0 -- feeds a lerp on top of existing Spellpower scaling:
+
+- **Low Attunement** (Common/Uncommon-heavy bag): spells cast faster,
+  hit weaker. Fast, wide, cheap.
+- **High Attunement** (Mythic/Legendary-heavy bag): spells cast slower,
+  hit harder. Slow, narrow, heavy.
+- **Empty bag is its own worst-case floor, not just the low end of the
+  lerp** -- per the idea's own explicit framing ("an empty bag should
+  be weak"). Implement as a distinct branch (a flat penalty applied only
+  while `backpack.is_empty()`), not an extrapolation of the Low-end
+  curve, so the mechanic actually punishes emptiness rather than just
+  rewarding fullness.
+
+Naming: **Attunement** -- "the bag tunes your spells" was the idea's own
+framing, the word is free (Alchemy was removed with Backpack Ability),
+fits the existing mystical stat register (Spellpower, Essence, Gleam)
+without colliding with anything.
+
+**Real balance risk, flagged not solved:** this is structurally similar
+to Path of Exile's flask system, which became infamous as "flask
+piano" -- near-mandatory upkeep with zero cost to skipping it, bad
+enough the developers have nerfed it repeatedly. If one Attunement
+state ends up strictly, unconditionally better, this collapses the same
+way. Needs the low and high ends to each genuinely win in different
+circumstances (e.g. low favors clearing trash / early phases, high
+favors Boss-scale single-target burst) rather than one dominating --
+**this needs real playtest-harness verification once built**, not an
+assertion that the shape above already solves it.
+
+Visual: each spell's existing procedural VFX (already `modulate`-tinted
+by nothing in particular right now) could trend cooler/thinner at low
+Attunement, warmer/thicker at high, reusing the exact tinting mechanism
+gems already use for rarity color -- no new art needed. A small HUD
+gauge showing current Attunement belongs with the already-queued HUD +
+death-summary rework (see TODO.md), not built standalone. Audio: none
+needed -- Attunement modulates values (cast rate) that already have
+their own cast SFX.
+
+Technical: new `get_attunement() -> float` on `Player` or
+`SpellCaster`, recomputed on backpack-change signals. `spell_caster.gd`
+wants one shared helper (e.g. `_attunement_multiplier(base, low_end,
+high_end)`) called from each of the 8 spells' existing calculations,
+not 8 duplicated lerps.
+
+### Group E: Pacts
+
+A new shop category, not a new stat tree -- sells *rule mutations* for
+a run instead of permanent numbers, matching the direction Compacting's
+removal already pointed at (fixed passives out, dynamic/skill-expressed
+systems in).
+
+**Shape:** a small set of per-run toggles, chosen before a run (likely
+folded into the run-prep/"Embark" screen, reusing the UI slot the
+deleted Backpack Ability picker used to occupy rather than adding a new
+screen). Each trades a real drawback for a real payout. Re-selected
+every run, not a permanent purchase -- that's the whole distinction from
+the old Compacting model.
+
+Starter roster (illustrative, like Rampage/Ratio's numbers -- a
+direction, not a locked menu):
+- **Heavy Start** -- begin the run with the bag already part-full
+  (baseline fill %/Attunement present) for a flat Essence/Stardust
+  bonus at run start.
+- **Narrow Queue** -- pickup queue capacity drops to holding only 1
+  pending gem at a time (must resolve before the next can even enter)
+  for a boosted Keep/Cast Off effect.
+- One correction to the idea's own illustrative list worth flagging:
+  "Legendaries don't stack" doesn't work as an example Pact -- Legendary
+  already never stacks, permanently, per the existing rarity table. A
+  coherent substitute in the same family: **Fragile Bearing** -- reduced
+  starting slot capacity for the run, in exchange for a bonus.
+
+Naming: **Pacts** -- directly cites the idea's own inspiration (Hades'
+Pact of Punishment), fits the dark/mystical register, and is distinct
+from Gem Combos (in-run, reactive) and the stat trees (permanent,
+currency-bought).
+
+Technical: new `PactDef` resource mirroring `StatDef`'s existing shape
+(id, display name, description, the rule mutation(s) it applies).
+`run_prep.tscn`/`.gd` needs a new selection UI block -- open question,
+not fully specified here, whether it's a 2-option toggle row like the
+deleted Backpack Ability picker or a longer selectable list, since
+Pacts likely wants more than 2 options. `MetaProgression` needs a new
+`active_pact` save-data field; each system a given Pact touches (queue
+cap in `player.gd`, starting fill in `player.gd`'s `_ready()`, etc.)
+checks it.
+
+### Group F: Score the run you played
+
+Folds into the already-queued **HUD + death-summary rework** TODO item
+rather than standing alone -- both are about what the death screen
+shows, no reason to spec them separately.
+
+The death summary currently ranks time survived and loot value; nothing
+measures triage quality. Track additional per-run stats -- total value
+kept vs. discarded (via Cast Off), a derived efficiency (value kept ÷
+slots used) -- and persist personal bests for named *shapes* of run
+rather than just one "best time": **Richest** (highest loot value
+banked), **Leanest** (best value-per-slot), **Most Refused** (most
+value voluntarily discarded via Cast Off). Plain, Function-register
+category names -- no extra flavor needed, matches TEXT_FLAVOR.md's
+established split. Technical: extends `meta_progression.gd`'s existing
+`update_best_run()` pattern with these additional derived, independently
+-persisted bests.
 
 ## Decisions log
 
@@ -1978,3 +2259,31 @@ Short dated entries when a design decision is made and worth remembering
   instead of one rect per distinct tier. Verified via 5 new unit-test
   cases (197 passing) covering the multi-slot split directly, plus a
   playtest batch with zero errors and sane fill % readings.
+- 2026-08-17 — Synthesized IDEAS.md's ten Now-ish entries into the
+  "Triage & Hoard Depth Pass" section above, at the player's request
+  ("create a cohesive set of mechanics," not ten isolated specs). Six
+  groups, not ten items, since most of the ideas were circling the same
+  few problems from different angles: Group A (Queue pressure, Cast
+  Off, Rarity cues) all deepen Active Pickup itself with no new
+  systems; Group B re-points Discard/Gleam, both quietly broken by the
+  pickup pivot rather than genuinely new; Group C (Scatter, Leaden,
+  Magpie) all make loot spatially/combatively consequential instead of
+  a pure inventory abstraction; Group D (Attunement) stood alone
+  deliberately -- the biggest single idea, touching all 8 spells, and
+  the only one that gives the run any in-run progression at all right
+  now; Group E (Pacts) is a new shop category, not a stat tree, selling
+  per-run rule mutations instead of permanent numbers -- the direction
+  Compacting's removal already pointed at; Group F folds into the
+  already-queued HUD + death-summary rework rather than standing alone.
+  Named everything that needed a name (Attunement, Pacts, Magpie) and
+  left the rest as plain mechanic terms per the established Frame/
+  Function split in TEXT_FLAVOR.md. Deliberately did NOT spec the Later
+  bucket at the same depth -- committing full technical requirements to
+  admittedly-half-formed blue-sky ideas would be thrown-away work and
+  defeats the point of keeping IDEAS.md low-rigor; those five got a
+  light naming pass in IDEAS.md instead. Flagged two real open
+  questions rather than guessing: whether Attunement's low/high ends
+  actually balance against each other needs the playtest harness once
+  built, not an assertion; Pacts' selection UI shape (2-option toggle
+  vs. a longer list) isn't decided. See TODO.md for the six
+  implementation items; none of this is built yet.

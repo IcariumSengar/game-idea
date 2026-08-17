@@ -99,11 +99,11 @@ Keep this pairing as the project grows: a scene's primary script lives in
 mirrored in `scenes/` under the matching domain subfolder.
 
 `scripts/` and `scenes/` are split into domain subfolders --
-`player/` (player, spells, backpack ability, familiar), `enemy/` (all
+`player/` (player, spells, familiar), `enemy/` (all
 enemy tiers, enemy projectiles), `loot/` (drops), `fx/` (procedural
 visual effects: bursts, projectiles, background decor), `ui/` (HUD, shop,
 skill tree, menus, save-slot screen). Autoloads (`MetaProgression`,
-`SaveManager`, `LootTypes`, `CloudSync`, `SceneTransition`,
+`SaveManager`, `LootTypes`, `SceneTransition`,
 `AudioManager`, `Settings`, `PlaytestHarness`, `UnitTests`) and the two
 root-flow scenes/scripts (`main`, `arena`) stay at `scripts/`/`scenes/`
 top level -- they're cross-cutting or the entry points into everything

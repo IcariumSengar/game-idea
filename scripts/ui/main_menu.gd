@@ -35,7 +35,6 @@ func _on_settings_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	SaveManager.save()
-	CloudSync.sync_now()
 	get_tree().quit()
 
 

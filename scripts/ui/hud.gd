@@ -119,7 +119,6 @@ func _on_player_died() -> void:
 
 	MetaProgression.award_run_end_currency(total_value, seconds_survived)
 	SaveManager.save()
-	CloudSync.sync_now()
 
 	if PlaytestHarness.active:
 		return
@@ -242,12 +241,10 @@ func _on_resume_button_pressed() -> void:
 ## previous runs and backs out.
 func _on_quit_to_menu_button_pressed() -> void:
 	SaveManager.save()
-	CloudSync.sync_now()
 	get_tree().paused = false
 	SceneTransition.goto_scene("res://scenes/ui/main_menu.tscn")
 
 
 func _on_quit_game_button_pressed() -> void:
 	SaveManager.save()
-	CloudSync.sync_now()
 	get_tree().quit()
