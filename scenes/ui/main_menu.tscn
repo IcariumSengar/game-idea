@@ -47,7 +47,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 52
 theme_type_variation = &"MainTitleLabel"
 theme_override_constants/outline_size = 6
-theme_override_colors/font_outline_color = Color(0.15, 0.08, 0.2, 0.8)
+theme_override_colors/font_outline_color = Color(0.02, 0.1, 0.12, 0.8)
 text = "ABYSSAL HOARD"
 horizontal_alignment = 1
 

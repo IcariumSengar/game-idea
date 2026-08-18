@@ -35,7 +35,7 @@ func _draw() -> void:
 		)
 	draw_circle(Vector2.ZERO, RADIUS, bolt_color)
 	draw_circle(Vector2.ZERO, RADIUS * 0.5, Palette.SPELL_ARCANE_CORE)
-	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 16, Palette.PAINTED_INK_PROJECTILE, 1.0)
+	draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 16, Palette.ABYSS_INK_PROJECTILE, 1.0)
 
 
 func _physics_process(delta: float) -> void:

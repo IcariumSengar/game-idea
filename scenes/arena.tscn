@@ -319,7 +319,7 @@ alignment = 1
 theme_override_font_sizes/font_size = 28
 theme_type_variation = &"BrightLabel"
 theme_override_constants/outline_size = 3
-theme_override_colors/font_outline_color = Color(0.1, 0.05, 0.15, 0.8)
+theme_override_colors/font_outline_color = Color(0.02, 0.1, 0.12, 0.8)
 text = "PAUSED"
 horizontal_alignment = 1
 

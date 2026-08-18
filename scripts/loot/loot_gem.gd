@@ -67,4 +67,4 @@ func _draw() -> void:
 	)
 
 	var outline := PackedVector2Array([top, right, bottom, left, top])
-	draw_polyline(outline, Palette.PAINTED_INK_GEM, INK_WIDTH, true)
+	draw_polyline(outline, Palette.ABYSS_INK_GEM, INK_WIDTH, true)

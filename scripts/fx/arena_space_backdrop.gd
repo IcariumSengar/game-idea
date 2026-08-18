@@ -1,30 +1,34 @@
 extends Node2D
 
-## Procedural space backdrop for the arena: a dark void, soft nebula
-## color washes, and twinkling stars -- replaces the dungeon floor
-## tileset so combat reads as floating in space rather than a stone
-## room with a repeating grid.
+## Procedural arena backdrop: a dark abyss void, murky drifting
+## particulate clouds, and suspended motes of light -- replaces the
+## dungeon floor tileset so combat reads as descending through open water
+## rather than a stone room with a repeating grid. Abyssal Dive (DESIGN.md
+## 2026-08-18): same "void + soft color washes + twinkling points"
+## technique the arena already used, just retinted via Palette rather
+## than rebuilt -- VOID_BASE/NEBULA_TINTS/STAR_TINT already carry the new
+## cold, scarce-color abyss language now.
 
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
-const STAR_COUNT: int = 220
-const NEBULA_COUNT: int = 7
+const MOTE_COUNT: int = 220
+const PARTICULATE_COUNT: int = 7
 
-var _stars: Array = []
-var _nebulae: Array = []
+var _motes: Array = []
+var _particulate: Array = []
 var _time: float = 0.0
 
 
 func _ready() -> void:
 	z_index = -10
-	_generate_stars()
-	_generate_nebulae()
+	_generate_motes()
+	_generate_particulate()
 
 
-func _generate_stars() -> void:
-	_stars.clear()
-	for i in STAR_COUNT:
+func _generate_motes() -> void:
+	_motes.clear()
+	for i in MOTE_COUNT:
 		(
-			_stars
+			_motes
 			. append(
 				{
 					"pos": Vector2(randf() * ARENA_SIZE.x, randf() * ARENA_SIZE.y),
@@ -37,11 +41,11 @@ func _generate_stars() -> void:
 		)
 
 
-func _generate_nebulae() -> void:
-	_nebulae.clear()
-	for i in NEBULA_COUNT:
+func _generate_particulate() -> void:
+	_particulate.clear()
+	for i in PARTICULATE_COUNT:
 		(
-			_nebulae
+			_particulate
 			. append(
 				{
 					"pos": Vector2(randf() * ARENA_SIZE.x, randf() * ARENA_SIZE.y),
@@ -60,11 +64,11 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), Palette.VOID_BASE)
 
-	for nebula: Dictionary in _nebulae:
-		draw_circle(nebula["pos"], nebula["radius"], nebula["color"])
+	for cloud: Dictionary in _particulate:
+		draw_circle(cloud["pos"], cloud["radius"], cloud["color"])
 
-	for star: Dictionary in _stars:
-		var twinkle: float = 0.5 + 0.5 * sin(_time * star["speed"] + star["offset"])
-		var alpha: float = star["base_alpha"] * (0.4 + 0.6 * twinkle)
+	for mote: Dictionary in _motes:
+		var twinkle: float = 0.5 + 0.5 * sin(_time * mote["speed"] + mote["offset"])
+		var alpha: float = mote["base_alpha"] * (0.4 + 0.6 * twinkle)
 		var tint := Palette.STAR_TINT
-		draw_circle(star["pos"], star["radius"], Color(tint.r, tint.g, tint.b, alpha))
+		draw_circle(mote["pos"], mote["radius"], Color(tint.r, tint.g, tint.b, alpha))
