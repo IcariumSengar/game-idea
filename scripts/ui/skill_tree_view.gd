@@ -76,6 +76,17 @@ const CURVE_SEGMENTS: int = 16
 ## elsewhere rather than adding a new animation technique.
 const HOVER_SCALE_BUMP: float = 0.12
 const HOVER_LERP_SPEED: float = 10.0
+## Keyboard/gamepad node navigation: tree nodes aren't real Controls (see
+## the DENIED_SHAKE_DURATION comment above), so ui_up/down/left/right can't
+## use Godot's normal focus-neighbor traversal -- _move_selection() instead
+## picks the nearest node roughly in the pressed direction from
+## _node_positions directly, using these as candidate directions.
+const NAV_ACTIONS: Dictionary = {
+	&"ui_up": Vector2.UP,
+	&"ui_down": Vector2.DOWN,
+	&"ui_left": Vector2.LEFT,
+	&"ui_right": Vector2.RIGHT
+}
 
 const STAT_DESCRIPTIONS: Dictionary = {
 	&"damage": "Your spells crackle with arcane power, striking harder.",
@@ -122,8 +133,22 @@ class TreeNode:
 func _ready() -> void:
 	custom_minimum_size = Vector2(0, 460)
 	mouse_filter = MOUSE_FILTER_STOP
+	# Selection is already shown via the per-node hover ring (_hover_amount)
+	# -- a whole-control focus rectangle on top of that would just be noise
+	# across this much area.
+	focus_mode = Control.FOCUS_ALL
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	set_process(false)
 	resized.connect(_on_resized)
+	focus_entered.connect(_on_focus_entered)
+
+
+## Selects the first node the instant the tree gains focus (tab switch,
+## or ui_down from the tab row above) rather than waiting for the first
+## direction press, so there's always immediate visual feedback.
+func _on_focus_entered() -> void:
+	if _hovered_node == StringName() and not _nodes.is_empty():
+		_select_node(_nodes[0])
 
 
 ## The container layout pass finishes after _ready(), so size.x isn't
@@ -354,13 +379,83 @@ func _gui_input(event: InputEvent) -> void:
 			if pos.distance_to(_node_positions[node.stat_id]) <= _get_node_radius(node):
 				hovered = node
 				break
-		var hovered_id: StringName = hovered.stat_id if hovered != null else StringName()
-		if hovered_id != _hovered_node:
-			_hovered_node = hovered_id
-			tooltip_text = _build_tooltip_text(hovered) if hovered != null else ""
-			node_hovered.emit(_hovered_node)
-			set_process(true)
-			queue_redraw()
+		if hovered != null:
+			if hovered.stat_id != _hovered_node:
+				_select_node(hovered)
+		elif _hovered_node != StringName():
+			_clear_selection()
+	elif event.is_action_pressed(&"ui_accept"):
+		if _hovered_node != StringName():
+			node_clicked.emit(_hovered_node)
+		get_tree().root.set_input_as_handled()
+	else:
+		for action_name: StringName in NAV_ACTIONS:
+			if event.is_action_pressed(action_name):
+				# Only consumed when a move actually happens -- at the tree's
+				# edges (topmost node pressing up, say) this falls through to
+				# Godot's normal focus-neighbor traversal instead, so ui_up
+				# escapes to the tab row above and ui_down escapes to Start
+				# Run/Back below, with no explicit wiring needed for either.
+				if _move_selection(NAV_ACTIONS[action_name]):
+					get_tree().root.set_input_as_handled()
+				return
+
+
+## Shared by mouse hover and keyboard/gamepad selection -- both are "this
+## node is the active one" and drive the identical ring/tooltip feedback,
+## so they share one code path instead of two parallel state machines.
+func _select_node(node: TreeNode) -> void:
+	_hovered_node = node.stat_id
+	tooltip_text = _build_tooltip_text(node)
+	node_hovered.emit(_hovered_node)
+	set_process(true)
+	queue_redraw()
+
+
+func _clear_selection() -> void:
+	_hovered_node = StringName()
+	tooltip_text = ""
+	node_hovered.emit(_hovered_node)
+	set_process(true)
+	queue_redraw()
+
+
+## Picks the nearest node roughly in `dir` from the current selection
+## (dot product against the direction, penalizing off-axis candidates by
+## dividing distance by alignment) rather than walking parent/child/sibling
+## links -- root-level nodes are separate stacked chains, not a left-right
+## row (see _calculate_positions()), so tree-structural "sibling" doesn't
+## match what's visually beside a node. Falls back to the first node when
+## nothing is selected yet (e.g. the very first press after gaining focus,
+## if _on_focus_entered() hasn't already picked one).
+func _move_selection(dir: Vector2) -> bool:
+	if _nodes.is_empty():
+		return false
+	var current: TreeNode = _find_node(_hovered_node)
+	if current == null:
+		_select_node(_nodes[0])
+		return true
+	var from: Vector2 = _node_positions[current.stat_id]
+	var best: TreeNode = null
+	var best_score: float = INF
+	for node in _nodes:
+		if node == current:
+			continue
+		var offset: Vector2 = _node_positions[node.stat_id] - from
+		var dist: float = offset.length()
+		if dist < 0.01:
+			continue
+		var along: float = offset.normalized().dot(dir)
+		if along < 0.3:
+			continue
+		var score: float = dist / along
+		if score < best_score:
+			best_score = score
+			best = node
+	if best == null:
+		return false
+	_select_node(best)
+	return true
 
 
 ## Sanctum UX point 4: a denied click (can't afford, or gated) answers

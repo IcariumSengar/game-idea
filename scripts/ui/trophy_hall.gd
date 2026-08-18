@@ -20,6 +20,7 @@ const HEADER_COLOR: String = "#e6cc99"
 
 func _ready() -> void:
 	_body.text = _build_bbcode()
+	$CenterContainer/OuterVBox/BackButton.grab_focus()
 
 
 func _build_bbcode() -> String:

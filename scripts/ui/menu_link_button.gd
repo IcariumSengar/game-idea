@@ -15,7 +15,12 @@ var _hover_amount: float = 0.0
 
 func _ready() -> void:
 	flat = true
-	focus_mode = Control.FOCUS_NONE
+	# Keyboard/gamepad navigation needs a focusable target on every screen --
+	# font_focus_color above already matches the hover gold, so a focused
+	# button reads the same as a hovered one. The empty "focus" stylebox
+	# suppresses Godot's default dotted focus rectangle, which would clash
+	# with this flat, text-only button style.
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	add_theme_color_override("font_color", NORMAL_COLOR)
 	add_theme_color_override("font_hover_color", HOVER_COLOR)
 	add_theme_color_override("font_pressed_color", HOVER_COLOR)

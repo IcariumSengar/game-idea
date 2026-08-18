@@ -81,9 +81,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _player_in_range == null:
 		return
 	var key_event := event as InputEventKey
-	if key_event == null or not key_event.pressed or key_event.echo:
+	if key_event != null and key_event.pressed and not key_event.echo:
+		if key_event.physical_keycode == Settings.get_keybind(&"keep"):
+			_try_confirm()
 		return
-	if key_event.physical_keycode == Settings.get_keybind(&"keep"):
+	# Same fixed gamepad button as the Keep gesture (player.gd's triage
+	# input) -- the Altar's confirm is the same "commit this item" verb.
+	var joy_event := event as InputEventJoypadButton
+	if (
+		joy_event != null
+		and joy_event.pressed
+		and joy_event.button_index == JOY_BUTTON_RIGHT_SHOULDER
+	):
 		_try_confirm()
 
 
@@ -123,7 +132,7 @@ func _draw() -> void:
 		var tier_def := LootTypes.get_type(cost_tier)
 		var tier_name: String = tier_def.display_name if tier_def != null else String(cost_tier)
 		var prompt: String = (
-			"[K] %s -- Sacrifice %d %s+"
+			"[K / RB] %s -- Sacrifice %d %s+"
 			% [BOON_LABELS.get(boon_id, ""), SACRIFICE_COUNT, tier_name]
 		)
 		draw_string(font, PROMPT_OFFSET, prompt, HORIZONTAL_ALIGNMENT_LEFT, 240, 13, Color.WHITE)

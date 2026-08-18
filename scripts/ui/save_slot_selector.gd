@@ -8,11 +8,18 @@ const BTN_HOVER: StyleBoxFlat = preload("res://resources/button_hover.tres")
 const BTN_PRESSED: StyleBoxFlat = preload("res://resources/button_pressed.tres")
 const ROW_PANEL: StyleBoxFlat = preload("res://resources/panel_row.tres")
 
+## Rows are built at runtime (see _add_slot_button()), so there's no fixed
+## scene node to grab_focus() on the way every other menu does -- tracks
+## whichever Start/Load button gets created first instead.
+var _first_slot_button: Button = null
+
 @onready var _slots_container: VBoxContainer = %SlotsContainer
 
 
 func _ready() -> void:
 	_populate_slots()
+	if _first_slot_button != null:
+		_first_slot_button.grab_focus()
 
 
 func _populate_slots() -> void:
@@ -59,6 +66,8 @@ func _add_slot_button(slot: int, metadata: Dictionary) -> void:
 	var load_btn := _make_styled_button("Start" if is_empty else "Load", Vector2(80, 40))
 	load_btn.pressed.connect(_on_load_pressed.bind(slot))
 	button_container.add_child(load_btn)
+	if _first_slot_button == null:
+		_first_slot_button = load_btn
 
 	# Overwrite button -- only meaningful (and shown) for occupied slots;
 	# wipes that slot back to a fresh save.
