@@ -2,6 +2,86 @@
 
 All notable fixed versions of this project are documented here.
 
+## v0.3.0 - 2026-08-18
+
+The biggest single release yet: a full re-theme, six new mechanics, a
+skill-tree UX rebuild, and gamepad support. Consolidates everything
+built since v0.2.0 across several parallel sessions/worktrees, now
+fully merged into `main`.
+
+**Abyssal Dive — full re-theme, replaces the fantasy setting
+top to bottom.** The game is now **Abyssal Hoard**: you're the Diver,
+descending into a lightless deep where glowing salvage is the only
+color in the frame.
+- Complete naming cascade: the Cove (was the shop), the Ship's Log
+  (reference screen), Glow/Depth (the two currencies), Hold/Current
+  (backpack capacity/move speed, Gleam unchanged), the Angler (the
+  loot-stealing enemy, was the Magpie), the Reliquary (was Trophy
+  Hall), the Lure (was the Forge), and all 8 spells renamed/reflavored
+  (Luminous Dart, The Undertow, Deep Chill, Trench Collapse, Eel
+  Current, Crushing Depths, Ink Jet, Anglerling) — mechanics unchanged
+  throughout, only names and flavor.
+- The Diver and all six enemy tiers moved from placeholder pixel art to
+  six hand-authored SVG vector sprites, with a procedural swim-bob
+  replacing frame animation.
+- Every color in the game — UI chrome, backgrounds, loot gem glow,
+  spell VFX — recolored from a warm painterly palette to a dark,
+  high-contrast, glow-driven one, each spell tinted to its new identity
+  rather than a uniform recolor.
+- Loot gems reworked: darker, desaturated facets with a layered
+  rarity-colored glow behind them — "dark ground, glow reads as
+  meaning" — replacing the old bright flat-gradient gems.
+- Trench Collapse's telegraph is now spreading pressure cracks instead
+  of a plain warning ring.
+
+**The Constellation — skill-tree UX rebuilt from the ground up.**
+Direct feedback that the previous pass was "too flat, doesn't tell the
+player what's been unlocked, or what they can afford" prompted a full
+redesign: one brightness/pulse language (locked/dim/affordable-
+pulsing/maxed) replaces three separate per-node rings, purchased
+upgrades now trace a lit glowing path back through the tree, and each
+of the three trees got a real shape — the Player Tree a hub-and-spoke
+around the Diver, the Backpack Tree a tight cluster, the Spell Tree a
+radial arc instead of a flat flowchart.
+
+**New mechanics:**
+- **Manual Triage deepened** (Depth Pass A-D): queued gems now weigh on
+  backpack-fill pressure before you decide on them; discarding a gem
+  fires a damaging Cast Off throw; picking up a gem flashes its rarity
+  color as a readable cue; Hold/Gleam re-pointed to matter earlier;
+  gems scatter on drop and can go Leaden (heavier, harder to carry);
+  the Angler chases loot instead of the player and can be killed to
+  recover what it stole; Attunement — your bag's composition live-tunes
+  spell cast rate vs. power.
+- **The Altar** — a structure spawning at each phase boundary, offering
+  one boon (a temporary power spike or full heal) in exchange for
+  sacrificing a stack of items.
+- **Legendary drops are a set piece** — instead of auto-magnetizing,
+  they pull every living enemy toward them until collected.
+- **Phase 4** — the arena itself closes in as a third escalation beat,
+  on top of the existing enemy-tier ramp.
+- **The Reliquary** — a pure-display screen showing the single best
+  item ever found per rarity tier.
+- **The Lure** — a chain-gated skill node that shifts the loot table
+  toward higher rarities.
+- **Facets** — Current and Gleam each get a free-to-switch second
+  effect (Hades' Mirror-style), no new cost or currency.
+- **Surfacing** — a voluntary extraction window every 30 seconds
+  survived, banking your run early at a 10% bonus instead of pushing
+  on. The hoard was always losable to death; now it's a real choice,
+  not just an inevitability.
+
+**Also:**
+- Full gamepad support: movement, dash, gem triage, and menu/skill-tree
+  navigation, alongside the existing mouse/keyboard controls.
+- Keybindings are now remappable from the Settings menu.
+- A HUD progress indicator toward completing a gem combo.
+- Player and every enemy tier's sprite/hitbox size halved for a
+  tighter, more legible arena at a glance.
+- The Pacts mechanic, added and playtested this cycle, was cut before
+  release on direct feedback — see the decision log if picking up
+  related work.
+
 ## v0.2.0 - 2026-08-17
 
 New mechanics, not just polish: the backpack-fill risk signal, gem
