@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" path="res://assets/abyssal_sprites/diver.svg" id="3_diver"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 16.0
+radius = 8.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
 radius = 60.0
@@ -14,12 +14,13 @@ radius = 60.0
 script = ExtResource("1_player")
 
 [node name="Shadow" type="Polygon2D" parent="."]
+scale = Vector2(0.5, 0.5)
 color = Color(0.0, 0.0, 0.0, 0.35)
 polygon = PackedVector2Array(16, 16, 13.86, 18.5, 8, 20.6, 0, 21, -8, 20.6, -13.86, 18.5, -16, 16, -13.86, 13.5, -8, 11.4, 0, 11, 8, 11.4, 13.86, 13.5)
 
 [node name="Sprite" type="Sprite2D" parent="."]
-position = Vector2(0, -10)
-scale = Vector2(2.5, 2.5)
+position = Vector2(0, -5)
+scale = Vector2(1.25, 1.25)
 texture = ExtResource("3_diver")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

@@ -21,7 +21,7 @@ const DEATH_SPARK_AMOUNT: int = 18
 const SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/fx/floating_text.tscn")
 const ARENA_SIZE: Vector2 = Vector2(1280.0, 720.0)
-const ARENA_MARGIN: float = 16.0
+const ARENA_MARGIN: float = 8.0
 const FROST_TINT: Color = Palette.ENEMY_FROST_TINT
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0
 

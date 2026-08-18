@@ -11,7 +11,7 @@ signal loot_changed(backpack: Dictionary)
 ## separately.
 signal loot_collected(type_id: StringName)
 
-const RADIUS: float = 16.0
+const RADIUS: float = 8.0
 const FLASH_DECAY_PER_SEC: float = 6.0
 const KNOCKBACK_SPEED: float = 400.0
 const KNOCKBACK_DECAY_PER_SEC: float = 8.0

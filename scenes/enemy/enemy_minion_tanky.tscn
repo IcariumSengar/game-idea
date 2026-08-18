@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/abyssal_sprites/minion.svg" id="2_minion"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_tanky"]
-radius = 17.0
+radius = 8.5
 
 [node name="EnemyMinionTanky" type="CharacterBody2D"]
 script = ExtResource("1_enemy")
@@ -13,11 +13,12 @@ speed = 65.0
 max_hp = 45.0
 
 [node name="Shadow" type="Polygon2D" parent="."]
+scale = Vector2(0.5, 0.5)
 color = Color(0.0, 0.0, 0.0, 0.35)
 polygon = PackedVector2Array(17, 17, 14.73, 19.43, 8.5, 21.37, 0, 21.86, -8.5, 21.37, -14.73, 19.43, -17, 17, -14.73, 14.57, -8.5, 12.63, 0, 12.14, 8.5, 12.63, 14.73, 14.57)
 
 [node name="Sprite" type="Sprite2D" parent="."]
-scale = Vector2(1.4, 1.4)
+scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_minion")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
