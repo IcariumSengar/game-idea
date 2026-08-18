@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Bruiser (Tier 2) -- armored crustacean charger. Big front claws
+       telegraph its charge attack; duller glow than other tiers on
+       purpose (armored, not bioluminescent -- reads as tankier). -->
+  <defs>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="shell" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a4632"/>
+      <stop offset="100%" stop-color="#3f2418"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rear legs -->
+  <path d="M40 74 L34 86" stroke="#2a1810" stroke-width="4" stroke-linecap="round"/>
+  <path d="M52 76 L50 88" stroke="#2a1810" stroke-width="4" stroke-linecap="round"/>
+  <path d="M64 74 L68 86" stroke="#2a1810" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- shell body, thick plated -->
+  <path d="M30 55 C28 40 42 26 58 26 C74 26 84 40 82 56 C80 68 68 74 56 74 C44 74 32 68 30 55 Z" fill="url(#shell)" stroke="#20120c" stroke-width="1.6"/>
+
+  <!-- plate seams -->
+  <path d="M36 40 C46 36 68 36 78 42" fill="none" stroke="#20120c" stroke-width="1.4" opacity="0.6"/>
+  <path d="M33 54 C46 58 66 58 79 52" fill="none" stroke="#20120c" stroke-width="1.4" opacity="0.6"/>
+
+  <!-- glowing eyes, dim amber (armored, not luminous) -->
+  <circle cx="52" cy="34" r="2.4" fill="#c9822a" filter="url(#glow)"/>
+  <circle cx="62" cy="34" r="2.4" fill="#c9822a" filter="url(#glow)"/>
+
+  <!-- big front claws -->
+  <path d="M28 52 C16 48 8 40 10 32 C18 34 26 40 32 48 Z" fill="#5a331f" stroke="#20120c" stroke-width="1.2"/>
+  <path d="M12 34 C8 30 6 24 10 20 C14 24 16 30 16 36 Z" fill="#5a331f" stroke="#20120c" stroke-width="1"/>
+  <path d="M84 52 C96 48 94 38 90 32 C82 36 78 42 76 50 Z" fill="#5a331f" stroke="#20120c" stroke-width="1.2"/>
+  <path d="M92 34 C96 30 96 24 92 20 C88 24 86 30 86 36 Z" fill="#5a331f" stroke="#20120c" stroke-width="1"/>
+</svg>

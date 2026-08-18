@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/player/spell_caster.gd" id="2_spell_caster"]
-[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/player_sprite_frames.tres" id="3_player_frames"]
+[ext_resource type="Texture2D" path="res://assets/abyssal_sprites/diver.svg" id="3_diver"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 16.0
@@ -17,11 +17,10 @@ script = ExtResource("1_player")
 color = Color(0.0, 0.0, 0.0, 0.35)
 polygon = PackedVector2Array(16, 16, 13.86, 18.5, 8, 20.6, 0, 21, -8, 20.6, -13.86, 18.5, -16, 16, -13.86, 13.5, -8, 11.4, 0, 11, 8, 11.4, 13.86, 13.5)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(0, -10)
 scale = Vector2(2.5, 2.5)
-sprite_frames = ExtResource("3_player_frames")
-animation = &"idle"
+texture = ExtResource("3_diver")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_player")

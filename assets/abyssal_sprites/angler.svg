@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- the Angler (renamed Magpie) -- loot-thief enemy. The lure is the
+       whole point of the silhouette: it's what a player should
+       recognize on sight, since this creature is drawn to *your* glow
+       exactly the way its own lure draws prey in. Sickly yellow-green
+       lure color deliberately breaks from every other creature's
+       cyan/purple/amber glow -- reads as "threat," not "ally light." -->
+  <defs>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="anglerBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a4638"/>
+      <stop offset="100%" stop-color="#161c15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tail -->
+  <path d="M20 58 C10 52 8 62 12 70 C18 68 22 64 26 60 Z" fill="#161c15"/>
+
+  <!-- bulbous body -->
+  <path d="M18 54 C16 40 30 30 46 30 C64 30 78 42 76 58 C74 70 58 78 42 76 C28 74 20 66 18 54 Z" fill="url(#anglerBody)" stroke="#0a0d09" stroke-width="1.4"/>
+
+  <!-- lure stalk arcing up from the head -->
+  <path d="M52 32 C56 20 68 14 74 18 C70 24 64 28 58 34" fill="none" stroke="#3a4638" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- the lure itself -- the single strongest glow on this sprite -->
+  <circle cx="76" cy="16" r="5.5" fill="#c9e63d" filter="url(#glow)"/>
+  <circle cx="76" cy="16" r="2" fill="#f2ffb0"/>
+
+  <!-- huge teeth, wide mouth -->
+  <path d="M66 54 C74 52 80 56 78 64 C70 68 60 66 56 60 Z" fill="#0a0d09"/>
+  <path d="M60 58 L64 62 M65 56 L69 61 M70 55 L74 59" stroke="#e8e4d8" stroke-width="1.3" stroke-linecap="round"/>
+
+  <!-- small dim eye, all attention goes to the lure -->
+  <circle cx="46" cy="42" r="2.2" fill="#7a8a6a"/>
+</svg>

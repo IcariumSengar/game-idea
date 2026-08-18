@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy/enemy_angler.gd" id="1_angler"]
-[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/magpie_sprite_frames.tres" id="2_angler_frames"]
+[ext_resource type="Texture2D" path="res://assets/abyssal_sprites/angler.svg" id="2_angler"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_angler"]
 radius = 12.0
@@ -10,16 +10,14 @@ radius = 12.0
 script = ExtResource("1_angler")
 speed = 150.0
 max_hp = 15.0
-modulate = Color(0.55, 0.85, 0.55, 1.0)
 
 [node name="Shadow" type="Polygon2D" parent="."]
 color = Color(0.0, 0.0, 0.0, 0.35)
 polygon = PackedVector2Array(12, 12, 10.39, 13.71, 6, 15.09, 0, 15.43, -6, 15.09, -10.39, 13.71, -12, 12, -10.39, 10.29, -6, 8.91, 0, 8.57, 6, 8.91, 10.39, 10.29)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 scale = Vector2(2.1, 2.1)
-sprite_frames = ExtResource("2_angler_frames")
-animation = &"run"
+texture = ExtResource("2_angler")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_angler")

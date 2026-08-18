@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy/enemy.gd" id="1_enemy"]
-[ext_resource type="SpriteFrames" path="res://assets/dungeon_tileset/enemy_sprite_frames.tres" id="2_enemy_frames"]
+[ext_resource type="Texture2D" path="res://assets/abyssal_sprites/minion.svg" id="2_minion"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_tanky"]
 radius = 17.0
@@ -16,10 +16,9 @@ max_hp = 45.0
 color = Color(0.0, 0.0, 0.0, 0.35)
 polygon = PackedVector2Array(17, 17, 14.73, 19.43, 8.5, 21.37, 0, 21.86, -8.5, 21.37, -14.73, 19.43, -17, 17, -14.73, 14.57, -8.5, 12.63, 0, 12.14, 8.5, 12.63, 14.73, 14.57)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="."]
 scale = Vector2(1.4, 1.4)
-sprite_frames = ExtResource("2_enemy_frames")
-animation = &"run"
+texture = ExtResource("2_minion")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_tanky")

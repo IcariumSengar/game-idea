@@ -70,6 +70,16 @@ const KEEP_GESTURE_HOP: float = -7.0
 const KEEP_GESTURE_TILT: float = -0.32
 const DISCARD_GESTURE_DURATION: float = 0.2
 const DISCARD_GESTURE_TILT: float = 0.4
+## Abyssal Dive sprite integration (DESIGN.md 2026-08-18): the Diver's
+## `Sprite2D` has no idle/run animation to toggle (a static SVG texture,
+## not a `SpriteFrames` sheet) -- movement instead reads through a
+## continuous bob on position.y while moving, settling back to neutral
+## when idle. Skipped whenever a Keep/Discard gesture tween (below) is
+## actively driving the same position.y property, so the two techniques
+## don't fight over one frame's value.
+const SWIM_BOB_AMPLITUDE: float = 2.5
+const SWIM_BOB_SPEED: float = 9.0
+const SWIM_BOB_SETTLE_SPEED: float = 10.0
 ## Facets (DESIGN.md's "Facets," 2026-08-17): Swiftness's Face B trades
 ## some move speed (see MetaProgression.get_stat()'s own facet branch)
 ## for a dash-cooldown reduction, applied once at run start alongside
@@ -149,13 +159,17 @@ var _phase4_damage_cooldown: float = 0.0
 @onready var _pickup_area: Area2D = $PickupArea
 @onready var _pickup_shape: CollisionShape2D = $PickupArea/CollisionShape2D
 @onready var _body_shape: CollisionShape2D = $CollisionShape2D
-@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _sprite: Sprite2D = $Sprite
 ## Public (unlike the private onreadys above) -- hud.gd reads Streak
 ## progress off this for the combo-nearing pips.
 @onready var spell_caster: SpellCaster = $SpellCaster
 
 var _base_sprite_scale: Vector2 = Vector2.ONE
 var _base_sprite_position: Vector2 = Vector2.ZERO
+var _swim_bob_time: float = 0.0
+## Set by _play_keep_gesture()/_play_discard_gesture() so the swim bob
+## knows to back off from position.y while a gesture tween owns it.
+var _gesture_tween: Tween = null
 
 
 func _ready() -> void:
@@ -211,10 +225,7 @@ func _physics_process(delta: float) -> void:
 	if input_direction != Vector2.ZERO:
 		_facing = input_direction
 		_sprite.flip_h = _facing.x < 0.0
-		if _sprite.animation != &"run":
-			_sprite.play("run")
-	elif _sprite.animation != &"idle":
-		_sprite.play("idle")
+	_update_swim_bob(input_direction != Vector2.ZERO, delta)
 
 	_check_dash_input()
 
@@ -236,6 +247,23 @@ func _physics_process(delta: float) -> void:
 	_check_triage_input()
 	_reposition_queue()
 	_check_phase4_damage(delta)
+
+
+## Continuous sine bob while moving, easing back to neutral when idle --
+## see SWIM_BOB_AMPLITUDE's docstring above for why this replaces the
+## old idle/run animation toggle. Yields to an in-progress Keep/Discard
+## gesture tween rather than fighting it for position.y.
+func _update_swim_bob(is_moving: bool, delta: float) -> void:
+	if _gesture_tween != null and _gesture_tween.is_valid() and _gesture_tween.is_running():
+		return
+	if is_moving:
+		_swim_bob_time += delta * SWIM_BOB_SPEED
+		_sprite.position.y = _base_sprite_position.y + sin(_swim_bob_time) * SWIM_BOB_AMPLITUDE
+	else:
+		_swim_bob_time = 0.0
+		_sprite.position.y = move_toward(
+			_sprite.position.y, _base_sprite_position.y, SWIM_BOB_SETTLE_SPEED * delta
+		)
 
 
 func _check_dash_input() -> void:
@@ -323,6 +351,7 @@ func _check_triage_input() -> void:
 ## block above for why this is a tilt/hop rather than a real animation.
 func _play_keep_gesture() -> void:
 	var tween := create_tween()
+	_gesture_tween = tween
 	tween.set_parallel(true)
 	(
 		tween

@@ -52,7 +52,7 @@ var _slow_multiplier: float = 1.0
 var _slow_time_left: float = 0.0
 var _knockback: Vector2 = Vector2.ZERO
 
-@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _sprite: Sprite2D = $Sprite
 
 
 func _ready() -> void:
@@ -62,7 +62,6 @@ func _ready() -> void:
 	var angle := randf() * TAU
 	var radius := randf_range(20.0, 60.0)
 	_approach_offset = Vector2(cos(angle), sin(angle)) * radius
-	_sprite.play("run")
 	_base_modulate = modulate
 
 

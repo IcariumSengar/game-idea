@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Minion (Tier 1) -- small bioluminescent fish-swarm creature.
+       Fast/Tanky variants stay in-engine tint (modulate), same as today --
+       this one base shape covers all three, no separate SVGs needed. -->
+  <defs>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="2.6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="fishBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a5f70"/>
+      <stop offset="100%" stop-color="#28333d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tail fin -->
+  <path d="M28 50 C18 42 12 44 8 50 C12 56 18 58 28 50 Z" fill="#28333d"/>
+
+  <!-- torpedo body -->
+  <ellipse cx="55" cy="50" rx="26" ry="15" fill="url(#fishBody)" stroke="#0f161c" stroke-width="1"/>
+
+  <!-- dorsal + belly fin -->
+  <path d="M48 36 C52 28 60 28 62 34 C58 38 52 38 48 36 Z" fill="#38495a"/>
+  <path d="M48 64 C52 72 60 72 62 66 C58 62 52 62 48 64 Z" fill="#38495a"/>
+
+  <!-- glow eye/lure spot, the readable "this is alive" cue -->
+  <circle cx="74" cy="47" r="4.2" fill="#35d0c4" filter="url(#glow)"/>
+  <circle cx="74" cy="47" r="1.6" fill="#eafffb"/>
+
+  <!-- faint bioluminescent speckle line along the flank -->
+  <path d="M38 50 C48 48 62 48 72 50" fill="none" stroke="#35d0c4" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="1.5 3" filter="url(#glow)"/>
+</svg>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Boss (Tier 4) -- leviathan hybrid, unique/one-per-run. Glow uses
+       the game's actual Legendary red (#E63333-adjacent) so the boss
+       visually ties into the rarity-color system it guarantees drops
+       from. Bigger/more detailed than the other tiers on purpose. -->
+  <defs>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3.4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="hide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a1218"/>
+      <stop offset="100%" stop-color="#180508"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tail -->
+  <path d="M18 54 C8 50 4 58 6 66 C12 64 18 60 24 56 Z" fill="#2c0a0e"/>
+
+  <!-- elongated body -->
+  <path d="M16 52 C14 36 32 22 56 22 C80 22 96 36 92 56 C88 72 66 82 46 80 C30 78 18 68 16 52 Z" fill="url(#hide)" stroke="#0e0304" stroke-width="1.6"/>
+
+  <!-- dorsal glow-spine -->
+  <path d="M30 26 C36 20 44 20 48 26" fill="none" stroke="#ff6a3d" stroke-width="2" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M46 24 C52 17 60 17 64 24" fill="none" stroke="#ff6a3d" stroke-width="2" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M62 25 C68 19 76 20 80 27" fill="none" stroke="#ff6a3d" stroke-width="2" stroke-linecap="round" filter="url(#glow)"/>
+
+  <!-- armored plating texture -->
+  <path d="M24 50 C40 46 66 46 84 50" fill="none" stroke="#0e0304" stroke-width="1.2" opacity="0.6"/>
+  <path d="M22 62 C40 66 66 66 86 60" fill="none" stroke="#0e0304" stroke-width="1.2" opacity="0.6"/>
+
+  <!-- jaw with teeth, hybrid chaser+ranged -->
+  <path d="M84 44 C96 42 98 52 92 58 C86 60 80 56 80 50 Z" fill="#2c0a0e" stroke="#0e0304" stroke-width="1"/>
+  <path d="M84 46 L88 50 M87 49 L91 52 M90 52 L94 55" stroke="#f4e4d8" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- eye, hottest glow on the sprite -->
+  <circle cx="72" cy="42" r="4" fill="#ffb08a" filter="url(#glow)"/>
+  <circle cx="72" cy="42" r="1.6" fill="#fff4ee"/>
+</svg>
