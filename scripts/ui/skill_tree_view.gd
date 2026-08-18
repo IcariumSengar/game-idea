@@ -14,12 +14,6 @@ signal node_hovered(stat_id: StringName)
 
 const NODE_RADIUS: float = 24.0
 const CAPSTONE_RADIUS: float = 30.0
-const NODE_SPACING: Vector2 = Vector2(66.0, 84.0)
-const ZIGZAG_AMOUNT: float = 15.0
-## Wide sibling groups (e.g. Spell Unlock's 6 gated upgrade nodes) wrap
-## after this many instead of spreading across a single row, which would
-## otherwise overflow past the tree column's width.
-const MAX_CHILDREN_PER_ROW: int = 4
 const PULSE_DECAY_PER_SEC: float = 2.5
 const PULSE_SPARK_SCENE: PackedScene = preload("res://scenes/fx/spark_burst.tscn")
 const LOCKED_BORDER: Color = Palette.SKILL_TREE_LOCKED_BORDER
@@ -31,24 +25,14 @@ const TOOLTIP_CYAN: Color = Palette.SKILL_TREE_TOOLTIP_CYAN
 const STATUS_GREEN: Color = Palette.STATUS_GREEN
 const STATUS_RED: Color = Palette.STATUS_RED
 const STATUS_MUTED: Color = Palette.STATUS_MUTED
-## Sanctum UX (DESIGN.md 2026-08-17), point 1: a partial ring outside the
-## node showing progress toward its next level's cost.
-const CURRENCY_RING_GAP: float = 6.0
-const CURRENCY_RING_WIDTH: float = 2.5
-const CURRENCY_RING_COLOR_ALPHA: float = 0.65
-## Point 3: a partial arc on the node's own border showing level/cap --
-## replaces the old pip row, which overlapped neighboring nodes on any
-## stat with a double-digit level cap.
-const LEVEL_ARC_WIDTH: float = 3.5
-## Point 4: a maxed node's sealed state needs to read as clearly distinct
-## from "just leveled," not a barely-different alpha (the old 0.9 vs 0.7
-## locked-alpha was functionally invisible at a glance).
-const SEALED_RING_COLOR: Color = Palette.SKILL_TREE_SEALED_RING
-const SEALED_RING_WIDTH: float = 2.0
-## Denied-click shake (point 4) -- same tween-driven juice technique
-## juicy_button.gd uses for its own press feedback, applied to this
-## node's draw offset instead of a separate Button's scale, since tree
-## nodes aren't individual Button instances here.
+## The Constellation (DESIGN.md 2026-08-18): the shortfall/LOCKED denied-
+## click message still uses this tint (see _draw_denied_message()) -- the
+## per-node currency-locked border it used to also drive is gone, folded
+## into the plain DIM state now (see SkillTreeGlow.State).
+## Denied-click shake -- same tween-driven juice technique juicy_button.gd
+## uses for its own press feedback, applied to this node's draw offset
+## instead of a separate Button's scale, since tree nodes aren't
+## individual Button instances here.
 const DENIED_SHAKE_DURATION: float = 0.3
 const DENIED_SHAKE_MAGNITUDE: float = 6.0
 ## Shimmer (point 1): a node crossing into affordable since the shop was
@@ -56,21 +40,10 @@ const DENIED_SHAKE_MAGNITUDE: float = 6.0
 ## mechanism a purchase pulse already uses, just triggered by a different
 ## cause, so there's one glow language instead of two.
 const SHIMMER_PULSE_AMOUNT: float = 0.7
-
-## Visual pass (direct feedback, 2026-08-17: "make use of Godot's ability
-## to render cool visuals" -- the flat single-circle glow/straight-line
-## tree read as flat). Layered soft glow instead of one low-alpha circle:
-## several concentric rings with quadratic falloff fake a bloom without a
-## shader or a second draw surface.
-const GLOW_LAYERS: int = 4
-const GLOW_LAYER_SPACING: float = 5.5
-## Real-gate connectors curve instead of drawing straight -- a cubic
-## Bezier that leaves each node vertically before bending toward the
-## other's x, the standard "flowchart connector" shape, reads as an
-## organic branch rather than a wiring diagram. Cosmetic (non-gate)
-## connections stay straight/dashed on purpose -- see _draw() -- so the
-## curve itself doubles as "this is a real dependency" signal.
-const CURVE_SEGMENTS: int = 16
+## The Constellation: one shared breathing rhythm for every affordable
+## node in the tab at once, not a per-node timer -- see _process() and
+## SkillTreeGlow.draw_node_glow()'s breathing_phase param.
+const BREATHING_SPEED: float = 1.6
 ## Hover now eases in/out (scale + ring alpha) instead of snapping,
 ## mirroring the shake/pulse tween-driven juice this file already uses
 ## elsewhere rather than adding a new animation technique.
@@ -97,13 +70,21 @@ const STAT_DESCRIPTIONS: Dictionary = {
 }
 
 var _accent_color: Color = Color(0.85, 0.75, 0.5, 1.0)
+var _tree_kind: SkillTreeLayout.TreeKind = SkillTreeLayout.TreeKind.SPELL
 var _node_positions: Dictionary = {}
+## The Constellation: only set for Player Tree's hub-and-spoke layout --
+## a virtual, non-purchasable center (the Diver), drawn specially in
+## _draw() and never fed through _gui_input()'s node hit-testing since
+## it's not in _nodes.
+var _hub_position: Vector2 = Vector2.ZERO
+var _has_hub: bool = false
 var _nodes: Array[TreeNode] = []
 var _hovered_node: StringName = StringName()
 var _pulse_amount: Dictionary = {}
-## Sanctum UX point 1: this tree's current/previous-close currency, used
-## to draw each node's progress-to-next-level ring and to detect which
-## nodes crossed into affordable since the shop was last closed (shimmer).
+var _time: float = 0.0
+## Sanctum UX point 1: this tree's current currency -- feeds each node's
+## affordable/dim state (see _node_state()) and detects which nodes
+## crossed into affordable since the shop was last closed (shimmer).
 var _current_currency: int = 0
 ## Denied-click shake offsets (point 4), decaying like _pulse_amount but
 ## a separate map since a node can be mid-shake independent of pulsing.
@@ -175,6 +156,7 @@ func pulse(stat_id: StringName) -> void:
 
 
 func _process(delta: float) -> void:
+	_time += delta
 	var finished: Array[StringName] = []
 	for stat_id: StringName in _pulse_amount:
 		_pulse_amount[stat_id] = max(_pulse_amount[stat_id] - delta * PULSE_DECAY_PER_SEC, 0.0)
@@ -201,27 +183,45 @@ func _process(delta: float) -> void:
 			_hover_amount[node.stat_id] = move_toward(current, target, HOVER_LERP_SPEED * delta)
 			hover_settled = false
 
-	if _pulse_amount.is_empty() and _shake_amount.is_empty() and hover_settled:
+	# The Constellation: the breathing rhythm has to keep running as long as
+	# any node is affordable, not just while something transient (pulse/
+	# shake/hover) is settling -- otherwise the "is it breathing" cue that
+	# replaces the old currency ring would freeze the instant those finish.
+	var has_affordable: bool = false
+	for node in _nodes:
+		if _node_state(node) == SkillTreeGlow.State.AFFORDABLE:
+			has_affordable = true
+			break
+
+	if (
+		_pulse_amount.is_empty()
+		and _shake_amount.is_empty()
+		and hover_settled
+		and not has_affordable
+	):
 		set_process(false)
 	queue_redraw()
 
 
 ## current_currency (Sanctum UX point 1, DESIGN.md 2026-08-17): feeds each
-## node's progress-to-next-level ring -- every stat in a given tree call
-## shares one currency (Player/Spell Tree both spend Essence, Backpack
-## Tree spends Stardust), so one value per call suffices.
+## node's locked/dim/affordable/maxed state -- every stat in a given tree
+## call shares one currency (Player/Spell Tree both spend Glow, Backpack
+## Tree spends Depth), so one value per call suffices.
 func set_tree_data(
 	stats: Array[StatDef],
 	level_getter: Callable,
 	gating_checker: Callable,
 	currency_checker: Callable,
 	accent_color: Color,
-	current_currency: int
+	current_currency: int,
+	tree_kind: SkillTreeLayout.TreeKind
 ) -> void:
 	_accent_color = accent_color
 	_current_currency = current_currency
+	_tree_kind = tree_kind
 	_nodes.clear()
 	_node_positions.clear()
+	_has_hub = false
 
 	var nodes_by_id: Dictionary = {}
 
@@ -238,6 +238,7 @@ func set_tree_data(
 
 	_build_tree_relationships(nodes_by_id)
 	_calculate_positions()
+	set_process(true)
 	queue_redraw()
 
 
@@ -300,60 +301,20 @@ func _build_tree_relationships(nodes_by_id: Dictionary) -> void:
 			parent.children.append(child)
 
 
+## The Constellation (DESIGN.md 2026-08-18): per-tree-shape placement --
+## radial arc for Spell Tree, hub-and-spoke for Player Tree, tight cluster
+## for Backpack Tree -- lives in skill_tree_layout.gd now, pure geometry
+## with no CanvasItem dependency. size.x/y aren't known yet on the first
+## call (before the container layout pass runs); SkillTreeLayout falls
+## back to a fixed anchor until _on_resized() fires and recenters using
+## the real column size.
 func _calculate_positions() -> void:
-	var roots: Array[TreeNode] = []
-	for node in _nodes:
-		if node.parent == null:
-			roots.append(node)
-
-	# size.x isn't known yet on the first call (before the container layout
-	# pass runs), so fall back to a fixed anchor until _on_resized() fires
-	# and recenters using the real column width.
-	var min_anchor: float = CAPSTONE_RADIUS + ZIGZAG_AMOUNT + 20.0
-	var center_x: float = size.x / 2.0 if size.x > min_anchor * 2.0 else min_anchor
-	var current_y: float = 36.0
-	for root in roots:
-		_position_subtree(root, center_x, current_y, NODE_SPACING.x, 0)
-		current_y += _get_subtree_height(root) + 60.0
-
-
-func _position_subtree(node: TreeNode, x: float, y: float, spacing: float, depth: int) -> void:
-	_node_positions[node.stat_id] = Vector2(x, y)
-
-	if node.children.is_empty():
-		return
-
-	if node.children.size() == 1:
-		var offset: float = ZIGZAG_AMOUNT if depth % 2 == 0 else -ZIGZAG_AMOUNT
-		_position_subtree(node.children[0], x + offset, y + NODE_SPACING.y, spacing, depth + 1)
-		return
-
-	var row_count: int = mini(node.children.size(), MAX_CHILDREN_PER_ROW)
-
-	for i in range(node.children.size()):
-		var row: int = i / row_count
-		var col: int = i % row_count
-		var items_in_row: int = mini(row_count, node.children.size() - row * row_count)
-		var row_width: float = items_in_row * spacing
-		var row_start_x: float = x - row_width / 2.0 + spacing / 2.0
-		var child_x: float = row_start_x + col * spacing
-		var child_y: float = y + NODE_SPACING.y * (row + 1)
-		_position_subtree(node.children[i], child_x, child_y, spacing * 0.85, depth + 1)
-
-
-func _get_subtree_height(node: TreeNode) -> float:
-	if node.children.is_empty():
-		return NODE_RADIUS * 2.0
-	var row_count: int = (
-		1 if node.children.size() == 1 else mini(node.children.size(), MAX_CHILDREN_PER_ROW)
-	)
-	var num_rows: int = (
-		1 if node.children.size() == 1 else ceili(float(node.children.size()) / float(row_count))
-	)
-	var max_child_height: float = 0.0
-	for child in node.children:
-		max_child_height = max(max_child_height, _get_subtree_height(child))
-	return NODE_RADIUS * 2.0 + NODE_SPACING.y * num_rows + max_child_height
+	var positions: Dictionary = SkillTreeLayout.calculate_positions(_nodes, _tree_kind, size)
+	_has_hub = positions.has(SkillTreeLayout.HUB_KEY)
+	if _has_hub:
+		_hub_position = positions[SkillTreeLayout.HUB_KEY]
+		positions.erase(SkillTreeLayout.HUB_KEY)
+	_node_positions = positions
 
 
 ## Sanctum UX point 2 (DESIGN.md 2026-08-17): asserted via StatDef.is_milestone,
@@ -603,47 +564,45 @@ func _draw() -> void:
 			continue
 		var parent_pos: Vector2 = _node_positions[node.parent.stat_id]
 		var child_pos: Vector2 = _node_positions[node.stat_id]
-		if node.is_real_gate:
-			_draw_branch_curve(parent_pos, child_pos, _accent_color.lerp(Color.BLACK, 0.15), 3.0)
-		else:
-			_draw_dashed_line(parent_pos, child_pos, _accent_color * Color(1, 1, 1, 0.35))
+		SkillTreeGlow.draw_connection(
+			self, parent_pos, child_pos, node.level > 0, _accent_color, node.is_real_gate
+		)
+
+	if _has_hub:
+		_draw_hub()
 
 	for node in _nodes:
 		_draw_node(node)
 
 
-## Cubic Bezier, control points pulled straight out of each endpoint
-## along y before bending toward the other's x -- see CURVE_SEGMENTS'
-## comment above for why this shape specifically (the standard flowchart-
-## connector curve) rather than a symmetric bow.
-func _draw_branch_curve(from: Vector2, to: Vector2, color: Color, width: float) -> void:
-	var vertical_reach: Vector2 = Vector2(0.0, (to.y - from.y) * 0.5)
-	var control_1: Vector2 = from + vertical_reach
-	var control_2: Vector2 = to - vertical_reach
-	var points := PackedVector2Array()
-	for i in CURVE_SEGMENTS + 1:
-		var t: float = float(i) / float(CURVE_SEGMENTS)
-		points.append(_cubic_bezier_point(from, control_1, control_2, to, t))
-	draw_polyline(points, color, width, true)
+## The Constellation: a non-purchasable center (the Diver) for Player
+## Tree's hub-and-spoke layout -- just a small steady glow and glyph, no
+## click handling (never added to _nodes, so _gui_input()'s hit-testing
+## and _move_selection() both skip it automatically).
+func _draw_hub() -> void:
+	SkillTreeGlow.draw_node_glow(
+		self, _hub_position, NODE_RADIUS * 0.7, SkillTreeGlow.State.MAXED, _accent_color, 0.0
+	)
+	draw_circle(_hub_position, NODE_RADIUS * 0.55, _accent_color * Color(1, 1, 1, 0.85))
+	draw_arc(
+		_hub_position, NODE_RADIUS * 0.55 - 1.0, 0.0, TAU, 24, _accent_color.lightened(0.3), 2.0
+	)
 
 
-func _cubic_bezier_point(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
-	var a: Vector2 = p0.lerp(p1, t)
-	var b: Vector2 = p1.lerp(p2, t)
-	var c: Vector2 = p2.lerp(p3, t)
-	return a.lerp(b, t).lerp(b.lerp(c, t), t)
-
-
-func _draw_dashed_line(from: Vector2, to: Vector2, color: Color) -> void:
-	var dash_len: float = 5.0
-	var gap_len: float = 4.0
-	var total: float = from.distance_to(to)
-	var direction: Vector2 = (to - from).normalized()
-	var distance: float = 0.0
-	while distance < total:
-		var seg_end: float = min(distance + dash_len, total)
-		draw_line(from + direction * distance, from + direction * seg_end, color, 2.0)
-		distance += dash_len + gap_len
+## The Constellation (DESIGN.md 2026-08-18): one of four states computed
+## fresh from data already on the node -- no new fields. Replaces the old
+## currency ring/level arc/sealed ring, three separate per-node answers to
+## what are actually field-wide questions, with a single brightness/pulse
+## language.
+func _node_state(node: TreeNode) -> SkillTreeGlow.State:
+	if node.is_gated:
+		return SkillTreeGlow.State.LOCKED
+	if node.is_maxed:
+		return SkillTreeGlow.State.MAXED
+	var cost: int = MetaProgression.get_cost(node.stat_id)
+	if cost > 0 and _current_currency >= cost:
+		return SkillTreeGlow.State.AFFORDABLE
+	return SkillTreeGlow.State.DIM
 
 
 func _draw_node(node: TreeNode) -> void:
@@ -662,118 +621,52 @@ func _draw_node(node: TreeNode) -> void:
 	if shake > 0.0:
 		center += Vector2(sin(shake * PI * 6.0) * DENIED_SHAKE_MAGNITUDE * shake, 0.0)
 
-	if node.level > 0 or pulse > 0.0:
-		_draw_glow(center, radius, pulse, node.is_maxed)
+	var state := _node_state(node)
+	var breathing_phase: float = sin(_time * BREATHING_SPEED)
+	SkillTreeGlow.draw_node_glow(self, center, radius, state, _accent_color, breathing_phase)
+	# The one-shot purchase spark's brief extra-bright flash -- kept as a
+	# separate transient layer on top of the steady state, not replaced by
+	# it (never the problem the ring/arc/sealed-ring trio was).
+	if pulse > 0.0:
+		SkillTreeGlow.draw_node_glow(
+			self,
+			center,
+			radius * (1.0 + pulse * 0.4),
+			SkillTreeGlow.State.MAXED,
+			_accent_color,
+			0.0
+		)
 
 	var fill_color: Color
 	var border_color: Color
 	var icon_color: Color
 
-	if node.is_gated:
-		fill_color = LOCKED_FILL
-		border_color = LOCKED_BORDER
-		icon_color = ICON_DIM
-	elif node.level > 0:
-		fill_color = _accent_color * Color(1, 1, 1, 0.9 if node.is_maxed else 0.7)
-		border_color = _accent_color.lightened(0.3 if node.is_maxed else 0.1)
-		icon_color = Color(0.08, 0.08, 0.08, 1.0)
-	elif node.is_locked_by_currency:
-		fill_color = LOCKED_FILL
-		border_color = _accent_color.lerp(NO_CURRENCY_TINT, 0.6)
-		icon_color = border_color
-	else:
-		fill_color = LOCKED_FILL
-		border_color = _accent_color
-		icon_color = _accent_color
+	match state:
+		SkillTreeGlow.State.LOCKED:
+			fill_color = LOCKED_FILL
+			border_color = LOCKED_BORDER
+			icon_color = ICON_DIM
+		SkillTreeGlow.State.DIM:
+			fill_color = _accent_color * Color(1, 1, 1, 0.35)
+			border_color = _accent_color.lerp(Color.BLACK, 0.35)
+			icon_color = _accent_color
+		SkillTreeGlow.State.AFFORDABLE:
+			fill_color = _accent_color * Color(1, 1, 1, 0.8)
+			border_color = _accent_color.lightened(0.15)
+			icon_color = Color(0.08, 0.08, 0.08, 1.0)
+		SkillTreeGlow.State.MAXED:
+			fill_color = _accent_color * Color(1, 1, 1, 0.95)
+			border_color = _accent_color.lightened(0.3)
+			icon_color = Color(0.08, 0.08, 0.08, 1.0)
 
 	draw_circle(center, radius, fill_color)
 	draw_arc(center, radius - 1.5, 0.0, TAU, 28, border_color, 3.0)
 	if hover_amount > 0.0 and not node.is_gated:
 		draw_arc(center, radius + 3.0, 0.0, TAU, 28, Color(1.0, 1.0, 1.0, hover_amount), 1.5)
 
-	# Sanctum UX point 4: sealed state -- a maxed node needs to read as
-	# clearly distinct from "just leveled," not the old barely-different
-	# 0.9-vs-0.7 fill alpha.
-	if node.is_maxed:
-		draw_arc(center, radius + 4.0, 0.0, TAU, 28, SEALED_RING_COLOR, SEALED_RING_WIDTH)
-
 	_draw_stat_icon(node.stat_id, center, radius * 0.62, icon_color)
-	_draw_level_arc(node, center, radius)
-	if not node.is_maxed:
-		_draw_currency_ring(node, center, radius)
 	if shake > 0.0 and _denied_message.has(node.stat_id):
 		_draw_denied_message(_denied_message[node.stat_id], center, radius, shake)
-
-
-## Layered soft glow (see GLOW_LAYERS' comment above) -- several
-## concentric, low-alpha circles with quadratic falloff read as a bloom
-## without a shader or a second additive-blend draw surface.
-func _draw_glow(center: Vector2, radius: float, pulse: float, is_maxed: bool) -> void:
-	var glow_base_alpha: float = (0.16 if is_maxed else 0.09) + pulse * 0.3
-	for layer in GLOW_LAYERS:
-		var layer_t: float = float(layer + 1) / float(GLOW_LAYERS)
-		var layer_radius: float = (
-			radius + GLOW_LAYER_SPACING * float(layer + 1) * (1.0 + pulse * 0.6)
-		)
-		var layer_alpha: float = glow_base_alpha * (1.0 - layer_t) * (1.0 - layer_t)
-		draw_circle(
-			center,
-			layer_radius,
-			Color(_accent_color.r, _accent_color.g, _accent_color.b, layer_alpha)
-		)
-
-
-## Sanctum UX point 3: replaces the old pip row (drew level_cap pips at
-## 7px each, so a 20-level stat drew a 140px-wide row against ~66px of
-## node spacing -- overlapped its neighbors) with a partial arc on the
-## node's own border. Distinct from the currency ring below: this shows
-## overall progress toward the *cap* (level ÷ level_cap); the ring shows
-## progress toward the *next* level's cost -- a node can be simultaneously
-## "3 of 20 levels bought" (this arc) and "60% of the way to affording
-## level 4" (the ring), so both coexist rather than one replacing the
-## other.
-func _draw_level_arc(node: TreeNode, center: Vector2, radius: float) -> void:
-	var cap: int = node.def.level_cap
-	if cap <= 1 or node.level <= 0:
-		return
-	var fraction: float = float(node.level) / float(cap)
-	draw_arc(
-		center,
-		radius - 1.5,
-		-PI / 2.0,
-		-PI / 2.0 + TAU * fraction,
-		28,
-		_accent_color.lightened(0.4),
-		LEVEL_ARC_WIDTH
-	)
-
-
-## Sanctum UX point 1: partial ring outside the node showing progress
-## toward its next level's cost. The locked geometric cost curve means
-## late-game nodes take many runs to afford -- a 60-second run earns ~3
-## Stardust against Bearing's first level costing 100 -- so most Sanctum
-## visits currently show no visible change at all on an unaffordable node
-## beyond a static red-tinted border. Disappears once maxed (nothing left
-## to save toward -- see the sealed ring in _draw_node() instead).
-func _draw_currency_ring(node: TreeNode, center: Vector2, radius: float) -> void:
-	var cost: int = MetaProgression.get_cost(node.stat_id)
-	if cost <= 0:
-		return
-	var fraction: float = clampf(float(_current_currency) / float(cost), 0.0, 1.0)
-	if fraction <= 0.0:
-		return
-	var ring_color: Color = Color(
-		_accent_color.r, _accent_color.g, _accent_color.b, CURRENCY_RING_COLOR_ALPHA
-	)
-	draw_arc(
-		center,
-		radius + CURRENCY_RING_GAP,
-		-PI / 2.0,
-		-PI / 2.0 + TAU * fraction,
-		28,
-		ring_color,
-		CURRENCY_RING_WIDTH
-	)
 
 
 ## Sanctum UX point 4: the shortfall (or "LOCKED") that goes with a denied

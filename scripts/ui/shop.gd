@@ -216,7 +216,8 @@ func _update_trees() -> void:
 		_is_stat_gated,
 		_is_locked_by_currency,
 		BACKPACK_ACCENT,
-		MetaProgression.backpack_currency
+		MetaProgression.backpack_currency,
+		SkillTreeLayout.TreeKind.BACKPACK
 	)
 	_player_tree.set_tree_data(
 		player_stats,
@@ -224,7 +225,8 @@ func _update_trees() -> void:
 		_is_stat_gated,
 		_is_locked_by_currency,
 		PLAYER_ACCENT,
-		MetaProgression.player_currency
+		MetaProgression.player_currency,
+		SkillTreeLayout.TreeKind.PLAYER
 	)
 	_spell_tree.set_tree_data(
 		spell_stats,
@@ -232,7 +234,8 @@ func _update_trees() -> void:
 		_is_stat_gated,
 		_is_locked_by_currency,
 		SPELL_ACCENT,
-		MetaProgression.player_currency
+		MetaProgression.player_currency,
+		SkillTreeLayout.TreeKind.SPELL
 	)
 	_backpack_header.text = "DEPTH TREE\n%d levels bought" % _total_levels(backpack_stats)
 	_player_header.text = "GLOW TREE\n%d levels bought" % _total_levels(player_stats)
