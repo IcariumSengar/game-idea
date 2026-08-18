@@ -118,11 +118,11 @@ const BUTTON_HOVER: Color = Color(0.95, 0.85, 0.35, 1.0)
 const BUTTON_HOVER_LINE: Color = Color(0.95, 0.85, 0.35, 0.9)
 const TAB_INACTIVE: Color = Color(0.6, 0.6, 0.63, 1.0)
 
-# --- Sanctum tree accents (ui/shop.gd, shared with each tab's skill-tree
+# --- Cove tree accents (ui/shop.gd, shared with each tab's skill-tree
 # glow via skill_tree_view.gd's accent_color param) ---
-const SANCTUM_PLAYER_ACCENT: Color = Color(0.85, 0.7, 0.35, 1.0)
-const SANCTUM_SPELL_ACCENT: Color = Color(0.65, 0.45, 0.85, 1.0)
-const SANCTUM_BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
+const COVE_PLAYER_ACCENT: Color = Color(0.85, 0.7, 0.35, 1.0)
+const COVE_SPELL_ACCENT: Color = Color(0.65, 0.45, 0.85, 1.0)
+const COVE_BACKPACK_ACCENT: Color = Color(0.35, 0.75, 0.85, 1.0)
 
 # --- Background decor (fx/night_sky_background.gd,
 # fx/arena_space_backdrop.gd, fx/vignette.gd, fx/magic_circle_decor.gd)

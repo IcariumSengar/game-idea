@@ -6,7 +6,7 @@ const MINION_FAST_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_
 const MINION_TANKY_SCENE: PackedScene = preload("res://scenes/enemy/enemy_minion_tanky.tscn")
 const BRUISER_SCENE: PackedScene = preload("res://scenes/enemy/enemy_bruiser.tscn")
 const ELITE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_elite.tscn")
-const MAGPIE_SCENE: PackedScene = preload("res://scenes/enemy/enemy_magpie.tscn")
+const ANGLER_SCENE: PackedScene = preload("res://scenes/enemy/enemy_angler.tscn")
 const BOSS_SCENE: PackedScene = preload("res://scenes/enemy/enemy_boss.tscn")
 const LOOT_SCENE: PackedScene = preload("res://scenes/loot/loot.tscn")
 const ALTAR_SCENE: PackedScene = preload("res://scenes/structures/altar.tscn")
@@ -23,14 +23,14 @@ const BOSS_SPAWN_TIME: float = 55.0
 ## speed/HP tradeoff for visual and tactical variety within the tier. Splits
 ## the existing per-phase Minion weight rather than changing the documented
 ## Minion-vs-Bruiser-vs-Elite ratios themselves.
-## Magpie (Depth Pass Group C's "Loot Has Consequences," DESIGN.md
+## The Angler (Depth Pass Group C's "Loot Has Consequences," DESIGN.md
 ## 2026-08-17) is added on top rather than carved out of the existing
 ## per-tier ratios above -- it's a new axis (reacts to loot), not a
 ## replacement for an existing tier's role, and _pick_enemy_scene()'s
 ## weights don't need to sum to anything in particular. Absent from Phase
 ## 1 on purpose: there's barely any loot on the ground yet for it to
 ## react to, and Phase 1 is meant to stay gentle/accessible.
-const MAGPIE_PHASE_WEIGHT: Array[float] = [0.0, 0.0, 0.12, 0.18]
+const ANGLER_PHASE_WEIGHT: Array[float] = [0.0, 0.0, 0.12, 0.18]
 const PHASE_SPAWN_WEIGHTS: Array[Dictionary] = [
 	{},
 	{MINION_SCENE: 0.7, MINION_FAST_SCENE: 0.15, MINION_TANKY_SCENE: 0.15},
@@ -269,13 +269,13 @@ func _spawn_boss(ramp: float) -> void:
 
 
 func _pick_enemy_scene() -> PackedScene:
-	# Capped at 3: PHASE_SPAWN_WEIGHTS/MAGPIE_PHASE_WEIGHT only have
+	# Capped at 3: PHASE_SPAWN_WEIGHTS/ANGLER_PHASE_WEIGHT only have
 	# entries through Phase 3 (see get_phase()'s own docstring).
 	var phase: int = mini(get_phase(), 3)
 	var weights: Dictionary = PHASE_SPAWN_WEIGHTS[phase].duplicate()
-	var magpie_weight: float = MAGPIE_PHASE_WEIGHT[phase]
-	if magpie_weight > 0.0:
-		weights[MAGPIE_SCENE] = magpie_weight
+	var angler_weight: float = ANGLER_PHASE_WEIGHT[phase]
+	if angler_weight > 0.0:
+		weights[ANGLER_SCENE] = angler_weight
 	var total: float = 0.0
 	for scene: PackedScene in weights:
 		total += float(weights[scene])
@@ -290,11 +290,11 @@ func _pick_enemy_scene() -> PackedScene:
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	_enemies_killed += 1
-	# Magpie (Depth Pass Group C) doesn't drop from the generic per-kill
-	# roll -- it drops what it stole (see EnemyMagpie's own _on_died()), or
+	# The Angler (Depth Pass Group C) doesn't drop from the generic per-kill
+	# roll -- it drops what it stole (see EnemyAngler's own _on_died()), or
 	# nothing at all if killed before it ever ate anything. That *is* its
 	# loot table, not an addition to it.
-	if enemy is EnemyMagpie:
+	if enemy is EnemyAngler:
 		return
 	var loot: Loot = LOOT_SCENE.instantiate()
 	loot.position = enemy.position

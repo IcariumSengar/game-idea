@@ -48,14 +48,14 @@ theme_override_font_sizes/font_size = 52
 theme_type_variation = &"MainTitleLabel"
 theme_override_constants/outline_size = 6
 theme_override_colors/font_outline_color = Color(0.15, 0.08, 0.2, 0.8)
-text = "HOARD SURVIVORS"
+text = "ABYSSAL HOARD"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="CenterContainer/ContentVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_type_variation = &"SubtitleLabel"
-text = "Hoard what you can. Survive what you must."
+text = "Hoard what you can. Surface while you still can."
 horizontal_alignment = 1
 
 [node name="Spacer" type="Control" parent="CenterContainer/ContentVBox"]

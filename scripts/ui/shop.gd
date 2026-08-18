@@ -1,9 +1,9 @@
 extends Control
 
 const BOUNCE_SCALE: float = 1.15
-const PLAYER_ACCENT: Color = Palette.SANCTUM_PLAYER_ACCENT
-const SPELL_ACCENT: Color = Palette.SANCTUM_SPELL_ACCENT
-const BACKPACK_ACCENT: Color = Palette.SANCTUM_BACKPACK_ACCENT
+const PLAYER_ACCENT: Color = Palette.COVE_PLAYER_ACCENT
+const SPELL_ACCENT: Color = Palette.COVE_SPELL_ACCENT
+const BACKPACK_ACCENT: Color = Palette.COVE_BACKPACK_ACCENT
 ## Shop structure rework (DESIGN.md 2026-08-17): Player Tree stays flat and
 ## small on purpose -- Spellpower/Swiftness/Gleam, no cross-gating -- with
 ## everything spell-related (Spell Unlock plus every per-spell upgrade
@@ -19,13 +19,13 @@ const PLAYER_TREE_STAT_IDS: Array[StringName] = [
 ## a small, deliberate duplication rather than exposing Grimoire's
 ## anonymous-Dictionary data as a cross-script API for one caller.
 const SPELL_DISPLAY_NAMES: Dictionary = {
-	MetaProgression.SPELL_INFERNO_BLADE: "Inferno Blade",
-	MetaProgression.SPELL_FROST_NOVA: "Frost Nova",
-	MetaProgression.SPELL_METEOR_STRIKE: "Meteor Strike",
-	MetaProgression.SPELL_LIGHTNING_CHAIN: "Lightning Chain",
-	MetaProgression.SPELL_TIME_WARP: "Time Warp",
-	MetaProgression.SPELL_TELEPORT_PULSE: "Teleport Pulse",
-	MetaProgression.SPELL_SUMMON_FAMILIAR: "Summon Familiar",
+	MetaProgression.SPELL_INFERNO_BLADE: "The Undertow",
+	MetaProgression.SPELL_FROST_NOVA: "Deep Chill",
+	MetaProgression.SPELL_METEOR_STRIKE: "Trench Collapse",
+	MetaProgression.SPELL_LIGHTNING_CHAIN: "Eel Current",
+	MetaProgression.SPELL_TIME_WARP: "Crushing Depths",
+	MetaProgression.SPELL_TELEPORT_PULSE: "Ink Jet",
+	MetaProgression.SPELL_SUMMON_FAMILIAR: "Anglerling",
 }
 ## Sanctum UX (DESIGN.md 2026-08-17), point 4: steps the purchase tone's
 ## pitch with the node's post-purchase level, so level 1 and a maxed
@@ -189,8 +189,8 @@ func _update_trees() -> void:
 		SPELL_ACCENT,
 		MetaProgression.player_currency
 	)
-	_backpack_header.text = "STARDUST TREE\n%d levels bought" % _total_levels(backpack_stats)
-	_player_header.text = "ESSENCE TREE\n%d levels bought" % _total_levels(player_stats)
+	_backpack_header.text = "DEPTH TREE\n%d levels bought" % _total_levels(backpack_stats)
+	_player_header.text = "GLOW TREE\n%d levels bought" % _total_levels(player_stats)
 	_spell_header.text = "SPELL TREE\n%d levels bought" % _total_levels(spell_stats)
 
 	# Sanctum UX point 3: a per-tab "N affordable" count so a player can
@@ -384,8 +384,8 @@ func _save_shop_close_snapshot() -> void:
 
 
 func _refresh_currency() -> void:
-	_player_currency_label.text = "Essence: %d" % MetaProgression.player_currency
-	_backpack_currency_label.text = "Stardust: %d" % MetaProgression.backpack_currency
+	_player_currency_label.text = "Glow: %d" % MetaProgression.player_currency
+	_backpack_currency_label.text = "Depth: %d" % MetaProgression.backpack_currency
 
 	if _last_player_currency != -1 and MetaProgression.player_currency != _last_player_currency:
 		_bounce_label(_player_currency_label)

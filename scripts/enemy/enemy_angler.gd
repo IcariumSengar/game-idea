@@ -1,4 +1,4 @@
-class_name EnemyMagpie
+class_name EnemyAngler
 extends Enemy
 
 ## "Loot Has Consequences" (DESIGN.md's Depth Pass Group C, 2026-08-17):
@@ -23,12 +23,12 @@ var _stolen_type_ids: Array[StringName] = []
 func _ready() -> void:
 	super._ready()
 	# No generic per-kill drop -- what it regurgitates on death (see
-	# _on_died()) IS its drop, and only if it actually ate something. A
-	# Magpie killed before it steals anything drops nothing, matching
+	# _on_died()) IS its drop, and only if it actually ate something. An
+	# Angler killed before it steals anything drops nothing, matching
 	# "recoverable if you catch it in time," not "always guarantees loot."
 	loot_weights = {}
 	died.connect(_on_died)
-	MetaProgression.mark_magpie_encountered()
+	MetaProgression.mark_angler_encountered()
 
 
 func _update_behavior(delta: float) -> void:
@@ -37,7 +37,7 @@ func _update_behavior(delta: float) -> void:
 		var distance: float = position.distance_to(loot.position)
 		if distance <= EAT_RANGE:
 			_stolen_type_ids.append(loot.steal())
-			AudioManager.play("magpie_eat")
+			AudioManager.play("angler_eat")
 		else:
 			velocity = position.direction_to(loot.position) * _slowed(speed) + _knockback
 			move_and_slide()

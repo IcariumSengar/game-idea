@@ -22,7 +22,7 @@ const COST_TIER_POOL: Array[StringName] = [&"rare", &"epic", &"mythic", &"legend
 ## not built here.
 const BOON_POOL: Array[StringName] = [Player.ALTAR_BOON_SPELLPOWER, Player.ALTAR_BOON_FULL_HEAL]
 const BOON_LABELS: Dictionary = {
-	Player.ALTAR_BOON_SPELLPOWER: "Arcane Surge (+Spellpower, rest of run)",
+	Player.ALTAR_BOON_SPELLPOWER: "Arcane Surge (+Fathom, rest of run)",
 	Player.ALTAR_BOON_FULL_HEAL: "Vital Bloom (full heal)",
 }
 const RADIUS: float = 22.0

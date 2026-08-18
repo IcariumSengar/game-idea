@@ -57,7 +57,7 @@ func _ready() -> void:
 	_player.loot_changed.connect(_on_loot_changed)
 	_player.died.connect(_on_player_died)
 	_stats_label.text = (
-		"Swiftness: %d   Gleam: %d   Bearing: %d"
+		"Current: %d   Gleam: %d   Hold: %d"
 		% [_player.speed, _player.pickup_range, _player.backpack_capacity]
 	)
 	_on_loot_changed(_player.backpack)
@@ -198,8 +198,8 @@ func _build_summary_bbcode(
 	lines.append("")
 	lines.append("[color=#666666]────────────────────────[/color]")
 	lines.append("[b]REWARDS THIS RUN[/b]")
-	lines.append("[color=#e6cc4d]Essence:[/color] ↑ %d" % total_value)
-	lines.append("[color=#4dbfe6]Stardust:[/color] ↑ %d" % stardust_earned)
+	lines.append("[color=#e6cc4d]Glow:[/color] ↑ %d" % total_value)
+	lines.append("[color=#4dbfe6]Depth:[/color] ↑ %d" % stardust_earned)
 
 	var loot_lines := _build_loot_breakdown()
 	if not loot_lines.is_empty():
@@ -225,9 +225,7 @@ func _build_summary_bbcode(
 		_best_line("Survival Time", _format_time(seconds_survived), seconds_survived, previous_time)
 	)
 	lines.append(
-		_best_line(
-			"Richest", "%d Essence" % total_value, float(total_value), float(previous_essence)
-		)
+		_best_line("Richest", "%d Glow" % total_value, float(total_value), float(previous_essence))
 	)
 	lines.append(_best_line("Leanest", "%.1f" % leanness, leanness, previous_leanness))
 	lines.append(

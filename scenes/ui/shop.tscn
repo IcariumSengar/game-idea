@@ -56,21 +56,21 @@ theme_override_constants/separation = 14
 [node name="TitleLabel" type="Label" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "SANCTUM"
+text = "THE COVE"
 horizontal_alignment = 1
 
 [node name="PlayerCurrencyLabel" type="Label" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 theme_type_variation = &"EssenceLabel"
-text = "Essence: 0"
+text = "Glow: 0"
 horizontal_alignment = 1
 
 [node name="BackpackCurrencyLabel" type="Label" parent="ShopPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 theme_type_variation = &"StardustLabel"
-text = "Stardust: 0"
+text = "Depth: 0"
 horizontal_alignment = 1
 
 [node name="Spacer1" type="Control" parent="ShopPanel/Margin/VBox"]
@@ -122,7 +122,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_type_variation = &"PlayerAccentLabel"
-text = "ESSENCE TREE
+text = "GLOW TREE
 0 levels bought"
 horizontal_alignment = 1
 
@@ -184,7 +184,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_type_variation = &"BackpackAccentLabel"
-text = "STARDUST TREE
+text = "DEPTH TREE
 0 levels bought"
 horizontal_alignment = 1
 

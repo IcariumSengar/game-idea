@@ -39,7 +39,7 @@ const LEADEN_VALUE_MULTIPLIER: float = 0.8
 const LEADEN_BALLAST_SLOTS: int = 1
 const LEADEN_PULSE_SCALE_AMOUNT: float = 0.12
 const LEADEN_PULSE_SPEED: float = 2.0
-## A Magpie (Depth Pass Group C) that dies after eating drops everything
+## An Angler (Depth Pass Group C) that dies after eating drops everything
 ## it stole back at its death position, at a bonus -- the reward for
 ## catching it in time rather than a straight refund.
 const RECOVERED_VALUE_BONUS_MULTIPLIER: float = 0.5
@@ -226,7 +226,7 @@ func enter_queue() -> void:
 	AudioManager.play_rarity_cue(type_id)
 
 
-## True while a Magpie (Depth Pass Group C) can steal this gem -- already-
+## True while an Angler (Depth Pass Group C) can steal this gem -- already-
 ## queued loot has committed to the player's triage decision and is off-
 ## limits; anything else on the ground (including mid-flight to a magnet)
 ## is fair game.
@@ -234,9 +234,9 @@ func is_available_to_steal() -> bool:
 	return not _is_queued
 
 
-## Called by EnemyMagpie once it reaches this gem -- removed without any
+## Called by EnemyAngler once it reaches this gem -- removed without any
 ## player interaction. Returns the tier so the thief can remember what it
-## ate and drop it back (see EnemyMagpie's _on_died()).
+## ate and drop it back (see EnemyAngler's _on_died()).
 func steal() -> StringName:
 	var stolen_type: StringName = type_id
 	set_deferred("monitoring", false)
@@ -244,7 +244,7 @@ func steal() -> StringName:
 	return stolen_type
 
 
-## Marks this instance as loot recovered from a killed Magpie -- adds a
+## Marks this instance as loot recovered from a killed Angler -- adds a
 ## bonus on top of whatever else it would have paid out (see collect()).
 func mark_recovered() -> void:
 	_is_recovered = true

@@ -17,38 +17,38 @@ const HEADER_COLOR: String = "#e6cc99"
 const SPELLS: Array[Dictionary] = [
 	{
 		"id": &"arcane_bolt",
-		"name": "Arcane Bolt",
+		"name": "Luminous Dart",
 		"desc": "Fires a homing bolt at the nearest enemy.",
 	},
 	{
 		"id": &"inferno_blade",
-		"name": "Inferno Blade",
+		"name": "The Undertow",
 		"desc": "Omnidirectional melee burn -- hits everything in range.",
 	},
-	{"id": &"frost_nova", "name": "Frost Nova", "desc": "AOE damage and slows everything nearby."},
+	{"id": &"frost_nova", "name": "Deep Chill", "desc": "AOE damage and slows everything nearby."},
 	{
 		"id": &"meteor_strike",
-		"name": "Meteor Strike",
+		"name": "Trench Collapse",
 		"desc": "Telegraphed strike, heavy AOE damage on impact.",
 	},
 	{
 		"id": &"lightning_chain",
-		"name": "Lightning Chain",
+		"name": "Eel Current",
 		"desc": "Arcs between up to 4 enemies, damage fading each hop.",
 	},
 	{
 		"id": &"time_warp",
-		"name": "Time Warp",
+		"name": "Crushing Depths",
 		"desc": "Large-radius crowd control, slows everything caught in it.",
 	},
 	{
 		"id": &"teleport_pulse",
-		"name": "Teleport Pulse",
+		"name": "Ink Jet",
 		"desc": "Blinks you forward, damaging enemies at both ends.",
 	},
 	{
 		"id": &"summon_familiar",
-		"name": "Summon Familiar",
+		"name": "Anglerling",
 		"desc": "Summons a pet that fires its own bolts at enemies.",
 	},
 ]
@@ -74,14 +74,14 @@ const COMBOS: Array[Dictionary] = [
 	},
 ]
 
-## Magpie (Depth Pass Group C): progressive discovery like Gem Combos
+## The Angler (Depth Pass Group C): progressive discovery like Gem Combos
 ## above, since it only spawns from Phase 2 on and a fresh run genuinely
 ## hasn't seen one yet. Attunement below is always shown instead --
 ## nothing about it is a run-time surprise (it's a passive, always-on
 ## mechanic from the moment a run starts) so hiding it behind discovery
 ## would gate information the player already has access to, not protect
 ## a real reveal.
-const MAGPIE_NAME: String = "Magpie"
+const MAGPIE_NAME: String = "the Angler"
 const MAGPIE_DESC: String = (
 	"Steals unclaimed loot off the ground and eats it. Kill it before"
 	+ " it gets away and it drops everything it ate, at a bonus."
@@ -130,7 +130,7 @@ func _build_bbcode() -> String:
 	lines.append("[color=#666666]────────────────────────[/color]")
 	lines.append("[color=%s][b]THREATS[/b][/color]" % HEADER_COLOR)
 	lines.append("")
-	if MetaProgression.magpie_encountered:
+	if MetaProgression.angler_encountered:
 		lines.append("[color=%s][b]%s[/b][/color]" % [NAME_COLOR, MAGPIE_NAME])
 		lines.append("[color=%s]%s[/color]" % [DESC_COLOR, MAGPIE_DESC])
 	else:

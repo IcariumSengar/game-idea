@@ -119,11 +119,11 @@ var last_shop_close_backpack_currency: int = 0
 ## nothing in actual gameplay reads this, combos work identically whether
 ## discovered or not.
 var discovered_combos: Dictionary = {}
-## Codex-only state for the Grimoire, same spirit as discovered_combos --
-## Magpie only spawns from Phase 2 on, so unlike Attunement (always
-## visible in the Grimoire, since nothing about it is a run-time
+## Codex-only state for the Ship's Log, same spirit as discovered_combos --
+## the Angler only spawns from Phase 2 on, so unlike Attunement (always
+## visible in the Ship's Log, since nothing about it is a run-time
 ## surprise) it has real "hasn't happened yet" discovery value.
-var magpie_encountered: bool = false
+var angler_encountered: bool = false
 ## Spell Choice (DESIGN.md 2026-08-17): Spell Unlock level -> which spell
 ## that level actually granted, once resolved. A level can legitimately be
 ## bought (STAT_SPELL_UNLOCK's own level already incremented via the
@@ -154,12 +154,12 @@ var _stat_levels: Dictionary = {}
 
 func _ready() -> void:
 	_register_stat(
-		STAT_BACKPACK_CAPACITY, "Bearing", 5.0, 1.0, 100, 1.25, 10, 0, StatDef.Currency.BACKPACK
+		STAT_BACKPACK_CAPACITY, "Hold", 5.0, 1.0, 100, 1.25, 10, 0, StatDef.Currency.BACKPACK
 	)
 	_register_stat(STAT_PICKUP_RANGE, "Gleam", 60.0, 8.0, 12, 1.15, 15, 0, StatDef.Currency.PLAYER)
-	_register_stat(STAT_DAMAGE, "Spellpower", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)
+	_register_stat(STAT_DAMAGE, "Fathom", 20.0, 2.0, 15, 1.15, 20, 0, StatDef.Currency.PLAYER)
 	_register_stat(
-		STAT_MOVE_SPEED, "Swiftness", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
+		STAT_MOVE_SPEED, "Current", 250.0, 10.0, 15, 1.18, 10, 0, StatDef.Currency.PLAYER
 	)
 	# Depth Pass Group B (DESIGN.md 2026-08-17): Discard no longer auto-purges
 	# at a fill threshold -- each level now adds flat bonus damage to Cast
@@ -172,7 +172,7 @@ func _ready() -> void:
 	# LootTypes.get_forge_adjusted_weights() divides by 100 itself, so the
 	# skill-tree tooltip's "Current: X -> Y" reads as plain whole numbers
 	# like every other stat instead of a confusing 0.02-style fraction.
-	_register_stat(STAT_FORGE, "Forge", 0.0, 2.0, 150, 1.2, 10, 0, StatDef.Currency.BACKPACK)
+	_register_stat(STAT_FORGE, "Lure", 0.0, 2.0, 150, 1.2, 10, 0, StatDef.Currency.BACKPACK)
 	# Cap raised 5->7 for v11's five new spells (L3-L7) on top of Inferno/Frost
 	# (L1/L2) -- same base cost/growth as originally locked in, just extended.
 	_register_stat(
@@ -457,10 +457,10 @@ func get_best_loot_value(tier_id: StringName) -> int:
 	return best_loot_value.get(tier_id, 0)
 
 
-## Called by EnemyMagpie the moment one spawns in. Harmless to call
+## Called by EnemyAngler the moment one spawns in. Harmless to call
 ## repeatedly -- stays encountered forever once seen once.
-func mark_magpie_encountered() -> void:
-	magpie_encountered = true
+func mark_angler_encountered() -> void:
+	angler_encountered = true
 
 
 func buy_upgrade(id: StringName) -> bool:
@@ -558,7 +558,7 @@ func export_save_data() -> Dictionary:
 		"best_run_discards": best_run_discards,
 		"stat_levels": _stat_levels,
 		"discovered_combos": discovered,
-		"magpie_encountered": magpie_encountered,
+		"angler_encountered": angler_encountered,
 		"chosen_spells": serialized_choices,
 		"best_loot_value": serialized_best_loot,
 		"active_facet": serialized_facets
@@ -584,7 +584,7 @@ func import_save_data(data: Dictionary) -> void:
 	var saved_combos: Array = data.get("discovered_combos", [])
 	for combo_id: String in saved_combos:
 		discovered_combos[StringName(combo_id)] = true
-	magpie_encountered = data.get("magpie_encountered", false)
+	angler_encountered = data.get("angler_encountered", false)
 	best_loot_value.clear()
 	var saved_best_loot: Dictionary = data.get("best_loot_value", {})
 	for tier_id: String in saved_best_loot:
@@ -634,7 +634,7 @@ func reset_progress() -> void:
 	for stat_id: StringName in _stat_levels:
 		_stat_levels[stat_id] = 0
 	discovered_combos.clear()
-	magpie_encountered = false
+	angler_encountered = false
 	best_loot_value.clear()
 	active_facet.clear()
 	chosen_spells.clear()

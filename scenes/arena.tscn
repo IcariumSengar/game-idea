@@ -208,7 +208,7 @@ script = ExtResource("5_statbar")
 [node name="MetaStatsLabel" type="Label" parent="HUD/StatsPanel/Margin/VBox"]
 theme_override_font_sizes/font_size = 13
 theme_type_variation = &"MutedLabel"
-text = "Swiftness: 250   Gleam: 60   Bearing: 20"
+text = "Current: 250   Gleam: 60   Hold: 20"
 
 [node name="GameOverCircle" type="Control" parent="HUD"]
 process_mode = 3
@@ -278,7 +278,7 @@ custom_minimum_size = Vector2(0, 4)
 process_mode = 3
 custom_minimum_size = Vector2(0, 40)
 theme_override_font_sizes/font_size = 20
-text = "Return to Sanctum"
+text = "Return to the Cove"
 script = ExtResource("15_link")
 
 [node name="RestartButton" type="Button" parent="HUD/GameOverPanel/GameOverMargin/GameOverVBox"]

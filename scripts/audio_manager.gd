@@ -35,7 +35,7 @@ func _ready() -> void:
 	_streams["cast_off_impact"] = _make_tone(180.0, 0.08, 0.35, "square", true)
 	for tier_id: StringName in RARITY_CUE_FREQ:
 		_streams["rarity_%s" % tier_id] = _make_tone(RARITY_CUE_FREQ[tier_id], 0.05, 0.2, "sine")
-	_streams["magpie_eat"] = _make_sweep(700.0, 250.0, 0.09, 0.3, "square")
+	_streams["angler_eat"] = _make_sweep(700.0, 250.0, 0.09, 0.3, "square")
 	_streams["purchase"] = _make_chime([660.0, 990.0], 0.08, 0.3)
 	_streams["dash"] = _make_sweep(320.0, 720.0, 0.1, 0.28)
 	_streams["click"] = _make_tone(520.0, 0.03, 0.2, "sine")

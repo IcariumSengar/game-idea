@@ -718,14 +718,14 @@ func _test_attunement_spell_multipliers() -> void:
 ## (DESIGN.md), but *whether one's ever been seen* has to survive across
 ## saves, which means it has to go through export_save_data()/
 ## import_save_data() like everything else persistent. Also covers
-## magpie_encountered, the same pattern extended to the Grimoire's new
+## angler_encountered, the same pattern extended to the Ship's Log's new
 ## THREATS section.
 func _test_combo_discovery_save_round_trip() -> void:
 	# reset_progress() (exercised below) touches more than discovered_combos --
 	# snapshot everything it can reach so this test can't leak state into
 	# whatever runs after it, not just the one field this test cares about.
 	var original_discovered: Dictionary = MetaProgression.discovered_combos.duplicate()
-	var original_magpie_encountered := MetaProgression.magpie_encountered
+	var original_angler_encountered := MetaProgression.angler_encountered
 	var original_player_currency := MetaProgression.player_currency
 	var original_backpack_currency := MetaProgression.backpack_currency
 	var original_best_run_time := MetaProgression.best_run_time
@@ -736,7 +736,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 	var original_levels: Dictionary = MetaProgression._stat_levels.duplicate()
 
 	MetaProgression.discovered_combos.clear()
-	MetaProgression.magpie_encountered = false
+	MetaProgression.angler_encountered = false
 	MetaProgression.best_run_essence = 250
 	MetaProgression.best_run_leanness = 42.5
 	MetaProgression.best_run_discards = 7
@@ -757,12 +757,12 @@ func _test_combo_discovery_save_round_trip() -> void:
 		"discovering one combo doesn't discover the other"
 	)
 
-	MetaProgression.mark_magpie_encountered()
-	_assert(MetaProgression.magpie_encountered, "marking Magpie encountered sets the flag")
+	MetaProgression.mark_angler_encountered()
+	_assert(MetaProgression.angler_encountered, "marking the Angler encountered sets the flag")
 
 	var exported := MetaProgression.export_save_data()
 	MetaProgression.discovered_combos.clear()
-	MetaProgression.magpie_encountered = false
+	MetaProgression.angler_encountered = false
 	MetaProgression.best_run_essence = 0
 	MetaProgression.best_run_leanness = 0.0
 	MetaProgression.best_run_discards = 0
@@ -773,8 +773,8 @@ func _test_combo_discovery_save_round_trip() -> void:
 		"discovery survives an export/import round-trip"
 	)
 	_assert(
-		MetaProgression.magpie_encountered,
-		"magpie_encountered survives an export/import round-trip"
+		MetaProgression.angler_encountered,
+		"angler_encountered survives an export/import round-trip"
 	)
 	_assert(
 		MetaProgression.best_run_essence == 250,
@@ -799,7 +799,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 		"reset_progress() clears discovered combos along with everything else"
 	)
 	_assert(
-		not MetaProgression.magpie_encountered, "reset_progress() clears magpie_encountered too"
+		not MetaProgression.angler_encountered, "reset_progress() clears angler_encountered too"
 	)
 	_assert(MetaProgression.best_run_essence == 0, "reset_progress() clears best_run_essence too")
 	_assert(
@@ -812,7 +812,7 @@ func _test_combo_discovery_save_round_trip() -> void:
 	)
 
 	MetaProgression.discovered_combos = original_discovered
-	MetaProgression.magpie_encountered = original_magpie_encountered
+	MetaProgression.angler_encountered = original_angler_encountered
 	MetaProgression.player_currency = original_player_currency
 	MetaProgression.backpack_currency = original_backpack_currency
 	MetaProgression.best_run_time = original_best_run_time
@@ -839,12 +839,12 @@ func _test_personal_best_updates() -> void:
 
 	_assert(
 		MetaProgression.update_best_essence(50) == 100,
-		"a lower Essence value returns the previous best"
+		"a lower Glow value returns the previous best"
 	)
 	_assert(MetaProgression.best_run_essence == 100, "the lower value never overwrote the best")
 	_assert(
 		MetaProgression.update_best_essence(150) == 100,
-		"a higher Essence value still returns the previous best"
+		"a higher Glow value still returns the previous best"
 	)
 	_assert(MetaProgression.best_run_essence == 150, "the higher value overwrote the best")
 
@@ -910,7 +910,7 @@ func _test_trophy_hall_updates() -> void:
 ## Facets (DESIGN.md's "Facets," 2026-08-17): flagged in its own spec as
 ## the one item in this pass touching already-shipped behavior, needing
 ## coverage for *both* faces of each stat, not just the new one -- a bug
-## here risks silently regressing Swiftness/Gleam's existing Face A
+## here risks silently regressing Current/Gleam's existing Face A
 ## effect, not just failing to add Face B cleanly.
 func _test_facets_swiftness() -> void:
 	var original_level := MetaProgression.get_level(MetaProgression.STAT_MOVE_SPEED)
@@ -922,7 +922,7 @@ func _test_facets_swiftness() -> void:
 	var face_a_expected: float = def.base_value + 4.0 * def.per_level_gain
 	_assert(
 		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED), face_a_expected),
-		"Face A (default) keeps Swiftness's normal per_level_gain, unregressed"
+		"Face A (default) keeps Current's normal per_level_gain, unregressed"
 	)
 	_assert(
 		MetaProgression.get_facet_bonus(MetaProgression.STAT_MOVE_SPEED) == 0.0,
@@ -936,7 +936,7 @@ func _test_facets_swiftness() -> void:
 	var face_b_expected: float = def.base_value + 4.0 * face_b_gain
 	_assert(
 		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_MOVE_SPEED), face_b_expected),
-		"Face B reduces Swiftness's per-level speed gain"
+		"Face B reduces Current's per-level speed gain"
 	)
 	var secondary_gain: float = MetaProgression.FACET_FACE_B_SECONDARY_GAIN[
 		MetaProgression.STAT_MOVE_SPEED
@@ -953,7 +953,7 @@ func _test_facets_swiftness() -> void:
 	var expected_cooldown: float = maxf(0.6 - 4.0 * secondary_gain, Player.DASH_COOLDOWN_FLOOR)
 	_assert(
 		_almost_eq(player.dash_cooldown, expected_cooldown),
-		"Player applies Swiftness Face B's dash-cooldown reduction at run start"
+		"Player applies Current Face B's dash-cooldown reduction at run start"
 	)
 	player.queue_free()
 
@@ -1017,8 +1017,7 @@ func _test_facets_gleam() -> void:
 func _test_facets_do_not_affect_other_stats() -> void:
 	var def := MetaProgression.get_stat_def(MetaProgression.STAT_DAMAGE)
 	_assert(
-		not MetaProgression.is_facet_stat(MetaProgression.STAT_DAMAGE),
-		"Spellpower is not a facet stat"
+		not MetaProgression.is_facet_stat(MetaProgression.STAT_DAMAGE), "Fathom is not a facet stat"
 	)
 	_assert(
 		MetaProgression.get_facet_bonus(MetaProgression.STAT_DAMAGE) == 0.0,
@@ -1033,7 +1032,7 @@ func _test_facets_do_not_affect_other_stats() -> void:
 	var expected: float = def.base_value + float(level) * def.per_level_gain
 	_assert(
 		_almost_eq(MetaProgression.get_stat(MetaProgression.STAT_DAMAGE), expected),
-		"Spellpower's formula is unaffected by the no-op facet call"
+		"Fathom's formula is unaffected by the no-op facet call"
 	)
 
 
@@ -1102,7 +1101,7 @@ func _test_forge_affects_rolls() -> void:
 	_assert(
 		common_frequency < 0.5,
 		(
-			"Forge at its level cap visibly shifts Common's roll frequency below its ~55%% base share (got %.2f)"
+			"the Lure at level cap shifts Common's roll frequency below its ~55%% base share (got %.2f)"
 			% common_frequency
 		)
 	)

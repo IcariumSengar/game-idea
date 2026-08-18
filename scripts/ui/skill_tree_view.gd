@@ -422,7 +422,7 @@ func _build_tooltip_text(node: TreeNode) -> String:
 	else:
 		var cost: int = MetaProgression.get_cost(node.stat_id)
 		var is_player_currency: bool = def.currency == StatDef.Currency.PLAYER
-		var currency_name: String = "Essence" if is_player_currency else "Stardust"
+		var currency_name: String = "Glow" if is_player_currency else "Depth"
 		var owned: int = (
 			MetaProgression.player_currency
 			if is_player_currency

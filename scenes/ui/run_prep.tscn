@@ -56,7 +56,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 theme_type_variation = &"TitleLabel"
-text = "EMBARK?"
+text = "DESCEND?"
 horizontal_alignment = 1
 
 [node name="ProgressLabel" type="Label" parent="CenterContainer/OuterVBox/Panel/Margin/VBoxContainer"]
@@ -65,7 +65,7 @@ custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 theme_type_variation = &"ProgressLabel"
-text = "Your Hoard"
+text = "Your Haul"
 horizontal_alignment = 0
 vertical_alignment = 1
 
@@ -84,21 +84,21 @@ script = ExtResource("4_link")
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "ENTER SANCTUM"
+text = "ENTER THE COVE"
 script = ExtResource("4_link")
 
 [node name="GrimoireButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "GRIMOIRE"
+text = "SHIP'S LOG"
 script = ExtResource("4_link")
 
 [node name="TrophyHallButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
 custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "TROPHY HALL"
+text = "THE RELIQUARY"
 script = ExtResource("4_link")
 
 [node name="BackButton" type="Button" parent="CenterContainer/OuterVBox/ButtonContainer"]
