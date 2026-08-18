@@ -94,6 +94,16 @@ const ALTAR_BOON_SPELLPOWER: StringName = &"spellpower"
 const ALTAR_BOON_FULL_HEAL: StringName = &"full_heal"
 const ALTAR_BOON_SPELLPOWER_BONUS: float = 15.0
 
+## Gamepad support: fixed bindings, not part of Settings.DEFAULT_KEYBINDS,
+## same reasoning as the hardcoded arrow-key movement fallback below -- one
+## working control scheme that survives even a bad rebind, and there's only
+## one local player so a single hardcoded device index is fine. Left stick
+## is read as a continuous vector (see _get_joy_stick_direction()) rather
+## than through Settings' keycode-based rebind map, so it needs its own
+## deadzone rather than reusing a keybind.
+const GAMEPAD_DEVICE: int = 0
+const JOY_DEADZONE: float = 0.2
+
 @export var speed: float = 250.0
 @export var arena_size: Vector2 = Vector2(1280.0, 720.0)
 @export var base_max_hp: float = 60.0
@@ -242,7 +252,10 @@ func _check_dash_input() -> void:
 	var want_dash: bool = (
 		_bot_dash_requested
 		if _bot_active
-		else Input.is_physical_key_pressed(Settings.get_keybind(&"dash"))
+		else (
+			Input.is_physical_key_pressed(Settings.get_keybind(&"dash"))
+			or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_A)
+		)
 	)
 	if _bot_active:
 		_bot_dash_requested = false
@@ -300,8 +313,14 @@ func enqueue_loot(loot: Loot) -> void:
 func _check_triage_input() -> void:
 	if _bot_active or _pending_gem == null:
 		return
-	var want_keep := Input.is_physical_key_pressed(Settings.get_keybind(&"keep"))
-	var want_discard := Input.is_physical_key_pressed(Settings.get_keybind(&"discard"))
+	var want_keep := (
+		Input.is_physical_key_pressed(Settings.get_keybind(&"keep"))
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_RIGHT_SHOULDER)
+	)
+	var want_discard := (
+		Input.is_physical_key_pressed(Settings.get_keybind(&"discard"))
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_LEFT_SHOULDER)
+	)
 	if want_keep and not _keep_was_pressed:
 		# A full backpack can refuse the Keep (collect() returns false) --
 		# leave the gem queued rather than advancing past it, so it isn't
@@ -610,21 +629,39 @@ func _get_input_direction() -> Vector2:
 	if (
 		Input.is_physical_key_pressed(Settings.get_keybind(&"move_up"))
 		or Input.is_physical_key_pressed(KEY_UP)
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_DPAD_UP)
 	):
 		dir.y -= 1.0
 	if (
 		Input.is_physical_key_pressed(Settings.get_keybind(&"move_down"))
 		or Input.is_physical_key_pressed(KEY_DOWN)
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_DPAD_DOWN)
 	):
 		dir.y += 1.0
 	if (
 		Input.is_physical_key_pressed(Settings.get_keybind(&"move_left"))
 		or Input.is_physical_key_pressed(KEY_LEFT)
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_DPAD_LEFT)
 	):
 		dir.x -= 1.0
 	if (
 		Input.is_physical_key_pressed(Settings.get_keybind(&"move_right"))
 		or Input.is_physical_key_pressed(KEY_RIGHT)
+		or Input.is_joy_button_pressed(GAMEPAD_DEVICE, JOY_BUTTON_DPAD_RIGHT)
 	):
 		dir.x += 1.0
-	return dir.normalized()
+	# limit_length() rather than normalized(): keyboard/d-pad input is always
+	# exactly unit length already (or zero), so this is a no-op for them, but
+	# it lets the analog stick contribute partial magnitude below instead of
+	# being snapped to full speed on the lightest tilt.
+	return (dir + _get_joy_stick_direction()).limit_length(1.0)
+
+
+## Left stick, kept separate from the digital d-pad/keyboard block above
+## since it reports a continuous vector rather than a fixed +-1 per axis.
+func _get_joy_stick_direction() -> Vector2:
+	var stick := Vector2(
+		Input.get_joy_axis(GAMEPAD_DEVICE, JOY_AXIS_LEFT_X),
+		Input.get_joy_axis(GAMEPAD_DEVICE, JOY_AXIS_LEFT_Y)
+	)
+	return stick if stick.length() >= JOY_DEADZONE else Vector2.ZERO

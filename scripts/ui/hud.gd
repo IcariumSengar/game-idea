@@ -47,6 +47,8 @@ var _boss_announced: bool = false
 @onready var _game_over_circle: Control = $GameOverCircle
 @onready var _summary_body: RichTextLabel = %SummaryBody
 @onready var _pause_panel: PanelContainer = $PausePanel
+@onready var _resume_button: Button = $PausePanel/PauseMargin/PauseVBox/ResumeButton
+@onready var _continue_button: Button = $GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton
 
 
 func _ready() -> void:
@@ -104,6 +106,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_pause_panel.show()
 			get_tree().paused = true
+			_resume_button.grab_focus()
 
 
 func _on_hp_changed(current: float, max_hp: float) -> void:
@@ -296,6 +299,7 @@ func _show_game_over_panel() -> void:
 		. set_ease(Tween.EASE_OUT)
 	)
 	tween.tween_property(_game_over_panel, "modulate:a", 1.0, 0.2)
+	_continue_button.grab_focus()
 
 
 func _hp_color(fraction: float) -> Color:

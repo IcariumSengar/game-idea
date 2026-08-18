@@ -19,6 +19,9 @@ func _ready() -> void:
 	var version := _read_version()
 	var dev_suffix := " (DEV)" if "--dev" in OS.get_cmdline_user_args() else ""
 	$CenterContainer/ContentVBox/VersionLabel.text = "v%s%s" % [version, dev_suffix]
+	# Gives keyboard/gamepad players a starting focus -- otherwise ui_up/
+	# ui_down/ui_accept have nothing to move relative to.
+	$CenterContainer/ContentVBox/NewGameButton.grab_focus()
 
 
 func _on_new_game_pressed() -> void:

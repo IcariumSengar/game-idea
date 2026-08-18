@@ -22,6 +22,7 @@ func _ready() -> void:
 	_fullscreen_check.button_pressed = Settings.fullscreen
 	_update_volume_label()
 	_build_keybind_rows()
+	_volume_slider.grab_focus()
 
 
 func _on_volume_slider_value_changed(value: float) -> void:

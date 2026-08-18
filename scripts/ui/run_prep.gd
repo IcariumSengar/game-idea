@@ -7,6 +7,7 @@ extends Control
 
 func _ready() -> void:
 	_update_progress_display()
+	$CenterContainer/OuterVBox/ButtonContainer/StartRunButton.grab_focus()
 
 
 func _update_progress_display() -> void:
