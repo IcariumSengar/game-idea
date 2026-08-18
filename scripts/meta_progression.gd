@@ -346,9 +346,15 @@ func is_maxed(id: StringName) -> bool:
 	return get_level(id) >= def.level_cap
 
 
-func award_run_end_currency(loot_value: int, seconds_survived: float) -> void:
-	player_currency += loot_value
-	backpack_currency += roundi(seconds_survived * BACKPACK_CURRENCY_PER_SECOND)
+## bonus_multiplier (Surfacing, DESIGN.md 2026-08-18): defaults to 1.0 so a
+## normal death awards exactly loot_value/the usual Stardust rate, unchanged.
+## Surfacing passes 1.1 to bank both currencies at a 10% bonus for ending
+## the run early instead of pushing on.
+func award_run_end_currency(
+	loot_value: int, seconds_survived: float, bonus_multiplier: float = 1.0
+) -> void:
+	player_currency += roundi(loot_value * bonus_multiplier)
+	backpack_currency += roundi(seconds_survived * BACKPACK_CURRENCY_PER_SECOND * bonus_multiplier)
 	currency_changed.emit()
 
 

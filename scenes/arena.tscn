@@ -351,9 +351,73 @@ theme_override_font_sizes/font_size = 14
 text = "Quit Game"
 script = ExtResource("15_link")
 
+[node name="SurfacingPanel" type="PanelContainer" parent="HUD"]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -100.0
+offset_right = 160.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("0_theme")
+theme_override_styles/panel = SubResource("StyleBoxFlat_gameover")
+
+[node name="SurfaceMargin" type="MarginContainer" parent="HUD/SurfacingPanel"]
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 20
+
+[node name="SurfaceVBox" type="VBoxContainer" parent="HUD/SurfacingPanel/SurfaceMargin"]
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="SurfaceLabel" type="Label" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+theme_override_font_sizes/font_size = 24
+theme_type_variation = &"BrightLabel"
+theme_override_constants/outline_size = 3
+theme_override_colors/font_outline_color = Color(0.02, 0.1, 0.12, 0.8)
+text = "SURFACE NOW?"
+horizontal_alignment = 1
+
+[node name="SurfaceDivider" type="ColorRect" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+custom_minimum_size = Vector2(0, 2)
+color = Color(0.92, 0.82, 0.4, 0.85)
+
+[node name="SurfaceBody" type="Label" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+theme_override_font_sizes/font_size = 14
+theme_type_variation = &"MutedLabel"
+text = "Bank your haul now for a bonus, or keep diving."
+horizontal_alignment = 1
+
+[node name="SurfaceSpacer" type="Control" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+custom_minimum_size = Vector2(0, 4)
+
+[node name="SurfaceNowButton" type="Button" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 40)
+theme_override_font_sizes/font_size = 20
+text = "Surface Now (+10%)"
+script = ExtResource("15_link")
+
+[node name="KeepDivingButton" type="Button" parent="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox"]
+process_mode = 3
+custom_minimum_size = Vector2(0, 30)
+theme_override_font_sizes/font_size = 14
+text = "Keep Diving"
+script = ExtResource("15_link")
+
 [connection signal="timeout" from="EnemySpawnTimer" to="." method="_on_enemy_spawn_timer_timeout"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/RestartButton" to="HUD" method="_on_restart_button_pressed"]
 [connection signal="pressed" from="HUD/GameOverPanel/GameOverMargin/GameOverVBox/ContinueButton" to="HUD" method="_on_continue_button_pressed"]
 [connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/ResumeButton" to="HUD" method="_on_resume_button_pressed"]
 [connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/QuitToMenuButton" to="HUD" method="_on_quit_to_menu_button_pressed"]
+[connection signal="pressed" from="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox/SurfaceNowButton" to="HUD" method="_on_surface_now_button_pressed"]
+[connection signal="pressed" from="HUD/SurfacingPanel/SurfaceMargin/SurfaceVBox/KeepDivingButton" to="HUD" method="_on_keep_diving_button_pressed"]
 [connection signal="pressed" from="HUD/PausePanel/PauseMargin/PauseVBox/QuitGameButton" to="HUD" method="_on_quit_game_button_pressed"]

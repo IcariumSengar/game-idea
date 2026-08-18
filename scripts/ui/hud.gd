@@ -26,12 +26,20 @@ const BOSS_LABEL_COLOR: Color = Palette.PHASE_BOSS_LABEL
 const PHASE_LABEL_OFFSET: Vector2 = Vector2(0.0, -48.0)
 const PHASE_LABEL_FONT_SIZE: int = 24
 
+## Surfacing (DESIGN.md's "the hoard is losable," decided 2026-08-18): a
+## voluntary extraction window opens every SURFACE_INTERVAL seconds
+## survived, offering to bank the run early at SURFACE_BONUS_MULTIPLIER
+## instead of pushing on toward death.
+const SURFACE_INTERVAL: float = 30.0
+const SURFACE_BONUS_MULTIPLIER: float = 1.1
+
 var _backpack_capacity: int
 var _player: Player
 var _spell_caster: SpellCaster
 var _stardust_update_timer: float = 0.0
 var _last_phase: int = 1
 var _boss_announced: bool = false
+var _next_surface_time: float = SURFACE_INTERVAL
 
 @onready var _arena: Arena = get_parent()
 @onready var _time_value: Label = %TimeValue
@@ -47,6 +55,7 @@ var _boss_announced: bool = false
 @onready var _game_over_circle: Control = $GameOverCircle
 @onready var _summary_body: RichTextLabel = %SummaryBody
 @onready var _pause_panel: PanelContainer = $PausePanel
+@onready var _surfacing_panel: PanelContainer = $SurfacingPanel
 
 
 func _ready() -> void:
@@ -66,6 +75,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_time_value.text = _format_time(_arena.get_run_time())
 	_check_phase_announcements()
+	_check_surfacing_window()
 
 	_stardust_update_timer += delta
 	if _stardust_update_timer >= STARDUST_UPDATE_INTERVAL:
@@ -95,15 +105,34 @@ func _spawn_phase_label(label: String, color: Color) -> void:
 ## Escape toggles the pause menu. HUD is process_mode ALWAYS specifically
 ## so this keeps firing after get_tree().paused is set -- otherwise
 ## there'd be no way to detect the second press that resumes. Ignored
-## while the death screen is already up (already paused for a different
-## reason -- don't stack a second overlay on top of it).
+## while the death screen or the Surfacing prompt is already up (already
+## paused for a different reason -- don't stack a second overlay on top).
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and not _game_over_panel.visible:
+	if (
+		event.is_action_pressed("ui_cancel")
+		and not _game_over_panel.visible
+		and not _surfacing_panel.visible
+	):
 		if get_tree().paused:
 			_resume()
 		else:
 			_pause_panel.show()
 			get_tree().paused = true
+
+
+## Skipped entirely during a headless playtest batch -- the bot has no way
+## to dismiss the prompt, and pausing the tree for an input it'll never
+## give would soft-lock every run past the first window.
+func _check_surfacing_window() -> void:
+	if PlaytestHarness.active:
+		return
+	if _game_over_panel.visible or _surfacing_panel.visible or get_tree().paused:
+		return
+	if _arena.get_run_time() < _next_surface_time:
+		return
+	_next_surface_time += SURFACE_INTERVAL
+	_surfacing_panel.show()
+	get_tree().paused = true
 
 
 func _on_hp_changed(current: float, max_hp: float) -> void:
@@ -143,63 +172,90 @@ func _on_loot_changed(backpack: Dictionary) -> void:
 
 
 func _on_player_died() -> void:
-	var total_value := _player.get_total_loot_value()
+	await _end_run(1.0, "Lost to the Void", "#e066a3", true)
+
+
+## Surfacing (DESIGN.md's "the hoard is losable," decided 2026-08-18): the
+## same run-end path as death, just triggered by a button instead of HP
+## hitting zero, with a bonus multiplier and no death FX.
+func _on_surface_now_button_pressed() -> void:
+	_surfacing_panel.hide()
+	await _end_run(SURFACE_BONUS_MULTIPLIER, "Surfaced Safely", "#4de6cc", false)
+
+
+func _on_keep_diving_button_pressed() -> void:
+	_surfacing_panel.hide()
+	get_tree().paused = false
+
+
+## Shared by death and Surfacing so both count identically for personal
+## bests, Trophy Hall, and the save -- only the bonus multiplier, title,
+## and whether the death FX plays differ.
+func _end_run(
+	bonus_multiplier: float, title: String, title_color: String, play_death_fx: bool
+) -> void:
 	var seconds_survived := _arena.get_run_time()
-	var stardust_earned := roundi(seconds_survived * MetaProgression.BACKPACK_CURRENCY_PER_SECOND)
+	var raw_value := _player.get_total_loot_value()
+	var total_value := roundi(raw_value * bonus_multiplier)
+	var stardust_earned := roundi(
+		seconds_survived * MetaProgression.BACKPACK_CURRENCY_PER_SECOND * bonus_multiplier
+	)
 	var leanness := seconds_survived * (1.0 - _player.get_max_fill_ratio())
 	var discards := _player.get_discards_this_run()
 
-	var previous_time := MetaProgression.update_best_run(seconds_survived)
-	var previous_essence := MetaProgression.update_best_essence(total_value)
-	var previous_leanness := MetaProgression.update_best_leanness(leanness)
-	var previous_discards := MetaProgression.update_best_discards(discards)
+	## Bundled into one Dictionary rather than passed positionally --
+	## _build_summary_bbcode was already at 9 args before Surfacing added
+	## title/title_color/bonus_multiplier, past gdlint's 10-arg ceiling.
+	var run_stats: Dictionary = {
+		"total_value": total_value,
+		"stardust_earned": stardust_earned,
+		"seconds_survived": seconds_survived,
+		"leanness": leanness,
+		"discards": discards,
+		"previous_time": MetaProgression.update_best_run(seconds_survived),
+		"previous_essence": MetaProgression.update_best_essence(total_value),
+		"previous_leanness": MetaProgression.update_best_leanness(leanness),
+		"previous_discards": MetaProgression.update_best_discards(discards),
+	}
 	_update_trophy_hall(_player.backpack)
 
-	MetaProgression.award_run_end_currency(total_value, seconds_survived)
+	MetaProgression.award_run_end_currency(raw_value, seconds_survived, bonus_multiplier)
 	SaveManager.save()
 
 	if PlaytestHarness.active:
 		return
 
-	_summary_body.text = _build_summary_bbcode(
-		total_value,
-		stardust_earned,
-		seconds_survived,
-		leanness,
-		discards,
-		previous_time,
-		previous_essence,
-		previous_leanness,
-		previous_discards
-	)
+	_summary_body.text = _build_summary_bbcode(title, title_color, bonus_multiplier, run_stats)
 
-	AudioManager.play("player_death")
-	await _arena.play_death_shake()
+	if play_death_fx:
+		AudioManager.play("player_death")
+		await _arena.play_death_shake()
+	else:
+		AudioManager.play("purchase")
 	_show_game_over_panel()
 	get_tree().paused = true
 
 
 func _build_summary_bbcode(
-	total_value: int,
-	stardust_earned: int,
-	seconds_survived: float,
-	leanness: float,
-	discards: int,
-	previous_time: float,
-	previous_essence: int,
-	previous_leanness: float,
-	previous_discards: int
+	title: String, title_color: String, bonus_multiplier: float, run: Dictionary
 ) -> String:
 	var lines: Array[String] = []
-	lines.append("[color=#e066a3]Lost to the Void[/color]")
+	lines.append("[color=%s]%s[/color]" % [title_color, title])
+	if bonus_multiplier > 1.0:
+		lines.append(
+			(
+				"[color=#4de6cc]Surfacing Bonus: +%d%%[/color]"
+				% roundi((bonus_multiplier - 1.0) * 100.0)
+			)
+		)
 	lines.append("")
-	lines.append("Time Survived: [b]%s[/b]" % _format_time(seconds_survived))
+	lines.append("Time Survived: [b]%s[/b]" % _format_time(run.seconds_survived))
 	lines.append("Difficulty Reached: [b]Phase %d[/b]" % _arena.get_phase())
 	lines.append("")
 	lines.append("[color=#666666]────────────────────────[/color]")
 	lines.append("[b]REWARDS THIS RUN[/b]")
-	lines.append("[color=#e6cc4d]Glow:[/color] ↑ %d" % total_value)
-	lines.append("[color=#4dbfe6]Depth:[/color] ↑ %d" % stardust_earned)
+	lines.append("[color=#e6cc4d]Glow:[/color] ↑ %d" % run.total_value)
+	lines.append("[color=#4dbfe6]Depth:[/color] ↑ %d" % run.stardust_earned)
 
 	var loot_lines := _build_loot_breakdown()
 	if not loot_lines.is_empty():
@@ -222,14 +278,26 @@ func _build_summary_bbcode(
 	lines.append("[color=#666666]────────────────────────[/color]")
 	lines.append("[b]PERSONAL BESTS[/b]")
 	lines.append(
-		_best_line("Survival Time", _format_time(seconds_survived), seconds_survived, previous_time)
+		_best_line(
+			"Survival Time",
+			_format_time(run.seconds_survived),
+			run.seconds_survived,
+			run.previous_time
+		)
 	)
 	lines.append(
-		_best_line("Richest", "%d Glow" % total_value, float(total_value), float(previous_essence))
+		_best_line(
+			"Richest",
+			"%d Glow" % run.total_value,
+			float(run.total_value),
+			float(run.previous_essence)
+		)
 	)
-	lines.append(_best_line("Leanest", "%.1f" % leanness, leanness, previous_leanness))
+	lines.append(_best_line("Leanest", "%.1f" % run.leanness, run.leanness, run.previous_leanness))
 	lines.append(
-		_best_line("Most Refused", "%d" % discards, float(discards), float(previous_discards))
+		_best_line(
+			"Most Refused", "%d" % run.discards, float(run.discards), float(run.previous_discards)
+		)
 	)
 
 	return "\n".join(lines)
