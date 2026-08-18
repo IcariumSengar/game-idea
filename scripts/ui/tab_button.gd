@@ -19,11 +19,17 @@ var is_active: bool = false
 
 func _ready() -> void:
 	flat = true
-	focus_mode = Control.FOCUS_NONE
+	# Keyboard/gamepad navigation needs a focusable target -- see
+	# menu_link_button.gd for the same fix and reasoning. Focus reuses the
+	# hover animation (below) and _update_colors()'s font_focus_color so a
+	# focused-but-inactive tab pops the same way a hovered one does.
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	pivot_offset = size / 2.0
 	resized.connect(func() -> void: pivot_offset = size / 2.0)
 	mouse_entered.connect(func() -> void: _animate_hover(1.0))
 	mouse_exited.connect(func() -> void: _animate_hover(0.0))
+	focus_entered.connect(func() -> void: _animate_hover(1.0))
+	focus_exited.connect(func() -> void: _animate_hover(0.0))
 	pressed.connect(func() -> void: AudioManager.play("click"))
 	_update_colors()
 

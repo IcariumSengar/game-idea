@@ -34,6 +34,11 @@ const SPELL_DISPLAY_NAMES: Dictionary = {
 ## under 1.8x.
 const PURCHASE_PITCH_STEP: float = 0.04
 const PURCHASE_PITCH_MAX: float = 1.8
+## Gamepad/keyboard tab cycling: works from anywhere regardless of what has
+## GUI focus (a tab button, or deep inside a tree's own node navigation),
+## unlike ui_left/ui_right which only move focus within whatever row is
+## currently focused. Matches TAB_ORDER below.
+const TAB_ORDER: Array[StringName] = [&"player", &"spell", &"backpack"]
 ## Facets (DESIGN.md's "Facets," 2026-08-17): Hades' Mirror toggle,
 ## free/no-cost, so this is plain descriptive tooltip text rather than
 ## a cost/level readout like the tree nodes' own tooltips.
@@ -86,6 +91,46 @@ func _ready() -> void:
 	_refresh_currency()
 	_show_newly_affordable_shimmer()
 	_set_active_tab(_active_tab)
+	_focus_active_tab()
+
+
+## Left/right shoulder (or Q/E) always cycles tabs, independent of whatever
+## currently has GUI focus -- the reliable way back to the tab row once
+## focus is deep inside a tree's own node navigation (_gui_input there
+## consumes ui_left/ui_right for moving between nodes, not switching tabs).
+func _unhandled_input(event: InputEvent) -> void:
+	var direction: int = 0
+	var joy_event := event as InputEventJoypadButton
+	if joy_event != null and joy_event.pressed:
+		if joy_event.button_index == JOY_BUTTON_LEFT_SHOULDER:
+			direction = -1
+		elif joy_event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+			direction = 1
+	var key_event := event as InputEventKey
+	if key_event != null and key_event.pressed and not key_event.echo:
+		if key_event.physical_keycode == KEY_Q:
+			direction = -1
+		elif key_event.physical_keycode == KEY_E:
+			direction = 1
+	if direction != 0:
+		_cycle_tab(direction)
+		get_viewport().set_input_as_handled()
+
+
+func _cycle_tab(direction: int) -> void:
+	var index: int = wrapi(TAB_ORDER.find(_active_tab) + direction, 0, TAB_ORDER.size())
+	_set_active_tab(TAB_ORDER[index])
+	_focus_active_tab()
+
+
+func _focus_active_tab() -> void:
+	match _active_tab:
+		&"player":
+			_player_tab.grab_focus()
+		&"spell":
+			_spell_tab.grab_focus()
+		&"backpack":
+			_backpack_tab.grab_focus()
 
 
 ## Sanctum UX point 1: a node that crossed into affordable since the shop
@@ -345,13 +390,21 @@ func _show_spell_choice_panel() -> void:
 	for child in _spell_choice_option_row.get_children():
 		child.queue_free()
 	var offer: Array[StringName] = MetaProgression.get_spell_choice_offer(level)
+	# Tracked by reference, not get_child(0) after the loop -- queue_free()
+	# above doesn't remove the old buttons until end of frame, so the
+	# children array would still contain them alongside the new ones.
+	var first_button: Button = null
 	for spell_id: StringName in offer:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(160, 60)
 		button.text = SPELL_DISPLAY_NAMES.get(spell_id, String(spell_id))
 		button.pressed.connect(_on_spell_choice_picked.bind(spell_id))
 		_spell_choice_option_row.add_child(button)
+		if first_button == null:
+			first_button = button
 	_spell_choice_panel.show()
+	if first_button != null:
+		first_button.grab_focus()
 
 
 func _on_spell_choice_picked(spell_id: StringName) -> void:
